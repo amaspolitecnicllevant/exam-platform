@@ -1,0 +1,14 @@
+# Secrets
+.env
+infra/.env
+# Certificats HTTPS (ca.key signa certificats en què confien els ordinadors del centre)
+infra/tls/certs/
+
+# Còpies de seguretat (contenen dades dels alumnes)
+backups/
+
+# Artefactes de compilació
+backend/target/
+frontend/node_modules/
+frontend/dist/
+backend/app.jar

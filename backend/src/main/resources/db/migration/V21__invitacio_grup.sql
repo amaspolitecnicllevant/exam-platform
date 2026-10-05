@@ -1,0 +1,1 @@
+ALTER TABLE invitacions ADD COLUMN grup_id UUID REFERENCES grups(id) ON DELETE SET NULL;

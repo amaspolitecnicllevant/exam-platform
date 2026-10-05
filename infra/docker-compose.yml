@@ -1,0 +1,92 @@
+services:
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-examplatform}
+      POSTGRES_USER: ${DB_USER:-examuser}
+      POSTGRES_PASSWORD: ${DB_PASS:?Cal definir DB_PASS a infra/.env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    # Només accessible des d'aquesta màquina (el backend hi arriba per la xarxa interna de Docker)
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-examuser} -d ${DB_NAME:-examplatform}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_NAME: ${DB_NAME:-examplatform}
+      DB_USER: ${DB_USER:-examuser}
+      DB_PASS: ${DB_PASS:?Cal definir DB_PASS a infra/.env}
+      JWT_SECRET: ${JWT_SECRET:?Cal definir JWT_SECRET a infra/.env (openssl rand -base64 48)}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      APP_ALLOWED_ORIGINS: ${APP_ALLOWED_ORIGINS:-http://localhost:3000}
+      SCRIPTS_HOST_PATH: /opt/exam-scripts
+      FILES_HOST_PATH: /opt/exam-files
+      JAVA_IMAGE: ${JAVA_IMAGE:-eclipse-temurin:21-jdk-alpine}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      # Heap de la JVM proporcional al límit de memòria del contenidor
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=70"
+    mem_limit: ${BACKEND_MEM_LIMIT:-1536m}
+    # Només accessible des d'aquesta màquina: els usuaris entren per nginx (port 3000). Si el backend
+    # fos accessible des de la xarxa, es podria saltar nginx.
+    ports:
+      - "127.0.0.1:8080:8080"
+    group_add:
+      - "${DOCKER_GID:-984}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /opt/exam-scripts:/opt/exam-scripts
+      - /opt/exam-files:/opt/exam-files
+      # Només per llegir l'estat de l'última còpia (estat.json) i mostrar-lo a l'administrador
+      - ${BACKUP_DIR:-../backups}:/backups:ro
+
+  backup:
+    # Còpia de seguretat diària de la BD i dels fitxers de dades (vegeu infra/backup/)
+    image: postgres:16-alpine
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    user: "${BACKUP_UID:-1000}:${BACKUP_GID:-1000}"
+    environment:
+      DB_HOST: db
+      DB_NAME: ${DB_NAME:-examplatform}
+      DB_USER: ${DB_USER:-examuser}
+      PGPASSWORD: ${DB_PASS:?Cal definir DB_PASS a infra/.env}
+      TZ: ${BACKUP_TZ:-Europe/Madrid}
+      BACKUP_HORA: ${BACKUP_HORA:-02:30}
+      BACKUP_RETENCIO_DIES: ${BACKUP_RETENCIO_DIES:-30}
+    volumes:
+      - ./backup:/backup:ro
+      - ${BACKUP_DIR:-../backups}:/backups
+      - /opt/exam-files:/opt/exam-files:ro
+    entrypoint: ["/backup/planificador.sh"]
+    mem_limit: 256m
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  db-data:

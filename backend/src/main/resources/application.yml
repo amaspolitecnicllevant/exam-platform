@@ -1,0 +1,72 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/${DB_NAME:examplatform}
+    username: ${DB_USER:examuser}
+    password: ${DB_PASS:exampass}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+
+server:
+  port: 8080
+  tomcat:
+    remoteip:
+      # Tomcat només es refia de X-Real-IP si la petició ve d'aquests proxies (nginx a la xarxa de
+      # Docker o la mateixa màquina). Qualsevol altre client no pot falsejar la seva IP.
+      remote-ip-header: x-real-ip
+      internal-proxies: '${TRUSTED_PROXIES:172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+|127\.\d+\.\d+\.\d+|0:0:0:0:0:0:0:1}'
+
+jwt:
+  # Obligatori: Base64 d'almenys 32 bytes (p. ex. `openssl rand -base64 48`). Sense valor per defecte.
+  secret: ${JWT_SECRET:}
+  expiration-ms: ${JWT_EXPIRATION_MS:14400000}  # 4h per defecte
+
+frontend:
+  url: ${FRONTEND_URL:http://localhost:5173}
+
+oauth:
+  allowed-domain: ${OAUTH_ALLOWED_DOMAIN:politecnicllevant.cat}
+
+execution:
+  # path accessible tant pel backend com pels contenidors Docker fills
+  scripts-host-path: ${SCRIPTS_HOST_PATH:/tmp/exam-scripts}
+  # path on s'emmagatzemen els fitxers adjunts de les preguntes
+  files-host-path: ${FILES_HOST_PATH:/data/exam-files}
+  timeout-seconds: ${EXEC_TIMEOUT:15}
+  memory-limit: ${EXEC_MEMORY:128m}
+  cpus: ${EXEC_CPUS:0.5}
+  bash-image: ${BASH_IMAGE:bash:5}
+  powershell-image: ${PS_IMAGE:mcr.microsoft.com/powershell:latest}
+  java-image: ${JAVA_IMAGE:eclipse-temurin:21-jdk-alpine}
+  # Execucions interactives (▶ Executar) simultànies a tota la màquina, i quant poden esperar torn
+  max-concurrent: ${EXEC_MAX_CONCURRENT:4}
+  queue-wait-seconds: ${EXEC_QUEUE_WAIT:30}
+
+exam:
+  # Minuts des de scheduledAt durant els quals un alumne pot iniciar l'examen
+  access-window-minutes: ${EXAM_ACCESS_WINDOW:20}
+  # Minuts de marge després de scheduledAt+durada abans de tancar l'examen automàticament
+  auto-close-grace-minutes: ${EXAM_AUTO_CLOSE_GRACE:5}
+
+correction:
+  # Fils que executen en segon pla les respostes de codi en entregar un examen
+  async-threads: ${CORRECTION_THREADS:2}
+  # Màxim de sessions en cua pendents de correcció
+  queue-capacity: ${CORRECTION_QUEUE:1000}
+
+app:
+  # Zona horària del centre: la que es fa servir per mostrar hores als missatges (les dates es desen en UTC)
+  zona-horaria: ${APP_ZONA_HORARIA:Europe/Madrid}

@@ -1,0 +1,1 @@
+ALTER TABLE exams ADD COLUMN penalitzacio_choice NUMERIC(5,4) NOT NULL DEFAULT 0;

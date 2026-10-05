@@ -1,0 +1,21 @@
+# Còpia de seguretat també a una carpeta compartida de la xarxa (Windows/Samba, protocol SMB).
+# S'activa afegint a infra/.env:
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.copies-remotes.yml
+# i les variables BACKUP_REMOT_* (vegeu .env.example). Docker munta la carpeta ell mateix: no cal
+# muntar-la a la màquina. A la carpeta compartida hi ha d'haver un fitxer buit anomenat
+# .carpeta-copies-examens (serveix per detectar que està muntada).
+services:
+  backup:
+    environment:
+      BACKUP_REMOT: "1"
+    volumes:
+      - copies-remot:/backups-remot
+
+volumes:
+  copies-remot:
+    driver: local
+    driver_opts:
+      type: cifs
+      # Ruta de la carpeta: //IP-del-servidor/nom-compartit[/subcarpeta]
+      device: "${BACKUP_REMOT_RUTA:?Cal definir BACKUP_REMOT_RUTA a infra/.env}"
+      o: "addr=${BACKUP_REMOT_SERVIDOR:?Cal definir BACKUP_REMOT_SERVIDOR (IP del servidor)},username=${BACKUP_REMOT_USUARI:?Cal definir BACKUP_REMOT_USUARI},password=${BACKUP_REMOT_CONTRASENYA:?Cal definir BACKUP_REMOT_CONTRASENYA},domain=${BACKUP_REMOT_DOMINI:-WORKGROUP},uid=${BACKUP_UID:-1000},gid=${BACKUP_GID:-1000},file_mode=0600,dir_mode=0700,vers=${BACKUP_REMOT_VERSIO_SMB:-3.0}"

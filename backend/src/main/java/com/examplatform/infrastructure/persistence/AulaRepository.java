@@ -1,0 +1,13 @@
+package com.examplatform.infrastructure.persistence;
+
+import com.examplatform.domain.model.Aula;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface AulaRepository extends JpaRepository<Aula, UUID> {
+    List<Aula> findAllByOrderByNomAsc();
+    Optional<Aula> findByNom(String nom);
+}

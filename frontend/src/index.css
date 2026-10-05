@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Color de marca per defecte: #b0306a → hsl(333, 57%, 44%) */
+  --brand-h: 333;
+  --brand-s: 57%;
+}
+
+body { @apply text-gray-800; }

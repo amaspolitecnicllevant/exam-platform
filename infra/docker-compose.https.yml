@@ -1,0 +1,17 @@
+# HTTPS amb una autoritat de certificació pròpia del centre (accés per IP dins la xarxa).
+# Passos (vegeu docs/https.md):
+#   1. ./tls/genera-certificats.sh <IP del servidor>
+#   2. A infra/.env: COMPOSE_FILE=docker-compose.yml:docker-compose.https.yml
+#      (si també hi ha còpies remotes: docker-compose.yml:docker-compose.copies-remotes.yml:docker-compose.https.yml)
+#   3. docker compose up -d frontend
+# El port HTTP (3000) queda com a redirecció a https://<IP>:${HTTPS_PORT}.
+services:
+  frontend:
+    ports:
+      - "${HTTPS_PORT:-3443}:443"
+    environment:
+      HTTPS_PORT: "${HTTPS_PORT:-3443}"
+    volumes:
+      - ./tls/nginx-https.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./tls/certs/server.crt:/etc/nginx/tls/server.crt:ro
+      - ./tls/certs/server.key:/etc/nginx/tls/server.key:ro

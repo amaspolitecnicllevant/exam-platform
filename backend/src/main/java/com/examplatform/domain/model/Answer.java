@@ -1,0 +1,56 @@
+package com.examplatform.domain.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Entity
+@Table(name = "answers",
+       uniqueConstraints = @UniqueConstraint(columnNames = {"session_id", "question_id"}))
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class Answer {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "session_id", nullable = false)
+    private ExamSession session;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "question_id", nullable = false)
+    private Question question;
+
+    @Column(columnDefinition = "TEXT")
+    private String contingut;
+
+    @Column(columnDefinition = "TEXT")
+    private String executionOutput;
+
+    @Column(precision = 4, scale = 2)
+    private BigDecimal autoScore;
+
+    @Column(precision = 4, scale = 2)
+    private BigDecimal manualScore;
+
+    /** Motius de la nota proposada (autoScore), una línia per motiu. */
+    @Column(columnDefinition = "TEXT")
+    private String autoFeedback;
+
+    /** Comentari del professor per a l'alumne (visible quan es publiquen les notes). */
+    @Column(columnDefinition = "TEXT")
+    private String comentari;
+
+    private LocalDateTime correctedAt;
+
+    @OneToMany(mappedBy = "answer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("executedAt DESC")
+    @Builder.Default
+    private List<Execution> executions = new ArrayList<>();
+}

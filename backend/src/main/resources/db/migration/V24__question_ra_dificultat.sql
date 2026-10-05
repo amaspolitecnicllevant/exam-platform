@@ -1,0 +1,2 @@
+ALTER TABLE questions ADD COLUMN ra VARCHAR(100);
+ALTER TABLE questions ADD COLUMN dificultat VARCHAR(10);
