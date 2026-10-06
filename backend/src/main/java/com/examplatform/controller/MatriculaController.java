@@ -3,9 +3,11 @@ package com.examplatform.controller;
 import com.examplatform.domain.service.MatriculaService;
 import com.examplatform.dto.MatriculaDto;
 import jakarta.validation.Valid;
+import com.examplatform.domain.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,9 +24,12 @@ public class MatriculaController {
     @PreAuthorize("hasAnyRole('PROFESSOR','ADMIN')")
     public List<MatriculaDto> list(@RequestParam(required = false) UUID alumneId,
                                    @RequestParam(required = false) UUID modulId,
-                                   @RequestParam(required = false) String curs) {
+                                   @RequestParam(required = false) String curs,
+                                   @AuthenticationPrincipal User user) {
         if (alumneId != null) return matriculaService.findByAlumne(alumneId);
         if (modulId != null && curs != null) return matriculaService.findByModulAndCurs(modulId, curs);
+        // Sense filtres: les matrícules visibles per a l'usuari (per filtrar alumnes per cicle/mòdul/curs)
+        if (modulId == null && curs == null) return matriculaService.findVisibles(user);
         return List.of();
     }
 

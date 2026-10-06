@@ -21,12 +21,13 @@ class MatriculaServiceTest {
     @Mock MatriculaRepository matriculaRepository;
     @Mock UserRepository      userRepository;
     @Mock ModulRepository     modulRepository;
+    @Mock ImparticioRepository imparticioRepository;
 
     MatriculaService service;
 
     @BeforeEach
     void setUp() {
-        service = new MatriculaService(matriculaRepository, userRepository, modulRepository);
+        service = new MatriculaService(matriculaRepository, userRepository, modulRepository, imparticioRepository);
     }
 
     // ── enroll ────────────────────────────────────────────────────────────────
@@ -185,5 +186,62 @@ class MatriculaServiceTest {
 
         assertThatThrownBy(() -> service.enrollLot(List.of(UUID.randomUUID()), m.getId(), "2026-27"))
                 .isInstanceOf(java.util.NoSuchElementException.class);
+    }
+
+    // ── findVisibles ──────────────────────────────────────────────────────────
+
+    private Matricula matricula(User alumne, Modul modul, String curs) {
+        return Matricula.builder().id(UUID.randomUUID()).alumne(alumne).modul(modul).curs(curs).build();
+    }
+
+    private User usuari(Role rol) {
+        return User.builder().id(UUID.randomUUID()).name("U").email("u@test.cat").role(rol).build();
+    }
+
+    @Test
+    void findVisibles_administrador_veu_totes_les_matricules() {
+        Modul m1 = modul();
+        Modul m2 = modul();
+        List<Matricula> totes = List.of(matricula(alumne(), m1, "2026-27"), matricula(alumne(), m2, "2026-27"));
+        when(matriculaRepository.findAllAmbDetall()).thenReturn(totes);
+
+        var r = service.findVisibles(usuari(Role.ADMIN));
+
+        assertThat(r).hasSize(2);
+        verifyNoInteractions(imparticioRepository);
+    }
+
+    @Test
+    void findVisibles_professor_nomes_veu_els_moduls_que_imparteix() {
+        User prof = usuari(Role.PROFESSOR);
+        Modul meu = modul();
+        User a = alumne();
+        when(imparticioRepository.findModulIdsByProfessorId(prof.getId())).thenReturn(List.of(meu.getId()));
+        when(matriculaRepository.findByModulIdsAmbDetall(List.of(meu.getId())))
+                .thenReturn(List.of(matricula(a, meu, "2026-27")));
+
+        var r = service.findVisibles(prof);
+
+        assertThat(r).singleElement().satisfies(d -> {
+            assertThat(d.alumneId()).isEqualTo(a.getId());
+            assertThat(d.modulId()).isEqualTo(meu.getId());
+        });
+        // Mai es consulten totes les matrícules per a un professor
+        verify(matriculaRepository, never()).findAllAmbDetall();
+    }
+
+    @Test
+    void findVisibles_professor_sense_moduls_no_veu_res_ni_consulta_matricules() {
+        User prof = usuari(Role.PROFESSOR);
+        when(imparticioRepository.findModulIdsByProfessorId(prof.getId())).thenReturn(List.of());
+
+        assertThat(service.findVisibles(prof)).isEmpty();
+        verifyNoInteractions(matriculaRepository);
+    }
+
+    @Test
+    void findVisibles_un_alumne_no_veu_cap_matricula() {
+        assertThat(service.findVisibles(usuari(Role.STUDENT))).isEmpty();
+        verifyNoInteractions(matriculaRepository, imparticioRepository);
     }
 }

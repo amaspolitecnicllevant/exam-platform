@@ -3,7 +3,13 @@ import Layout from '../../components/Layout'
 import { getGrups, createGrup, setGrupStudents, deleteGrup, assignGrupModul } from '../../api/grups'
 import { getUsers } from '../../api/users'
 import { getModuls } from '../../api/moduls'
-import type { Grup, User, Modul } from '../../types'
+import { getMatricules } from '../../api/matricules'
+import {
+  FILTRE_BUIT, filtraAlumnes, filtraPerMatricula, filtreInicial,
+  cursosDisponibles, modulsAmbMatricula, ciclesAmbMatricula,
+  type FiltreAlumnes,
+} from '../../utils/filtreAlumnes'
+import type { Grup, User, Modul, Matricula } from '../../types'
 
 type Tab = 'grups' | 'alumnes'
 
@@ -12,6 +18,7 @@ export default function GrupsPage() {
   const [grups, setGrups]           = useState<Grup[]>([])
   const [allStudents, setStudents]  = useState<User[]>([])
   const [moduls, setModuls]         = useState<Modul[]>([])
+  const [matricules, setMatricules] = useState<Matricula[]>([])
   const [loading, setLoading]       = useState(true)
   const [error, setError]           = useState('')
   const [saving, setSaving]         = useState(false)
@@ -25,17 +32,20 @@ export default function GrupsPage() {
   // Modal Grups — editar alumnes d'un grup
   const [editingGrup, setEditingGrup]         = useState<Grup | null>(null)
   const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set())
+  const [filtre, setFiltre]                   = useState<FiltreAlumnes>(FILTRE_BUIT)
 
   // Modal Alumnes — editar grups d'un alumne
   const [editingStudent, setEditingStudent]   = useState<User | null>(null)
   const [selectedGrups, setSelectedGrups]     = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    Promise.all([getGrups(), getUsers(), getModuls()])
-      .then(([g, u, m]) => {
+    // Si les matrícules no es poden carregar, la llista d'alumnes continua funcionant (sense filtres de matrícula)
+    Promise.all([getGrups(), getUsers(), getModuls(), getMatricules().catch(() => [] as Matricula[])])
+      .then(([g, u, m, mat]) => {
         setGrups(g)
         setStudents(u.filter(u => u.role === 'STUDENT'))
         setModuls(m)
+        setMatricules(mat)
       })
       .catch(() => setError('Error carregant dades'))
       .finally(() => setLoading(false))
@@ -45,6 +55,18 @@ export default function GrupsPage() {
 
   const grupIdsForStudent = (studentId: string): Set<string> =>
     new Set(grups.filter(g => g.students.some(s => s.id === studentId)).map(g => g.id))
+
+  // Llista d'alumnes del modal de grup, segons els filtres
+  const alumnesVisibles = editingGrup
+    ? filtraAlumnes(allStudents, matricules, moduls, filtre, selectedStudents)
+    : []
+  const ciclesFiltre  = ciclesAmbMatricula(moduls, matricules)
+  const modulsFiltre  = modulsAmbMatricula(moduls, matricules, filtre.cicleId)
+  const cursosFiltre  = cursosDisponibles(matricules)
+  const idsMatriculats = new Set(matricules.map(m => m.alumneId))
+  const senseMatricula = allStudents.filter(a => !idsMatriculats.has(a.id)).length
+  const filtreActiu = filtre.text !== '' || filtre.nomesSeleccionats || filtraPerMatricula(filtre)
+  const seleccionatsFora = [...selectedStudents].filter(id => !alumnesVisibles.some(a => a.id === id)).length
 
   // ── Accions Grups ─────────────────────────────────────────────────────────
 
@@ -63,7 +85,18 @@ export default function GrupsPage() {
   const openGrupEdit = (g: Grup) => {
     setEditingGrup(g)
     setSelectedStudents(new Set(g.students.map(s => s.id)))
+    setFiltre(filtreInicial(g.modulId, matricules, moduls))
   }
+
+  const canviaFiltre = (canvis: Partial<FiltreAlumnes>) => setFiltre(prev => ({ ...prev, ...canvis }))
+
+  /** Marca o desmarca tots els alumnes que ara es veuen (els que queden fora del filtre no es toquen). */
+  const marcaVisibles = (visibles: User[], marcar: boolean) =>
+    setSelectedStudents(prev => {
+      const next = new Set(prev)
+      visibles.forEach(a => (marcar ? next.add(a.id) : next.delete(a.id)))
+      return next
+    })
 
   const handleSaveGrupStudents = async () => {
     if (!editingGrup) return
@@ -305,17 +338,81 @@ export default function GrupsPage() {
       {/* Modal: alumnes d'un grup */}
       {editingGrup && (
         <Modal title={`Alumnes de «${editingGrup.name}»`}
-          subtitle={`${selectedStudents.size} seleccionat${selectedStudents.size !== 1 ? 's' : ''}`}
+          subtitle={`${selectedStudents.size} seleccionat${selectedStudents.size !== 1 ? 's' : ''}`
+            + (seleccionatsFora > 0 ? ` (${seleccionatsFora} fora del filtre actual)` : '')}
           onClose={() => setEditingGrup(null)}
           onSave={handleSaveGrupStudents} saving={saving}>
           {allStudents.length === 0
             ? <p className="text-sm text-gray-400 text-center py-4">No hi ha alumnes al sistema.</p>
-            : allStudents.map(s => (
-              <CheckRow key={s.id}
-                label={s.name} sub={s.email}
-                checked={selectedStudents.has(s.id)}
-                onChange={() => setSelectedStudents(prev => toggle(prev, s.id))} />
-            ))}
+            : <>
+              <div className="sticky top-0 bg-white pb-2 space-y-2 border-b border-gray-100 mb-1">
+                <input type="search" value={filtre.text}
+                  onChange={e => canviaFiltre({ text: e.target.value })}
+                  placeholder="Cerca per nom o correu…"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                {matricules.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <select value={filtre.cicleId} aria-label="Cicle"
+                      onChange={e => canviaFiltre({ cicleId: e.target.value, modulId: '' })}
+                      className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm col-span-2">
+                      <option value="">Tots els cicles</option>
+                      {ciclesFiltre.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+                    </select>
+                    <select value={filtre.modulId} aria-label="Mòdul"
+                      onChange={e => canviaFiltre({ modulId: e.target.value })}
+                      className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm">
+                      <option value="">Tots els mòduls</option>
+                      {modulsFiltre.map(m => <option key={m.id} value={m.id}>{m.codi} — {m.nom}</option>)}
+                    </select>
+                    <select value={filtre.curs} aria-label="Curs"
+                      onChange={e => canviaFiltre({ curs: e.target.value })}
+                      className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm">
+                      <option value="">Tots els cursos</option>
+                      {cursosFiltre.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                )}
+                <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+                  <input type="checkbox" checked={filtre.nomesSeleccionats}
+                    onChange={e => canviaFiltre({ nomesSeleccionats: e.target.checked })}
+                    className="accent-brand-600" />
+                  Mostra només els seleccionats
+                </label>
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className="text-gray-500">
+                    Es mostren {alumnesVisibles.length} de {allStudents.length}
+                  </span>
+                  <span className="flex gap-3">
+                    {filtreActiu && (
+                      <button type="button" onClick={() => setFiltre(FILTRE_BUIT)}
+                        className="text-gray-500 hover:underline">Treure filtres</button>
+                    )}
+                    <button type="button" disabled={alumnesVisibles.length === 0}
+                      onClick={() => marcaVisibles(alumnesVisibles, true)}
+                      className="text-brand-600 hover:underline disabled:opacity-40">
+                      Marcar els {alumnesVisibles.length} visibles
+                    </button>
+                    <button type="button" disabled={alumnesVisibles.length === 0}
+                      onClick={() => marcaVisibles(alumnesVisibles, false)}
+                      className="text-gray-500 hover:underline disabled:opacity-40">Desmarcar-los</button>
+                  </span>
+                </div>
+                {filtraPerMatricula(filtre) && senseMatricula > 0 && (
+                  <p className="text-xs text-amber-700">
+                    {senseMatricula} alumne{senseMatricula !== 1 ? 's' : ''} sense matrícula no surt{senseMatricula !== 1 ? 'en' : ''} amb
+                    aquest filtre. Treu els filtres per veure'ls.
+                  </p>
+                )}
+              </div>
+              {alumnesVisibles.length === 0
+                ? <p className="text-sm text-gray-400 text-center py-4">Cap alumne coincideix amb els filtres.</p>
+                : alumnesVisibles.map(s => (
+                  <CheckRow key={s.id}
+                    label={s.name} sub={s.email}
+                    checked={selectedStudents.has(s.id)}
+                    onChange={() => setSelectedStudents(prev => toggle(prev, s.id))} />
+                ))}
+            </>}
         </Modal>
       )}
 

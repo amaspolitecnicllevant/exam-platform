@@ -18,6 +18,7 @@ public class MatriculaService {
     private final MatriculaRepository matriculaRepository;
     private final UserRepository      userRepository;
     private final ModulRepository     modulRepository;
+    private final ImparticioRepository imparticioRepository;
 
     @Transactional(readOnly = true)
     public List<MatriculaDto> findByAlumne(UUID alumneId) {
@@ -28,6 +29,26 @@ public class MatriculaService {
     @Transactional(readOnly = true)
     public List<MatriculaDto> findByModulAndCurs(UUID modulId, String curs) {
         return matriculaRepository.findByModulIdAndCurs(modulId, curs).stream()
+                .map(MatriculaDto::from).toList();
+    }
+
+    /**
+     * Matrícules que l'usuari pot veure: l'administrador, totes; un professor, només les dels
+     * mòduls que imparteix (no veu a quins altres mòduls estan matriculats els alumnes).
+     */
+    @Transactional(readOnly = true)
+    public List<MatriculaDto> findVisibles(User usuari) {
+        if (usuari.getRole() == Role.ADMIN) {
+            return matriculaRepository.findAllAmbDetall().stream().map(MatriculaDto::from).toList();
+        }
+        if (usuari.getRole() != Role.PROFESSOR) {
+            return List.of();
+        }
+        List<UUID> modulIds = imparticioRepository.findModulIdsByProfessorId(usuari.getId());
+        if (modulIds.isEmpty()) {
+            return List.of();
+        }
+        return matriculaRepository.findByModulIdsAmbDetall(modulIds).stream()
                 .map(MatriculaDto::from).toList();
     }
 

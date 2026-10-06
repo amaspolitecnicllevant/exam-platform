@@ -1,7 +1,11 @@
 import client from './client'
 import type { Matricula } from '../types'
 
-export const getMatriculesByAlumne = (alumneId: string): Promise<Matricula[]> =>
+/** Matrícules visibles per a l'usuari: totes (admin) o les dels mòduls que imparteix (professor). */
+export const getMatricules = (): Promise<Matricula[]> =>
+  client.get('/matricules').then(r => r.data)
+
+export const getMatriculesByAlumne =(alumneId: string): Promise<Matricula[]> =>
   client.get('/matricules', { params: { alumneId } }).then(r => r.data)
 
 export const getMatriculesByModul = (modulId: string, curs: string): Promise<Matricula[]> =>

@@ -16,4 +16,7 @@ public interface ImparticioRepository extends JpaRepository<Imparticio, UUID> {
     @Query("SELECT COUNT(i) > 0 FROM Imparticio i WHERE i.professor.id = :professorId AND i.modul.id = :modulId")
     boolean professorImparteixModul(@Param("professorId") UUID professorId,
                                    @Param("modulId") UUID modulId);
+
+    @Query("SELECT DISTINCT i.modul.id FROM Imparticio i WHERE i.professor.id = :professorId")
+    List<UUID> findModulIdsByProfessorId(@Param("professorId") UUID professorId);
 }
