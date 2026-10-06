@@ -36,6 +36,7 @@ class ExamServiceTest {
     @Mock ExamSessionRepository   sessionRepository;
     @Mock QuestionFileRepository  questionFileRepository;
     @Mock com.examplatform.infrastructure.persistence.AnswerRepository answerRepository;
+    @Mock com.examplatform.infrastructure.storage.FitxersRespostaStorage fitxersStorage;
 
     ExamService service;
 
@@ -47,7 +48,7 @@ class ExamServiceTest {
     void setUp() {
         service = new ExamService(examRepository, examParser, grupRepository,
                 questionRepository, modulRepository, imparticioRepository, aulaRepository,
-                sessionRepository, questionFileRepository, answerRepository);
+                sessionRepository, questionFileRepository, answerRepository, fitxersStorage);
         professor = user(Role.PROFESSOR);
         altreProf = user(Role.PROFESSOR);
         admin     = user(Role.ADMIN);
@@ -130,6 +131,31 @@ class ExamServiceTest {
         service.delete(exam.getId(), professor);
 
         verify(examRepository).deleteById(exam.getId());
+    }
+
+    @Test
+    void delete_esborra_tambe_els_fitxers_pujats_de_les_sessions_de_l_examen() {
+        Exam exam = exam(ExamStatus.DRAFT, professor);
+        when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
+        ExamSession s1 = ExamSession.builder().id(UUID.randomUUID()).exam(exam).build();
+        ExamSession s2 = ExamSession.builder().id(UUID.randomUUID()).exam(exam).build();
+        when(sessionRepository.findByExamId(exam.getId())).thenReturn(List.of(s1, s2));
+
+        service.delete(exam.getId(), professor);
+
+        verify(fitxersStorage).esborraSessio(s1.getId());
+        verify(fitxersStorage).esborraSessio(s2.getId());
+        verify(examRepository).deleteById(exam.getId());
+    }
+
+    @Test
+    void delete_rebutjat_no_toca_cap_fitxer() {
+        Exam exam = exam(ExamStatus.PUBLISHED, professor);
+        when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
+
+        assertThatThrownBy(() -> service.delete(exam.getId(), professor)).isInstanceOf(IllegalStateException.class);
+
+        verifyNoInteractions(fitxersStorage);
     }
 
     @Test

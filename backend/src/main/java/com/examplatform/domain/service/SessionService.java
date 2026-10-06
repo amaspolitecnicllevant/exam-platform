@@ -28,6 +28,7 @@ public class SessionService {
     private final CorrectionService correctionService;
     private final ApplicationEventPublisher eventPublisher;
     private final com.examplatform.infrastructure.persistence.GrupRepository grupRepository;
+    private final com.examplatform.infrastructure.storage.FitxersRespostaStorage fitxersStorage;
 
     @Value("${exam.access-window-minutes:20}")
     private int accessWindowMinutes;
@@ -164,6 +165,21 @@ public class SessionService {
 
     @Transactional
     public AnswerDto saveAnswer(UUID sessionId, AnswerDto.SaveRequest req, User student, String clientIp) {
+        Answer answer = respostaPerEscriure(sessionId, req.questionId(), student, clientIp);
+        if (answer.getQuestion().getTipus().isFileUpload()) {
+            throw new IllegalArgumentException("Aquesta pregunta es respon pujant un fitxer");
+        }
+        answer.setContingut(req.contingut());
+        return AnswerDto.senseNotes(answerRepository.save(answer));
+    }
+
+    /**
+     * Resposta (existent o nova, sense desar) d'una pregunta de la sessió de l'alumne, un cop comprovat
+     * que hi pot escriure: sessió pròpia i no enviada, examen actiu, aula permesa i dins del temps.
+     * La fan servir el desament de respostes i la pujada de fitxers, perquè tinguin les mateixes regles.
+     */
+    @Transactional
+    public Answer respostaPerEscriure(UUID sessionId, UUID questionId, User student, String clientIp) {
         ExamSession session = getSessionOwned(sessionId, student);
         if (session.getStatus() == SessionStatus.SUBMITTED) {
             throw new IllegalStateException("La sessió ja ha estat enviada");
@@ -173,13 +189,10 @@ public class SessionService {
         assertAulaPermesa(session.getExam(), clientIp);
         assertDinsDelTemps(session);
 
-        Answer answer = answerRepository
-                .findBySessionIdAndQuestionId(sessionId, req.questionId())
+        return answerRepository
+                .findBySessionIdAndQuestionId(sessionId, questionId)
                 .orElseGet(() -> Answer.builder().session(session)
-                        .question(findQuestion(session, req.questionId())).build());
-
-        answer.setContingut(req.contingut());
-        return AnswerDto.senseNotes(answerRepository.save(answer));
+                        .question(findQuestion(session, questionId)).build());
     }
 
     @Transactional
@@ -406,6 +419,7 @@ public class SessionService {
             throw new IllegalStateException("S'ha acabat el temps de l'examen: no es pot tornar a fer");
         }
         answerRepository.deleteBySessionId(session.getId());
+        fitxersStorage.esborraSessio(session.getId());
         session.getAnswers().clear();
         session.setStatus(SessionStatus.IN_PROGRESS);
         session.setSubmittedAt(null);

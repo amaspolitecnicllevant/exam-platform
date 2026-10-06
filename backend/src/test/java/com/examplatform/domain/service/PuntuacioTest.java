@@ -25,6 +25,22 @@ class PuntuacioTest {
     }
 
     @Test
+    void un_lliurament_de_fitxer_sense_nota_esta_pendent_i_no_compta_com_a_zero() {
+        // Hi ha resposta (fitxer pujat) però el professor encara no l'ha qualificat: null = pendent
+        assertThat(Puntuacio.punts(pregunta(QuestionType.FILE_UPLOAD, "5"), resposta(null, null))).isNull();
+    }
+
+    @Test
+    void un_lliurament_de_fitxer_qualificat_compta_la_nota_del_professor() {
+        assertThat(Puntuacio.punts(pregunta(QuestionType.FILE_UPLOAD, "5"), resposta(null, "3.5"))).isEqualByComparingTo("3.5");
+    }
+
+    @Test
+    void sense_lliurament_la_pregunta_de_fitxer_compta_zero() {
+        assertThat(Puntuacio.punts(pregunta(QuestionType.FILE_UPLOAD, "5"), null)).isEqualByComparingTo("0");
+    }
+
+    @Test
     void la_nota_revisada_te_prioritat_sobre_la_proposta() {
         assertThat(Puntuacio.punts(pregunta(QuestionType.SHORT, "2"), resposta("1.5", "1"))).isEqualByComparingTo("1");
     }

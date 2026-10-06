@@ -166,4 +166,82 @@ class AnswerRepositoryIntegrationTest {
         assertThat(llegida.getComentari()).isEqualTo("Revisa el protocol.");
         assertThat(llegida.getQuestion().getClaus()).isEqualTo("DHCP");
     }
+
+    // ── migració V34: lliurament de fitxers ──────────────────────────────────
+
+    private Question preguntaDeFitxer(String formats) {
+        Question q = question(5, QuestionType.FILE_UPLOAD);
+        q.setFormatsPermesos(formats);
+        exam = examRepository.save(exam);
+        return exam.getQuestions().get(exam.getQuestions().size() - 1);
+    }
+
+    @Test
+    void desa_i_llegeix_formats_de_la_pregunta_i_el_fitxer_de_la_resposta() {
+        Question q = preguntaDeFitxer("docx,pkt");
+        ExamSession s = session(SessionStatus.IN_PROGRESS);
+        Answer a = answer(s, q, "Treball.docx", null);
+        java.time.LocalDateTime pujat = java.time.LocalDateTime.of(2026, 10, 6, 9, 30);
+        a.setFitxerNom("Treball.docx");
+        a.setFitxerRuta("/opt/exam-files/answers/s/q.docx");
+        a.setFitxerMida(123_456L);
+        a.setFitxerSha256("a".repeat(64));
+        a.setFitxerPujatEl(pujat);
+        answerRepository.saveAndFlush(a);
+
+        Answer llegida = answerRepository.findById(a.getId()).orElseThrow();
+        assertThat(llegida.getQuestion().getTipus()).isEqualTo(QuestionType.FILE_UPLOAD);
+        assertThat(llegida.getQuestion().getFormatsPermesos()).isEqualTo("docx,pkt");
+        assertThat(llegida.teFitxer()).isTrue();
+        assertThat(llegida.getFitxerNom()).isEqualTo("Treball.docx");
+        assertThat(llegida.getFitxerRuta()).isEqualTo("/opt/exam-files/answers/s/q.docx");
+        assertThat(llegida.getFitxerMida()).isEqualTo(123_456L);
+        assertThat(llegida.getFitxerSha256()).hasSize(64);
+        assertThat(llegida.getFitxerPujatEl()).isEqualTo(pujat);
+    }
+
+    @Test
+    void una_resposta_sense_fitxer_no_en_te_i_una_pregunta_sense_formats_els_admet_tots() {
+        Question q = preguntaDeFitxer(null);
+        ExamSession s = session(SessionStatus.IN_PROGRESS);
+        Answer a = answerRepository.saveAndFlush(Answer.builder().session(s).question(q).build());
+
+        Answer llegida = answerRepository.findById(a.getId()).orElseThrow();
+        assertThat(llegida.teFitxer()).isFalse();
+        assertThat(llegida.getFitxerNom()).isNull();
+        assertThat(llegida.getQuestion().getFormatsPermesos()).isNull();
+    }
+
+    @Test
+    void un_lliurament_de_fitxer_entregat_apareix_com_a_pendent_fins_que_el_professor_el_qualifica() {
+        Question q = preguntaDeFitxer("docx");
+        ExamSession s = session(SessionStatus.SUBMITTED);
+        Answer a = answer(s, q, "Treball.docx", null);
+        a.setFitxerNom("Treball.docx");
+        a.setFitxerRuta("/opt/exam-files/answers/x.docx");
+        answerRepository.saveAndFlush(a);
+
+        assertThat(answerRepository.findPendentsRevisio(exam.getId(), CorrectionService.PENDENTS_TIPUS_EXCLOSOS))
+                .extracting(Answer::getId).contains(a.getId());
+
+        a.setManualScore(new BigDecimal("2"));
+        answerRepository.saveAndFlush(a);
+
+        assertThat(answerRepository.findPendentsRevisio(exam.getId(), CorrectionService.PENDENTS_TIPUS_EXCLOSOS))
+                .extracting(Answer::getId).doesNotContain(a.getId());
+    }
+
+    @Test
+    void si_s_esborren_les_respostes_d_una_sessio_el_fitxer_desapareix_de_la_bd() {
+        Question q = preguntaDeFitxer(null);
+        ExamSession s = session(SessionStatus.IN_PROGRESS);
+        Answer a = answer(s, q, "x.docx", null);
+        a.setFitxerRuta("/opt/exam-files/answers/x.docx");
+        answerRepository.saveAndFlush(a);
+
+        answerRepository.deleteBySessionId(s.getId());
+        answerRepository.flush();
+
+        assertThat(answerRepository.findBySessionId(s.getId())).isEmpty();
+    }
 }

@@ -49,6 +49,26 @@ public class Answer {
 
     private LocalDateTime correctedAt;
 
+    /** Fitxer pujat per l'alumne (preguntes FILE_UPLOAD): nom original, ruta al disc, mida i empremta. */
+    @Column(name = "fitxer_nom", length = 255)
+    private String fitxerNom;
+
+    @Column(name = "fitxer_ruta", length = 500)
+    private String fitxerRuta;
+
+    @Column(name = "fitxer_mida")
+    private Long fitxerMida;
+
+    @Column(name = "fitxer_sha256", length = 64)
+    private String fitxerSha256;
+
+    @Column(name = "fitxer_pujat_el")
+    private LocalDateTime fitxerPujatEl;
+
+    public boolean teFitxer() {
+        return fitxerRuta != null;
+    }
+
     @OneToMany(mappedBy = "answer", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("executedAt DESC")
     @Builder.Default

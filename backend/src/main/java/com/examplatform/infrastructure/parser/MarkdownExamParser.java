@@ -1,6 +1,7 @@
 package com.examplatform.infrastructure.parser;
 
 import com.examplatform.domain.model.*;
+import com.examplatform.domain.service.FormatsFitxer;
 import com.examplatform.domain.port.ExamParser;
 import com.examplatform.domain.service.ClausCorreccio;
 import org.springframework.stereotype.Component;
@@ -21,10 +22,11 @@ import java.util.regex.*;
 public class MarkdownExamParser implements ExamParser {
 
     private static final Pattern QUESTION_HEADER =
-            Pattern.compile("^##\\s+(\\d+)\\.?\\s+\\[(\\w+(?:-\\w+)?)\\]\\s+\\[pts:([\\d.]+)\\]((?:\\s+\\[(?:(?:ra|dif|ordre):[^\\]]+|apunts)\\])*)\\s*$");
+            Pattern.compile("^##\\s+(\\d+)\\.?\\s+\\[(\\w+(?:-\\w+)?)\\]\\s+\\[pts:([\\d.]+)\\]((?:\\s+\\[(?:(?:ra|dif|ordre|formats):[^\\]]+|apunts)\\])*)\\s*$");
 
     private static final Pattern SECTION_HEADER = Pattern.compile("^###\\s+(.+?)(\\s+\\[apunts\\])?\\s*$");
     private static final Pattern TAG_APUNTS = Pattern.compile("\\[apunts\\]");
+    private static final Pattern TAG_FORMATS = Pattern.compile("\\[formats:([^\\]]+)\\]");
     private static final Pattern HEADER_LIKE    = Pattern.compile("^##\\s.*");
     private static final Pattern BLOCK_OPENER   = Pattern.compile("^:::([\\w-]+)\\s*$");
     private static final Pattern SEPARATOR      = Pattern.compile("^-{3,}\\s*$");
@@ -268,16 +270,17 @@ public class MarkdownExamParser implements ExamParser {
         Matcher tags = Pattern.compile("\\[(\\w+):").matcher(t);
         while (tags.find()) {
             String tag = tags.group(1);
-            if (!Set.of("pts", "ra", "dif", "ordre").contains(tag)) {
-                return "Etiqueta desconeguda [" + tag + ":…]. Només s'admeten [ra:…], [dif:…], [ordre:fix] i [apunts], després de [pts:X]";
+            if (!Set.of("pts", "ra", "dif", "ordre", "formats").contains(tag)) {
+                return "Etiqueta desconeguda [" + tag + ":…]. Només s'admeten [ra:…], [dif:…], [ordre:fix], [formats:…] i [apunts], després de [pts:X]";
             }
         }
-        return "Format: ## N. [tipus] [pts:X] i, opcionalment, [ra:RA1] [dif:mitjana] [ordre:fix] [apunts]";
+        return "Format: ## N. [tipus] [pts:X] i, opcionalment, [ra:RA1] [dif:mitjana] [ordre:fix] [formats:docx,xlsx] [apunts]";
     }
 
     private Question buildQuestion(Draft d, int ordre, Exam exam) {
         String nom = d.nom + " (línia " + d.line + ")";
         String typeStr = d.tipus.trim().toUpperCase().replace("-", "_");
+        if (typeStr.equals("FITXER")) typeStr = QuestionType.FILE_UPLOAD.name();   // alies en català
         QuestionType type;
         try {
             type = QuestionType.valueOf(typeStr);
@@ -323,6 +326,7 @@ public class MarkdownExamParser implements ExamParser {
             barrejarOpcions = false;
         }
 
+        String formatsPermesos = validateFormats(nom, type, d.tags);
         validateBlocsPerTipus(nom, type, blocks);
 
         if (type == QuestionType.CHOICE) {
@@ -352,11 +356,42 @@ public class MarkdownExamParser implements ExamParser {
                 .ambApunts(d.ambApunts)
                 .ra(ra)
                 .dificultat(dificultat)
+                .formatsPermesos(formatsPermesos)
                 .build();
+    }
+
+    /**
+     * Formats d'una pregunta de lliurament de fitxer ({@code [formats:docx,xlsx]}), normalitzats.
+     * Sense l'etiqueta, s'admeten tots els formats permesos (es desa null). L'etiqueta només té sentit
+     * en preguntes {@code [fitxer]}.
+     */
+    private String validateFormats(String nom, QuestionType type, String tags) {
+        Matcher m = TAG_FORMATS.matcher(tags);
+        boolean present = m.find();
+        if (type != QuestionType.FILE_UPLOAD) {
+            if (present) {
+                throw new IllegalArgumentException(nom + ": [formats:…] només es pot usar en preguntes [fitxer]");
+            }
+            return null;
+        }
+        if (!present) return null;
+        try {
+            return String.join(",", FormatsFitxer.normalitzaLlista(m.group(1)));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(nom + ": [formats:…] — " + e.getMessage());
+        }
     }
 
     /** Rebutja els blocs que la correcció ignoraria per al tipus de pregunta. */
     private void validateBlocsPerTipus(String nom, QuestionType type, Map<String, String> blocks) {
+        if (type == QuestionType.FILE_UPLOAD) {
+            String estrany = blocks.keySet().stream().filter(b -> !b.equals("model")).findFirst().orElse(null);
+            if (estrany != null) {
+                throw new IllegalArgumentException(nom + ": :::" + estrany + " no es pot usar en preguntes [fitxer]; "
+                        + "es corregeixen a mà (només es permet :::model, com a nota per al professor)");
+            }
+            return;
+        }
         boolean text = type == QuestionType.TEXT || type == QuestionType.SHORT || type == QuestionType.LONG;
         if (blocks.containsKey("clau") && !text) {
             throw new IllegalArgumentException(nom + ": :::clau només es pot usar en preguntes TEXT, SHORT o LONG");

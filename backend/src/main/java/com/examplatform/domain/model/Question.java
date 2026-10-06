@@ -77,4 +77,8 @@ public class Question {
 
     @Column(length = 10)
     private String dificultat;
+
+    /** Només FILE_UPLOAD: extensions admeses separades per comes (docx,xlsx,pkt…); null = totes les permeses. */
+    @Column(name = "formats_permesos", length = 200)
+    private String formatsPermesos;
 }

@@ -31,6 +31,7 @@ class ExamServiceAssignModulTest {
     @Mock ExamSessionRepository   sessionRepository;
     @Mock QuestionFileRepository  questionFileRepository;
     @Mock com.examplatform.infrastructure.persistence.AnswerRepository answerRepository;
+    @Mock com.examplatform.infrastructure.storage.FitxersRespostaStorage fitxersStorage;
 
     ExamService service;
 
@@ -42,7 +43,7 @@ class ExamServiceAssignModulTest {
     void setUp() {
         service   = new ExamService(examRepository, examParser, grupRepository,
                 questionRepository, modulRepository, imparticioRepository, aulaRepository,
-                sessionRepository, questionFileRepository, answerRepository);
+                sessionRepository, questionFileRepository, answerRepository, fitxersStorage);
         professor = user(Role.PROFESSOR);
         admin     = user(Role.ADMIN);
         altreProf = user(Role.PROFESSOR);

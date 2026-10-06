@@ -13,18 +13,21 @@ public record AnswerDto(
         BigDecimal autoScore,
         BigDecimal manualScore,
         String autoFeedback,
-        String comentari
+        String comentari,
+        /** Fitxer pujat (preguntes de lliurament): nom original i mida en bytes. */
+        String fitxerNom,
+        Long fitxerMida
 ) {
     public static AnswerDto from(Answer a) {
         return new AnswerDto(a.getId(), a.getQuestion().getId(), a.getContingut(),
                 a.getExecutionOutput(), a.getAutoScore(), a.getManualScore(), a.getAutoFeedback(),
-                a.getComentari());
+                a.getComentari(), a.getFitxerNom(), a.getFitxerMida());
     }
 
     /** Per a l'alumne abans que es publiquin les notes: sense puntuacions ni motius. */
     public static AnswerDto senseNotes(Answer a) {
         return new AnswerDto(a.getId(), a.getQuestion().getId(), a.getContingut(),
-                a.getExecutionOutput(), null, null, null, null);
+                a.getExecutionOutput(), null, null, null, null, a.getFitxerNom(), a.getFitxerMida());
     }
 
     public record SaveRequest(UUID questionId, String contingut) {}

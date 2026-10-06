@@ -7,6 +7,8 @@ public enum QuestionType {
     BASH_SCRIPT, PS_SCRIPT,
     JAVA_PROG,
     HTML_CSS,
+    /** L'alumne respon pujant un fitxer (Word, Excel, Packet Tracer…); es corregeix a mà. */
+    FILE_UPLOAD,
     SECTION;
 
     public boolean isExecutable() {
@@ -25,5 +27,9 @@ public enum QuestionType {
 
     public boolean isJava() {
         return this == JAVA_PROG;
+    }
+
+    public boolean isFileUpload() {
+        return this == FILE_UPLOAD;
     }
 }

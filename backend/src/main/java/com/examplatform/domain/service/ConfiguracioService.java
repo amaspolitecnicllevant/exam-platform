@@ -46,6 +46,7 @@ public class ConfiguracioService {
             }
             c.setCopiesLlindarApunts(req.copiesLlindarApunts());
         }
+        if (req.pujadaFitxersActiva()  != null) c.setPujadaFitxersActiva(req.pujadaFitxersActiva());
         return configuracioRepository.save(c);
     }
 

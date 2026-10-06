@@ -12,5 +12,6 @@ public record ConfiguracioUpdateRequest(
         Integer    gracePeriodSeconds,
         String     dominisOauth,
         Integer    copiesLlindar,
-        Integer    copiesLlindarApunts
+        Integer    copiesLlindarApunts,
+        Boolean    pujadaFitxersActiva
 ) {}

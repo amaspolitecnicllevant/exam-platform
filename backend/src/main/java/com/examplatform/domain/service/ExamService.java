@@ -36,6 +36,7 @@ public class ExamService {
     private final com.examplatform.infrastructure.persistence.ExamSessionRepository sessionRepository;
     private final QuestionFileRepository questionFileRepository;
     private final com.examplatform.infrastructure.persistence.AnswerRepository answerRepository;
+    private final com.examplatform.infrastructure.storage.FitxersRespostaStorage fitxersStorage;
 
     /** Durada màxima d'un examen en minuts (8 hores). */
     static final int DURADA_MAXIMA = 480;
@@ -191,6 +192,7 @@ public class ExamService {
             throw new IllegalStateException(
                     "Només es pot esborrar un examen en estat DRAFT (estat actual: " + exam.getStatus() + ")");
         }
+        sessionRepository.findByExamId(id).forEach(s -> fitxersStorage.esborraSessio(s.getId()));
         examRepository.deleteById(id);
     }
 

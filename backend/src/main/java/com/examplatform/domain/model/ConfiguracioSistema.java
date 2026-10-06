@@ -48,6 +48,10 @@ public class ConfiguracioSistema {
     @Column(name = "grace_period_seconds", nullable = false)
     private Integer gracePeriodSeconds = 0;
 
+    /** Si és fals, els alumnes no poden pujar fitxers a les preguntes de lliurament. */
+    @Column(name = "pujada_fitxers_activa", nullable = false)
+    private Boolean pujadaFitxersActiva = true;
+
     @Column(name = "dominis_oauth", nullable = false)
     private String dominisOauth = "politecnicllevant.cat";
 }

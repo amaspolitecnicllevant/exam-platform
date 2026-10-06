@@ -841,4 +841,179 @@ class MarkdownExamParserTest {
         assertThat(parser.parse(examen("## 1. [short] [pts:10]\nP\n"), professor)
                 .getQuestions().get(0).isAmbApunts()).isFalse();
     }
+
+    // ── Preguntes de lliurament de fitxer ────────────────────────────────────
+
+    @Test
+    void parseja_pregunta_fitxer_amb_formats() {
+        String md = """
+                # Pràctica
+                ---
+                ## 1. [fitxer] [pts:10] [formats:docx, XLSX,pkt]
+                Entrega el document i la simulació.
+                """;
+
+        Question q = parser.parse(md, professor).getQuestions().get(0);
+
+        assertThat(q.getTipus()).isEqualTo(QuestionType.FILE_UPLOAD);
+        assertThat(q.getFormatsPermesos()).isEqualTo("docx,xlsx,pkt");
+        assertThat(q.getPunts()).isEqualByComparingTo("10");
+    }
+
+    @Test
+    void pregunta_fitxer_sense_formats_admet_tots_els_permesos() {
+        String md = """
+                # Pràctica
+                ---
+                ## 1. [fitxer] [pts:10]
+                Entrega el treball.
+                """;
+
+        Question q = parser.parse(md, professor).getQuestions().get(0);
+
+        assertThat(q.getTipus()).isEqualTo(QuestionType.FILE_UPLOAD);
+        assertThat(q.getFormatsPermesos()).isNull();
+    }
+
+    @Test
+    void file_upload_tambe_es_valid_com_a_tipus() {
+        String md = """
+                # Pràctica
+                ---
+                ## 1. [file-upload] [pts:10] [formats:pdf]
+                Entrega el treball.
+                """;
+
+        Question q = parser.parse(md, professor).getQuestions().get(0);
+
+        assertThat(q.getTipus()).isEqualTo(QuestionType.FILE_UPLOAD);
+        assertThat(q.getFormatsPermesos()).isEqualTo("pdf");
+    }
+
+    @Test
+    void pregunta_fitxer_combina_amb_apunts_ra_i_dificultat() {
+        String md = """
+                # Pràctica
+                ---
+                ## 1. [fitxer] [pts:10] [ra:RA2] [dif:alta] [formats:docx] [apunts]
+                Entrega.
+                """;
+
+        Question q = parser.parse(md, professor).getQuestions().get(0);
+
+        assertThat(q.getRa()).isEqualTo("RA2");
+        assertThat(q.getDificultat()).isEqualTo("alta");
+        assertThat(q.isAmbApunts()).isTrue();
+        assertThat(q.getFormatsPermesos()).isEqualTo("docx");
+    }
+
+    @Test
+    void pregunta_fitxer_admet_model_com_a_nota_per_al_professor() {
+        String md = """
+                # Pràctica
+                ---
+                ## 1. [fitxer] [pts:10]
+                Entrega.
+                :::model
+                Ha de tenir 3 apartats.
+                :::
+                """;
+
+        Question q = parser.parse(md, professor).getQuestions().get(0);
+
+        assertThat(q.getModelResposta()).isEqualTo("Ha de tenir 3 apartats.");
+    }
+
+    @Test
+    void rebutja_format_desconegut_a_pregunta_fitxer() {
+        String md = """
+                # Pràctica
+                ---
+                ## 1. [fitxer] [pts:3] [formats:docx,exe]
+                Entrega.
+                """;
+
+        assertThatThrownBy(() -> parser.parse(md, professor))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Pregunta 1")
+                .hasMessageContaining("«exe»");
+    }
+
+    @Test
+    void rebutja_documents_amb_macros() {
+        String md = """
+                # Pràctica
+                ---
+                ## 1. [fitxer] [pts:3] [formats:xlsm]
+                Entrega.
+                """;
+
+        assertThatThrownBy(() -> parser.parse(md, professor))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("«xlsm»");
+    }
+
+    @Test
+    void rebutja_formats_en_una_pregunta_que_no_es_de_fitxer() {
+        String md = """
+                # Examen
+                ---
+                ## 1. [short] [pts:3] [formats:docx]
+                Pregunta.
+                """;
+
+        assertThatThrownBy(() -> parser.parse(md, professor))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("només es pot usar en preguntes [fitxer]");
+    }
+
+    @Test
+    void rebutja_formats_buits() {
+        String md = """
+                # Pràctica
+                ---
+                ## 1. [fitxer] [pts:3] [formats:, ]
+                Entrega.
+                """;
+
+        assertThatThrownBy(() -> parser.parse(md, professor))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("almenys un format");
+    }
+
+    @Test
+    void rebutja_blocs_de_correccio_en_pregunta_fitxer() {
+        String md = """
+                # Pràctica
+                ---
+                ## 1. [fitxer] [pts:3]
+                Entrega.
+                :::clau
+                termini
+                :::
+                """;
+
+        assertThatThrownBy(() -> parser.parse(md, professor))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("es corregeixen a mà");
+    }
+
+    @Test
+    void examen_pot_barrejar_preguntes_de_fitxer_i_d_altres_tipus() {
+        String md = """
+                # Mixt
+                ---
+                ## 1. [short] [pts:5]
+                Una pregunta.
+                :::model
+                resposta
+                :::
+                ## 2. [fitxer] [pts:5] [formats:docx,pkt]
+                Entrega.
+                """;
+
+        var preguntes = parser.parse(md, professor).getQuestions();
+
+        assertThat(preguntes).extracting(Question::getTipus)
+                .containsExactly(QuestionType.SHORT, QuestionType.FILE_UPLOAD);
+        assertThat(preguntes.get(0).getFormatsPermesos()).isNull();
+    }
 }

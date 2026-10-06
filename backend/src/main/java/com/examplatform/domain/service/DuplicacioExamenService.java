@@ -72,6 +72,7 @@ public class DuplicacioExamenService {
                     .ambApunts(q.isAmbApunts())
                     .ra(q.getRa())
                     .dificultat(q.getDificultat())
+                    .formatsPermesos(q.getFormatsPermesos())
                     .build());
         }
         Exam desat = examRepository.save(copia);

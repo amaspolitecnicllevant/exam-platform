@@ -2,6 +2,7 @@ package com.examplatform.dto;
 
 import com.examplatform.domain.model.Question;
 import com.examplatform.domain.model.QuestionType;
+import com.examplatform.domain.service.FormatsFitxer;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -26,14 +27,16 @@ public record QuestionDto(
         boolean ambApunts,
         String ra,
         String dificultat,
-        List<QuestionFileDto> files
+        List<QuestionFileDto> files,
+        /** Només FILE_UPLOAD: extensions que l'alumne pot pujar. */
+        List<String> formatsPermesos
 ) {
     public static QuestionDto from(Question q, List<QuestionFileDto> files) {
         return new QuestionDto(q.getId(), q.getOrdre(), q.getTipus(), q.getEnunciat(),
                 q.getPunts(), q.getModelResposta(), q.getOutputContains(),
                 q.getOutputExact(), q.getOutputRegex(), q.getTestScript(), q.getClaus(),
                 parseChoices(q.getChoices()), q.getCorrectChoice(), q.isBarrejarOpcions(), q.isAnulada(), q.isAmbApunts(),
-                q.getRa(), q.getDificultat(), files);
+                q.getRa(), q.getDificultat(), files, formats(q));
     }
 
     public static QuestionDto from(Question q) {
@@ -44,11 +47,15 @@ public record QuestionDto(
         return new QuestionDto(q.getId(), q.getOrdre(), q.getTipus(), q.getEnunciat(),
                 q.getPunts(), null, null, null, null, null, null,
                 parseChoices(q.getChoices()), null, q.isBarrejarOpcions(), q.isAnulada(), q.isAmbApunts(),
-                null, null, files);
+                null, null, files, formats(q));
     }
 
     public static QuestionDto forStudent(Question q) {
         return forStudent(q, List.of());
+    }
+
+    private static List<String> formats(Question q) {
+        return q.getTipus() == QuestionType.FILE_UPLOAD ? FormatsFitxer.deLaPregunta(q.getFormatsPermesos()) : null;
     }
 
     private static List<String> parseChoices(String raw) {

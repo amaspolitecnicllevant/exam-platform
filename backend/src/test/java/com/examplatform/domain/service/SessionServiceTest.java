@@ -31,6 +31,7 @@ class SessionServiceTest {
     @Mock CorrectionService     correctionService;
     @Mock org.springframework.context.ApplicationEventPublisher eventPublisher;
     @Mock com.examplatform.infrastructure.persistence.GrupRepository grupRepository;
+    @Mock com.examplatform.infrastructure.storage.FitxersRespostaStorage fitxersStorage;
 
     SessionService service;
 
@@ -40,7 +41,7 @@ class SessionServiceTest {
     @BeforeEach
     void setUp() {
         service      = new SessionService(sessionRepository, answerRepository, examService, matriculaRepository,
-                correctionService, eventPublisher, grupRepository);
+                correctionService, eventPublisher, grupRepository, fitxersStorage);
         student      = user(Role.STUDENT);
         otherStudent = user(Role.STUDENT);
     }
@@ -289,6 +290,88 @@ class SessionServiceTest {
         assertThat(noComencada.getStatus()).isEqualTo(SessionStatus.IN_PROGRESS);
         verify(correctionService).proposaSenseExecucio(enCurs);
         verify(sessionRepository).save(enCurs);
+    }
+
+    @Test
+    void saveAnswer_en_pregunta_de_fitxer_es_rebutja_perque_es_respon_pujant_un_fitxer() {
+        Exam exam = exam(ExamStatus.PUBLISHED);
+        Question q = question(exam, QuestionType.FILE_UPLOAD, new BigDecimal("5"));
+        exam.getQuestions().add(q);
+        ExamSession s = session(exam, student);
+        when(sessionRepository.findById(s.getId())).thenReturn(Optional.of(s));
+        when(answerRepository.findBySessionIdAndQuestionId(s.getId(), q.getId())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.saveAnswer(s.getId(),
+                new com.examplatform.dto.AnswerDto.SaveRequest(q.getId(), "text escrit a mà"), student, "10.0.1.5"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("pujant un fitxer");
+        verify(answerRepository, never()).save(any());
+    }
+
+    // ── respostaPerEscriure (regles comunes de desar i de pujar fitxers) ──────
+
+    @Test
+    void respostaPerEscriure_retorna_la_resposta_existent_o_una_de_nova() {
+        Exam exam = exam(ExamStatus.PUBLISHED);
+        Question q = question(exam, QuestionType.FILE_UPLOAD, new BigDecimal("5"));
+        exam.getQuestions().add(q);
+        ExamSession s = session(exam, student);
+        when(sessionRepository.findById(s.getId())).thenReturn(Optional.of(s));
+        when(answerRepository.findBySessionIdAndQuestionId(s.getId(), q.getId())).thenReturn(Optional.empty());
+
+        Answer nova = service.respostaPerEscriure(s.getId(), q.getId(), student, "10.0.1.5");
+
+        assertThat(nova.getQuestion()).isSameAs(q);
+        assertThat(nova.getSession()).isSameAs(s);
+        assertThat(nova.getId()).isNull();   // no es desa: ho fa qui la fa servir
+        verify(answerRepository, never()).save(any());
+    }
+
+    @Test
+    void respostaPerEscriure_aplica_les_mateixes_regles_que_desar() {
+        Exam exam = exam(ExamStatus.PUBLISHED);
+        Question q = question(exam, QuestionType.FILE_UPLOAD, new BigDecimal("5"));
+        exam.getQuestions().add(q);
+
+        // sessió enviada
+        ExamSession enviada = session(exam, student);
+        enviada.setStatus(SessionStatus.SUBMITTED);
+        when(sessionRepository.findById(enviada.getId())).thenReturn(Optional.of(enviada));
+        assertThatThrownBy(() -> service.respostaPerEscriure(enviada.getId(), q.getId(), student, "10.0.1.5"))
+                .isInstanceOf(IllegalStateException.class);
+
+        // sessió d'un altre alumne
+        ExamSession aliena = session(exam, otherStudent);
+        when(sessionRepository.findById(aliena.getId())).thenReturn(Optional.of(aliena));
+        assertThatThrownBy(() -> service.respostaPerEscriure(aliena.getId(), q.getId(), student, "10.0.1.5"))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+
+        // examen tancat
+        Exam tancat = exam(ExamStatus.CLOSED);
+        Question qt = question(tancat, QuestionType.FILE_UPLOAD, new BigDecimal("5"));
+        tancat.getQuestions().add(qt);
+        ExamSession deTancat = session(tancat, student);
+        when(sessionRepository.findById(deTancat.getId())).thenReturn(Optional.of(deTancat));
+        assertThatThrownBy(() -> service.respostaPerEscriure(deTancat.getId(), qt.getId(), student, "10.0.1.5"))
+                .isInstanceOf(IllegalStateException.class);
+
+        // passat el temps i el marge
+        ExamSession tard = session(exam, student);
+        tard.setStartedAt(LocalDateTime.now().minusMinutes(61).minusSeconds(120));
+        when(sessionRepository.findById(tard.getId())).thenReturn(Optional.of(tard));
+        assertThatThrownBy(() -> service.respostaPerEscriure(tard.getId(), q.getId(), student, "10.0.1.5"))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("temps");
+    }
+
+    @Test
+    void respostaPerEscriure_pregunta_d_un_altre_examen_no_es_troba() {
+        Exam exam = exam(ExamStatus.PUBLISHED);
+        ExamSession s = session(exam, student);
+        when(sessionRepository.findById(s.getId())).thenReturn(Optional.of(s));
+        UUID aliena = UUID.randomUUID();
+        when(answerRepository.findBySessionIdAndQuestionId(s.getId(), aliena)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.respostaPerEscriure(s.getId(), aliena, student, "10.0.1.5"))
+                .isInstanceOf(java.util.NoSuchElementException.class);
     }
 
     @Test
@@ -574,6 +657,17 @@ class SessionServiceTest {
         s.setStartedAt(LocalDateTime.now().minusMinutes(minutsDesDeInici));
         when(sessionRepository.findByExamIdAndStudentId(exam.getId(), student.getId())).thenReturn(Optional.of(s));
         return s;
+    }
+
+    @Test
+    void restart_esborra_tambe_els_fitxers_pujats_de_la_sessio() {
+        Exam exam = exam(ExamStatus.PUBLISHED);
+        ExamSession s = entregada(exam, 20);
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.restartByStudent(exam.getId(), student, "10.0.1.5");
+
+        verify(fitxersStorage).esborraSessio(s.getId());
     }
 
     @Test

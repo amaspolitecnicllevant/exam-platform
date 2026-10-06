@@ -16,6 +16,7 @@ public record ConfiguracioDto(
         String  dominisOauth,
         int     copiesLlindar,
         int     copiesLlindarApunts,
+        boolean pujadaFitxersActiva,
         /** Hi ha login amb Google configurat (GOOGLE_CLIENT_ID i GOOGLE_CLIENT_SECRET). */
         boolean googleActiu
 ) {
@@ -32,6 +33,7 @@ public record ConfiguracioDto(
                 c.getDominisOauth(),
                 c.getCopiesLlindar(),
                 c.getCopiesLlindarApunts(),
+                !Boolean.FALSE.equals(c.getPujadaFitxersActiva()),
                 googleActiu
         );
     }
