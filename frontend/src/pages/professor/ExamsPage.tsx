@@ -5,8 +5,16 @@ import { getMyExams, publishExam, unpublishExam, closeExam, deleteExam, duplicat
 import { getGrups, assignExamToGrup } from '../../api/grups'
 import { getModuls } from '../../api/moduls'
 import { getAules, assignAulaExamen, removeAulaExamen } from '../../api/aules'
+import FiltreGrups from '../../components/FiltreGrups'
+import {
+  FILTRE_GRUPS_BUIT, filtraGrupsAssignacio, filtreGrupsInicial, type FiltreGrupsAssig,
+} from '../../utils/filtreGrupsAssignacio'
 import type { Exam, Grup, Modul, Aula } from '../../types'
 import { aInstantUtc, dataLocal, horaLocal } from '../../dates'
+import {
+  SENSE_MODUL, FILTRE_EXAMENS_BUIT, filtraExamens, hiHaFiltres, opcionsFiltre,
+  type FiltreExamens,
+} from '../../utils/filtreExamens'
 
 function examVisualState(exam: Exam): 'scheduled' | 'active' | 'closed' | 'draft' {
   if (exam.status === 'CLOSED') return 'closed'
@@ -28,11 +36,6 @@ const STATUS_BADGE: Record<string, string> = {
   active:    'bg-green-100 text-green-800',
   closed:    'bg-gray-200 text-gray-500',
 }
-
-const SENSE_MODUL = '__sense__'
-
-/** Minúscules i sense accents, per cercar «examen» i trobar «Exàmen». */
-const normalitza = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 
 const STATUS_LABELS: Record<string, string> = {
   draft:     'Esborrany',
@@ -58,9 +61,10 @@ export default function ExamsPage() {
   const [assigningAula, setAssigningAula]   = useState<Exam | null>(null)
   const [selectedAula, setSelectedAula]     = useState('')
   const [expandedConfig, setExpandedConfig] = useState<Set<string>>(new Set())
-  const [cerca, setCerca]           = useState('')
-  const [filtreEstat, setFiltreEstat] = useState('')
-  const [filtreModul, setFiltreModul] = useState('')
+  const [filtre, setFiltre]     = useState<FiltreExamens>(FILTRE_EXAMENS_BUIT)
+  const canviaFiltre = (canvis: Partial<FiltreExamens>) => setFiltre(prev => ({ ...prev, ...canvis }))
+  // Filtres per triar grup (assignar o programar un examen)
+  const [filtreGrups, setFiltreGrups] = useState<FiltreGrupsAssig>(FILTRE_GRUPS_BUIT)
 
   const toggleConfig = (id: string) =>
     setExpandedConfig(prev => {
@@ -83,7 +87,7 @@ export default function ExamsPage() {
     setDuplicant(exam.id)
     try {
       const copia = await duplicateExam(exam.id)
-      setCerca(''); setFiltreEstat(''); setFiltreModul('')
+      setFiltre(FILTRE_EXAMENS_BUIT)
       await refresh()
       setFeedback(`S'ha creat «${copia.title}» com a esborrany. Pots canviar-li el títol i la durada a Previsualitzar.`)
     } catch (err: any) {
@@ -104,6 +108,7 @@ export default function ExamsPage() {
   const openSchedule = (exam: Exam) => {
     setScheduling(exam)
     setSchedError('')
+    setFiltreGrups(filtreGrupsInicial(exam.modulId, grups, moduls))
     if (exam.scheduledAt) {
       const d = new Date(exam.scheduledAt)
       setSchedDate(dataLocal(d))
@@ -176,13 +181,13 @@ export default function ExamsPage() {
     }
   }
 
-  const nomsModuls = [...new Set(exams.map(e => e.modulNom).filter((m): m is string => !!m))].sort((a, b) => a.localeCompare(b, 'ca'))
-  const filtresActius = !!(cerca.trim() || filtreEstat || filtreModul)
-  const textCerca = normalitza(cerca.trim())
-  const filtrats = exams.filter(e =>
-    (!textCerca || normalitza(e.title).includes(textCerca))
-    && (!filtreEstat || examVisualState(e) === filtreEstat)
-    && (!filtreModul || (filtreModul === SENSE_MODUL ? !e.modulNom : e.modulNom === filtreModul)))
+  const opcions = opcionsFiltre(exams)
+  const grupsVisibles = filtraGrupsAssignacio(grups, moduls, filtreGrups)
+  // El grup ja triat a «Programar» es manté al desplegable encara que el filtre l'amagui
+  const grupTriat = grups.find(g => g.id === schedGrup)
+  const grupsSelect = grupTriat && !grupsVisibles.some(g => g.id === grupTriat.id) ? [...grupsVisibles, grupTriat] : grupsVisibles
+  const filtresActius = hiHaFiltres(filtre)
+  const filtrats = filtraExamens(exams, filtre, examVisualState)
 
   return (
     <Layout>
@@ -209,30 +214,67 @@ export default function ExamsPage() {
         )}
 
         {exams.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            <input type="search" value={cerca} onChange={e => setCerca(e.target.value)}
-              placeholder="Cerca per títol…" aria-label="Cerca per títol"
-              className="border rounded-lg px-3 py-1.5 text-sm flex-1 min-w-[12rem]" />
-            <select value={filtreEstat} onChange={e => setFiltreEstat(e.target.value)} aria-label="Estat"
-              className="border rounded-lg px-2 py-1.5 text-sm">
-              <option value="">Tots els estats</option>
-              {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
-            {nomsModuls.length > 0 && (
-              <select value={filtreModul} onChange={e => setFiltreModul(e.target.value)} aria-label="Mòdul"
-                className="border rounded-lg px-2 py-1.5 text-sm max-w-[16rem]">
-                <option value="">Tots els mòduls</option>
-                {nomsModuls.map(m => <option key={m} value={m}>{m}</option>)}
-                <option value={SENSE_MODUL}>Sense mòdul</option>
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <input type="search" value={filtre.cerca} onChange={e => canviaFiltre({ cerca: e.target.value })}
+                placeholder="Cerca per títol…" aria-label="Cerca per títol"
+                className="border rounded-lg px-3 py-1.5 text-sm flex-1 min-w-[12rem]" />
+              <select value={filtre.estat} onChange={e => canviaFiltre({ estat: e.target.value })} aria-label="Estat"
+                className="border rounded-lg px-2 py-1.5 text-sm">
+                <option value="">Tots els estats</option>
+                {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
-            )}
-            {filtresActius && (
-              <>
-                <span className="text-xs text-gray-500">{filtrats.length} de {exams.length}</span>
-                <button onClick={() => { setCerca(''); setFiltreEstat(''); setFiltreModul('') }}
-                  className="text-xs text-brand-600 hover:underline">Treu els filtres</button>
-              </>
-            )}
+              {opcions.autors.length > 1 && (
+                <select value={filtre.autor} onChange={e => canviaFiltre({ autor: e.target.value })} aria-label="Professor"
+                  className="border rounded-lg px-2 py-1.5 text-sm max-w-[14rem]">
+                  <option value="">Tots els professors</option>
+                  {opcions.autors.map(a => <option key={a} value={a}>{a}</option>)}
+                </select>
+              )}
+              {opcions.cicles.length > 0 && (
+                <select value={filtre.cicle} onChange={e => canviaFiltre({ cicle: e.target.value })} aria-label="Cicle"
+                  className="border rounded-lg px-2 py-1.5 text-sm max-w-[14rem]">
+                  <option value="">Tots els cicles</option>
+                  {opcions.cicles.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              )}
+              {opcions.moduls.length > 0 && (
+                <select value={filtre.modul} onChange={e => canviaFiltre({ modul: e.target.value })} aria-label="Mòdul"
+                  className="border rounded-lg px-2 py-1.5 text-sm max-w-[16rem]">
+                  <option value="">Tots els mòduls</option>
+                  {opcions.moduls.map(m => <option key={m} value={m}>{m}</option>)}
+                  <option value={SENSE_MODUL}>Sense mòdul</option>
+                </select>
+              )}
+              {opcions.grups.length > 0 && (
+                <select value={filtre.grup} onChange={e => canviaFiltre({ grup: e.target.value })}
+                  aria-label="Grup programat" title="Grup per al qual l'examen està programat"
+                  className="border rounded-lg px-2 py-1.5 text-sm max-w-[14rem]">
+                  <option value="">Tots els grups</option>
+                  {opcions.grups.map(g => <option key={g.id} value={g.id}>{g.nom}</option>)}
+                </select>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+              <span title="Data programada de l'examen, o la de creació si no està programat">Data:</span>
+              <label className="flex items-center gap-1">des de
+                <input type="date" value={filtre.dataDes} max={filtre.dataFins || undefined}
+                  onChange={e => canviaFiltre({ dataDes: e.target.value })}
+                  className="border rounded-lg px-2 py-1 text-sm" />
+              </label>
+              <label className="flex items-center gap-1">fins a
+                <input type="date" value={filtre.dataFins} min={filtre.dataDes || undefined}
+                  onChange={e => canviaFiltre({ dataFins: e.target.value })}
+                  className="border rounded-lg px-2 py-1 text-sm" />
+              </label>
+              {filtresActius && (
+                <>
+                  <span className="text-xs text-gray-500 ml-2">{filtrats.length} de {exams.length}</span>
+                  <button onClick={() => setFiltre(FILTRE_EXAMENS_BUIT)}
+                    className="text-xs text-brand-600 hover:underline">Treu els filtres</button>
+                </>
+              )}
+            </div>
           </div>
         )}
 
@@ -389,7 +431,7 @@ export default function ExamsPage() {
 
                     {/* Assignar a grup (publicat) */}
                     {exam.status === 'PUBLISHED' && (
-                      <button onClick={() => setAssigning(exam)}
+                      <button onClick={() => { setFiltreGrups(filtreGrupsInicial(exam.modulId, grups, moduls)); setAssigning(exam) }}
                         className="text-xs bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700">
                         Assignar a grup
                       </button>
@@ -449,13 +491,17 @@ export default function ExamsPage() {
                     className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
                 </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Grup</label>
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-gray-600">Grup</label>
+                <FiltreGrups grups={grups} moduls={moduls} filtre={filtreGrups}
+                  onChange={setFiltreGrups} visibles={grupsVisibles.length} />
                 <select value={schedGrup} onChange={e => setSchedGrup(e.target.value)}
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400">
                   <option value="">— Selecciona un grup —</option>
-                  {grups.map(g => (
-                    <option key={g.id} value={g.id}>{g.name} ({g.students.length} alumnes)</option>
+                  {grupsSelect.map(g => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}{g.modulNom ? ` · ${g.modulNom}` : ''} ({g.students.length} alumnes)
+                    </option>
                   ))}
                 </select>
               </div>
@@ -547,21 +593,33 @@ export default function ExamsPage() {
       {/* Modal assignar a grup */}
       {assigning && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="px-6 py-4 border-b border-gray-100">
               <h2 className="font-semibold text-gray-800">Assignar «{assigning.title}» a un grup</h2>
               <p className="text-xs text-gray-500 mt-0.5">Es crearà una sessió per a cada alumne del grup que no en tingui ja una.</p>
             </div>
+            {grups.length > 0 && (
+              <div className="px-4 pt-3">
+                <FiltreGrups grups={grups} moduls={moduls} filtre={filtreGrups}
+                  onChange={setFiltreGrups} visibles={grupsVisibles.length} />
+              </div>
+            )}
             <div className="px-4 py-3 space-y-1 max-h-64 overflow-y-auto">
               {grups.length === 0 && (
                 <p className="text-sm text-gray-400 text-center py-4">No hi ha grups creats.</p>
               )}
-              {grups.map(g => (
+              {grups.length > 0 && grupsVisibles.length === 0 && (
+                <p className="text-sm text-gray-400 text-center py-4">Cap grup coincideix amb els filtres.</p>
+              )}
+              {grupsVisibles.map(g => (
                 <button key={g.id}
                   onClick={() => handleAssign(g.id)}
-                  className="w-full text-left px-4 py-3 rounded-lg hover:bg-brand-50 flex items-center justify-between">
-                  <span className="font-medium text-gray-800">{g.name}</span>
-                  <span className="text-xs text-gray-400">{g.students.length} alumnes</span>
+                  className="w-full text-left px-4 py-3 rounded-lg hover:bg-brand-50 flex items-center justify-between gap-3">
+                  <span>
+                    <span className="font-medium text-gray-800 block">{g.name}</span>
+                    {g.modulNom && <span className="text-xs text-gray-500 block">{g.modulNom}</span>}
+                  </span>
+                  <span className="text-xs text-gray-400 whitespace-nowrap">{g.students.length} alumnes</span>
                 </button>
               ))}
             </div>
