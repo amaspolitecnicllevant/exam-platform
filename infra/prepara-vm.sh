@@ -19,7 +19,8 @@ echo "==> 1/5 Sistema base"
 sudo apt update
 sudo apt full-upgrade -y
 sudo apt install -y qemu-guest-agent ca-certificates curl git rsync openssl libnss3-tools
-sudo systemctl enable --now qemu-guest-agent
+# A Ubuntu el servei és "static" (s'activa sol per udev): no es pot fer "enable", i no ha de aturar el script
+sudo systemctl start qemu-guest-agent || true
 sudo timedatectl set-timezone Europe/Madrid
 
 echo "==> 2/5 Docker Engine + plugin Compose (repositori oficial)"

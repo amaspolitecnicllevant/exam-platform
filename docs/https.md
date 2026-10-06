@@ -86,16 +86,37 @@ llocs web*.
 
 **Comprovar-ho:** obre `https://<IP>:3443`. No hi ha d'haver cap avís i el cadenat ha de sortir tancat.
 
-## Renovar el certificat o canviar la IP
+## Renovar el certificat
+
+El certificat del servidor dura 825 dies. Per renovar-lo fes servir el script, que reutilitza les IP/noms
+del certificat actual, conserva l'anterior a `tls/certs/anteriors/`, recarrega nginx **sense tallar
+connexions** (es pot fer amb un examen en marxa) i comprova que l'HTTPS respon amb el certificat nou:
 
 ```bash
-./tls/genera-certificats.sh <IP>
+./tls/renova-certificat.sh --prova     # només mostra quan caduquen el certificat i l'autoritat
+./tls/renova-certificat.sh             # renova només si queden menys de 60 dies
+./tls/renova-certificat.sh --forca     # renova ara
+```
+
+Per planificar-ho cada setmana (`crontab -e`, amb un usuari del grup `docker`):
+
+```
+0 4 * * 1  /home/USUARI/exam-platform/infra/tls/renova-certificat.sh >> /home/USUARI/renova-certificat.log 2>&1
+```
+
+El script s'atura si falta `ca.key`, perquè regenerar l'autoritat obligaria a reinstal·lar-la a tots els
+ordinadors. L'autoritat dura 10 anys i el script avisa quan en queda menys d'un.
+
+Es reutilitza l'autoritat existent, de manera que **no cal tocar els ordinadors**.
+
+## Canviar la IP del servidor
+
+```bash
+./tls/genera-certificats.sh <IP nova>
 docker compose up -d --force-recreate frontend
 ```
 
-Es reutilitza l'autoritat existent, de manera que **no cal tocar els ordinadors**. Posa't un recordatori
-uns dies abans que caduqui (la data surt en generar-lo, o amb
-`openssl x509 -in tls/certs/server.crt -noout -enddate`).
+Actualitza també `FRONTEND_URL` i `APP_ALLOWED_ORIGINS` a `infra/.env`.
 
 ## Desactivar-lo
 
