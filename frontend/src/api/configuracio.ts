@@ -16,6 +16,8 @@ export interface ConfiguracioDto {
   copiesLlindarApunts: number
   /** Hi ha login amb Google configurat al servidor */
   googleActiu: boolean
+  /** Els alumnes poden pujar fitxers a les preguntes de lliurament */
+  pujadaFitxersActiva: boolean
 }
 
 export interface ConfiguracioUpdateRequest {
@@ -29,6 +31,7 @@ export interface ConfiguracioUpdateRequest {
   dominisOauth?: string
   copiesLlindar?: number
   copiesLlindarApunts?: number
+  pujadaFitxersActiva?: boolean
 }
 
 export const getConfiguracio = () =>

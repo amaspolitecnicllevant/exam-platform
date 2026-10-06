@@ -1,7 +1,7 @@
 export type Role = 'ADMIN' | 'PROFESSOR' | 'STUDENT'
 export type ExamStatus = 'DRAFT' | 'PUBLISHED' | 'CLOSED'
 export type SessionStatus = 'IN_PROGRESS' | 'SUBMITTED'
-export type QuestionType = 'TEXT' | 'SHORT' | 'LONG' | 'CHOICE' | 'BASH_CMD' | 'PS_CMD' | 'BASH_SCRIPT' | 'PS_SCRIPT' | 'JAVA_PROG' | 'HTML_CSS' | 'SECTION'
+export type QuestionType = 'TEXT' | 'SHORT' | 'LONG' | 'CHOICE' | 'BASH_CMD' | 'PS_CMD' | 'BASH_SCRIPT' | 'PS_SCRIPT' | 'JAVA_PROG' | 'HTML_CSS' | 'FILE_UPLOAD' | 'SECTION'
 
 export interface QuestionFile {
   id: string
@@ -40,6 +40,8 @@ export interface Question {
   ra?: string
   dificultat?: 'baixa' | 'mitjana' | 'alta'
   files?: QuestionFile[]
+  /** Només FILE_UPLOAD: extensions (sense punt) que l'alumne pot pujar */
+  formatsPermesos?: string[]
 }
 
 export interface Departament {
@@ -160,6 +162,9 @@ export interface Answer {
   autoFeedback?: string
   /** Comentari del professor (l'alumne el veu quan es publiquen les notes) */
   comentari?: string
+  /** Fitxer pujat (preguntes de lliurament): nom original i mida en bytes */
+  fitxerNom?: string
+  fitxerMida?: number
 }
 
 export interface PreguntaStats {

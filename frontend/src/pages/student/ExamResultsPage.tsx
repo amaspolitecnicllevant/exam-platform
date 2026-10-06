@@ -5,6 +5,8 @@ import Md from '../../components/Md'
 import { getSession } from '../../api/sessions'
 import { getExam } from '../../api/exams'
 import type { Session, Exam } from '../../types'
+import { descarregaFitxerResposta } from '../../api/respostaFitxer'
+import { formatMida } from '../../utils/fitxers'
 import { notaTotal, notaPerRa, puntsPregunta, puntsMaxims, sobreDeu } from '../../notes'
 
 export default function ExamResultsPage() {
@@ -134,7 +136,18 @@ export default function ExamResultsPage() {
 
               <Md>{q.enunciat}</Md>
 
-              {answer?.contingut && (
+              {q.tipus === 'FILE_UPLOAD' && answer?.fitxerNom && (
+                <div className="bg-gray-50 border rounded-lg px-4 py-3 flex flex-wrap items-center gap-3">
+                  <span aria-hidden>📎</span>
+                  <span className="text-sm font-medium text-gray-800 break-all">{answer.fitxerNom}</span>
+                  <span className="text-xs text-gray-400">{formatMida(answer.fitxerMida ?? 0)}</span>
+                  <button type="button"
+                    onClick={() => descarregaFitxerResposta(session.id, q.id, answer.fitxerNom ?? 'lliurament')}
+                    className="text-xs text-brand-600 hover:underline ml-auto">Descarregar</button>
+                </div>
+              )}
+
+              {q.tipus !== 'FILE_UPLOAD' && answer?.contingut && (
                 <div className="bg-gray-50 border rounded-lg px-4 py-3">
                   <p className="text-xs text-gray-400 mb-1">La teva resposta</p>
                   <pre className="text-sm text-gray-800 whitespace-pre-wrap font-sans">
@@ -155,7 +168,7 @@ export default function ExamResultsPage() {
                 </div>
               )}
 
-              {!answer?.contingut && !q.anulada && (
+              {!answer?.contingut && !answer?.fitxerNom && !q.anulada && (
                 <p className="text-sm text-gray-400 italic">Sense resposta</p>
               )}
 

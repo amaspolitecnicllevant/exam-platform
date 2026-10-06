@@ -179,6 +179,7 @@ export default function ExamSintaxiPage() {
             { cap: '[ra:RA1]', desc: 'Opcional. Resultat d\'aprenentatge; permet veure la nota per RA.' },
             { cap: '[dif:mitjana]', desc: 'Opcional. Dificultat: baixa, mitjana o alta.' },
             { cap: '[apunts]', desc: 'Opcional. En aquesta pregunta es poden fer servir apunts en paper. També es pot posar al títol d\'una secció (### Pràctica [apunts]) per marcar-ne totes les preguntes.' },
+            { cap: '[formats:docx,pkt]', desc: 'Opcional, només [fitxer]. Extensions que l\'alumne pot pujar (docx, xlsx, pptx, odt, ods, odp, pdf, pkt, pka, pkz, zip, png, jpg, txt). Sense l\'etiqueta, s\'admeten tots.' },
             { cap: '[ordre:fix]', desc: 'Opcional, només CHOICE. Les opcions no es barregen (per defecte cada alumne les veu en un ordre diferent). Útil per a «Totes les anteriors».' },
           ]} />
         </Section>
@@ -195,6 +196,7 @@ export default function ExamSintaxiPage() {
             { cap: 'PS_SCRIPT',   desc: 'Alumne escriu un script PowerShell. Execució i comprovació automàtica.' },
             { cap: 'JAVA_PROG',   desc: 'Alumne escriu un programa Java. La classe principal ha de dir-se Main. Compilació i execució automàtica.' },
             { cap: 'HTML_CSS',    desc: 'Alumne escriu HTML/CSS. Previsualització en directe al navegador. Correcció manual.' },
+            { cap: 'FITXER',      desc: 'L\'alumne puja un fitxer (Word, Excel, Packet Tracer…), de fins a 10 MB. Es pot escriure [fitxer]. Correcció manual: el professor el descarrega i el qualifica.' },
           ]} />
         </Section>
 

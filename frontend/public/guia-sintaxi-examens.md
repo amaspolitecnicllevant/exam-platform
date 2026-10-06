@@ -84,7 +84,7 @@ Si en una secció es poden fer servir apunts (per exemple, la part pràctica), a
 ## 4. Capçalera de pregunta
 
 ```
-## N. [tipus] [pts:X] [ra:RA1] [dif:mitjana] [ordre:fix]
+## N. [tipus] [pts:X] [ra:RA1] [dif:mitjana] [ordre:fix] [formats:docx,xlsx]
 ```
 
 | Element | Obligatori | Descripció |
@@ -96,6 +96,7 @@ Si en una secció es poden fer servir apunts (per exemple, la part pràctica), a
 | `[dif:NIVELL]` | No | Dificultat: només `baixa`, `mitjana` o `alta` |
 | `[ordre:fix]` | No | Només per a `choice`: les opcions surten en l'ordre del fitxer (vegeu §6.1) |
 | `[apunts]` | No | En aquesta pregunta es poden fer servir apunts (en paper). Vegeu §3 per marcar-ho a tota una secció |
+| `[formats:LLISTA]` | No | Només per a `fitxer`: extensions que l'alumne pot pujar, separades per comes (vegeu §6.7) |
 
 - Les etiquetes opcionals van **després** de `[pts:X]`, en qualsevol ordre. `[apunts]` no porta valor.
 - No s'admeten altres etiquetes (p. ex. `[pes:1]`) ni altres dificultats: l'examen es rebutja indicant la línia.
@@ -156,6 +157,7 @@ inet
 | `ps-script` | Un script PowerShell | Automàtica (`:::test` o `:::output-*`) |
 | `java-prog` | Un programa Java (classe `Main`) | Automàtica (`:::output-*`) |
 | `html-css` | Codi HTML/CSS amb previsualització | Manual |
+| `fitxer` | Puja un fitxer (Word, Excel, Packet Tracer…) | Manual (vegeu §6.7) |
 
 Les notes automàtiques de les preguntes de text i de codi són **propostes**: el professor les revisa (les accepta o les canvia) abans de publicar les notes.
 
@@ -267,6 +269,25 @@ El codi de l'alumne (i el `:::test`) s'executa en un contenidor aïllat:
 - Imatges: `bash:5` (Alpine), PowerShell oficial per a Linux i `eclipse-temurin:21` per a Java. No és Windows: no hi ha `C:\`.
 - Límits: 128 MB de memòria, mitja CPU i **15 s** per execució (configurable pel centre).
 - Els fitxers de dades que el professor adjunti a una pregunta (des de la previsualització) són a `/data/files/`.
+
+### 6.7 `fitxer` — Lliurament d'un fitxer
+
+L'alumne respon pujant un fitxer en comptes d'escriure: un document Word o Excel, una simulació de Packet Tracer, un PDF… La pregunta es **corregeix a mà**: el professor descarrega el fitxer des de la correcció i hi posa la nota. Mentre no la qualifiqui, apareix com a «pendent de revisar» i no es poden publicar les notes.
+
+```
+## 5. [fitxer] [pts:3] [formats:docx,pkt]
+Dissenya la xarxa de l'enunciat i entrega:
+- la simulació de Packet Tracer (`.pkt`),
+- un document amb la taula d'adreçament (`.docx`).
+```
+
+- `[formats:…]` indica quins fitxers admet la pregunta, per exemple `[formats:docx]` o `[formats:xlsx,pdf]`. Sense l'etiqueta s'admeten tots els formats de la llista.
+- **Formats admesos:** `docx`, `xlsx`, `pptx`, `odt`, `ods`, `odp`, `pdf`, `pkt`, `pka`, `pkz` (Packet Tracer), `zip`, `png`, `jpg`, `jpeg` i `txt`. No s'admeten documents amb macros (`docm`, `xlsm`…) ni executables.
+- **Un fitxer per pregunta**, de **10 MB com a màxim**. Si l'alumne en puja un altre, substitueix l'anterior; fins que entrega l'examen el pot esborrar o canviar. Si calen diversos fitxers, posa diverses preguntes `fitxer` o un `.zip`.
+- Es comprova que el contingut correspongui a l'extensió (un executable canviat de nom a `.docx` es rebutja). Per als fitxers de Packet Tracer només se'n comprova l'extensió.
+- Només es permet el bloc `:::model`, com a nota per al professor (p. ex. què ha de tenir el lliurament). No porta `:::clau`, `:::output-*` ni `:::test`.
+- Els fitxers no entren a l'informe de possibles còpies.
+- L'administrador pot desactivar la pujada de fitxers a *Configuració*. Aleshores els alumnes no en poden pujar, però els ja pujats es conserven.
 
 ---
 
@@ -416,6 +437,8 @@ La plataforma revisa tot el fitxer i, si troba un error, el rebutja indicant **l
 - Un bloc que no correspon al tipus: `:::clau` fora de `text`/`short`/`long`, `:::output-*` fora de les preguntes de codi (també a `html-css`), `:::test` fora de `bash-script`/`ps-script`, dos criteris `:::output-*`, o `:::test` combinat amb `:::output-*`.
 - Un `:::output-contains` buit, una `:::output-regex` invàlida o un `:::clau` mal format.
 - `[ordre:…]` amb un valor diferent de `fix` o en una pregunta que no és `choice`.
+- `[formats:…]` en una pregunta que no és `fitxer`, buit, o amb un format que no és a la llista (p. ex. `exe`, `xlsm`).
+- Un bloc `:::` diferent de `:::model` en una pregunta `fitxer`.
 
 Els fitxers desats a Windows (salts de línia CRLF) o amb BOM s'accepten sense problemes. Les línies separadores (`---`, `***`) entre preguntes o seccions s'ignoren.
 
@@ -432,6 +455,7 @@ Quan generis un examen seguint aquesta guia:
 - `choice`: 4 opcions (`- a)` a `- d)`), una sola correcta, la lletra a `:::model`. Si una opció és «Totes les anteriors» o similar, afegeix `[ordre:fix]`.
 - `short`, `text` i `long`: inclou `:::model` i un `:::clau` amb 2–4 conceptes imprescindibles, amb els sinònims habituals separats per comes.
 - `bash-cmd`, `ps-cmd` i `java-prog`: inclou `:::model` i un criteri `:::output-*` que doni el mateix resultat per a totes les solucions correctes. Prefereix `:::output-contains`; usa `:::output-exact` només si la sortida és totalment determinista.
+- `fitxer`: usa-ho només quan l'alumne ha de lliurar un document o una simulació (Word, Excel, Packet Tracer). Indica els formats amb `[formats:…]` i descriu clarament què ha de contenir el lliurament. No hi posis `:::clau`, `:::output-*` ni `:::test`; `:::model` només com a nota per al professor.
 - `bash-script` i `ps-script`: inclou `:::model` i un `:::test` robust que creï les seves dades a `/tmp` i comprovi el resultat de manera objectiva. Tria dades de prova amb què **una solució incorrecta però plausible falli** (p. ex. si es demana comptar recursivament, posa fitxers en subdirectoris perquè un `ls` sense recursió doni un altre resultat).
 - Tingues en compte l'entorn (§6.6): sense xarxa, només `/tmp` és escrivible, Linux (no Windows), 15 s per execució.
 - No usis `###` dins dels enunciats. Per a subtítols, usa negreta.

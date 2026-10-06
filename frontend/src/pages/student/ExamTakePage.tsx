@@ -8,6 +8,9 @@ import { getExam, runAnswer } from '../../api/exams'
 import { startSession, saveAnswer, submitSession, reportFocusLoss, restartSession } from '../../api/sessions'
 import { downloadQuestionFile } from '../../api/questionFiles'
 import { useAuth } from '../../context/AuthContext'
+import { useConfiguracio } from '../../context/ConfiguracioContext'
+import { pujaFitxerResposta, esborraFitxerResposta, descarregaFitxerResposta } from '../../api/respostaFitxer'
+import { errorFitxer, formatMida, llistaFormats, MIDA_MAXIMA_FITXER } from '../../utils/fitxers'
 import type { Exam, Session, QuestionType, ExecutionResult } from '../../types'
 
 const SCRIPT_TYPES: QuestionType[] = ['BASH_CMD', 'PS_CMD', 'BASH_SCRIPT', 'PS_SCRIPT', 'JAVA_PROG']
@@ -78,6 +81,7 @@ export default function ExamTakePage() {
   const { examId }              = useParams<{ examId: string }>()
   const navigate                = useNavigate()
   const { user: authUser }      = useAuth()
+  const { config }              = useConfiguracio()
   const [exam, setExam]             = useState<Exam | null>(null)
   const [session, setSession]       = useState<Session | null>(null)
   const [orderedQs, setOrderedQs]   = useState<Exam['questions']>([])
@@ -94,6 +98,10 @@ export default function ExamTakePage() {
   const [htmlPreviews, setHtmlPreviews] = useState<Record<string, boolean>>({})
   const [current, setCurrent] = useState(0)
   const [saveError, setSaveError] = useState('')
+  // Preguntes de lliurament de fitxer: fitxer pujat per pregunta, pujada en curs i errors
+  const [fitxers, setFitxers] = useState<Record<string, { nom: string; mida: number }>>({})
+  const [pujant, setPujant] = useState<string | null>(null)
+  const [errorsFitxer, setErrorsFitxer] = useState<Record<string, string>>({})
   // Estat del desament per a l'alumne: 'pendent' (escrivint), 'desant', 'desat', 'error'
   const [estatDesat, setEstatDesat] = useState<'inici' | 'pendent' | 'desant' | 'desat' | 'error'>('inici')
   const desamentsEnCurs = useRef(0)
@@ -151,6 +159,9 @@ export default function ExamTakePage() {
       try { setCurrent(Number(sessionStorage.getItem(`exam-pos-${s.id}`)) || 0) } catch { /* sense emmagatzematge */ }
       const init: Record<string, string> = {}
       s.answers.forEach(a => { if (a.contingut) init[a.questionId] = a.contingut })
+      const fitxersInicials: Record<string, { nom: string; mida: number }> = {}
+      s.answers.forEach(a => { if (a.fitxerNom) fitxersInicials[a.questionId] = { nom: a.fitxerNom, mida: a.fitxerMida ?? 0 } })
+      setFitxers(fitxersInicials)
       // Inicialitza stub Java per les preguntes sense resposta
       e.questions.forEach(q => {
         if (q.tipus === 'JAVA_PROG' && !init[q.id]) init[q.id] = JAVA_STUB
@@ -236,6 +247,39 @@ export default function ExamTakePage() {
     setEstatDesat('pendent')
     saveTimers.current[questionId] = setTimeout(() => envia(questionId), 500)
   }, [session, envia])
+
+  /** Puja (o substitueix) el fitxer d'una pregunta de lliurament. */
+  const handlePuja = async (q: Q, fitxer: File) => {
+    if (!session || submitted) return
+    const error = errorFitxer(fitxer.name, fitxer.size, q.formatsPermesos ?? [], MIDA_MAXIMA_FITXER)
+    if (error) { setErrorsFitxer(prev => ({ ...prev, [q.id]: error })); return }
+    setErrorsFitxer(prev => { const n = { ...prev }; delete n[q.id]; return n })
+    setPujant(q.id)
+    try {
+      const resposta = await pujaFitxerResposta(session.id, q.id, fitxer)
+      setFitxers(prev => ({ ...prev, [q.id]: { nom: resposta.fitxerNom ?? fitxer.name, mida: resposta.fitxerMida ?? fitxer.size } }))
+      setAnswers(prev => ({ ...prev, [q.id]: resposta.fitxerNom ?? fitxer.name }))
+    } catch (err: any) {
+      const msg = err?.response?.status === 413
+        ? `El fitxer supera la mida màxima de ${Math.round(MIDA_MAXIMA_FITXER / (1024 * 1024))} MB.`
+        : err?.response?.data?.error || 'No s\'ha pogut pujar el fitxer. Torna-ho a provar.'
+      setErrorsFitxer(prev => ({ ...prev, [q.id]: msg }))
+    } finally {
+      setPujant(null)
+    }
+  }
+
+  const handleEsborraFitxer = async (q: Q) => {
+    if (!session || submitted) return
+    if (!confirm('Vols esborrar el fitxer pujat?')) return
+    try {
+      await esborraFitxerResposta(session.id, q.id)
+      setFitxers(prev => { const n = { ...prev }; delete n[q.id]; return n })
+      setAnswers(prev => { const n = { ...prev }; delete n[q.id]; return n })
+    } catch (err: any) {
+      setErrorsFitxer(prev => ({ ...prev, [q.id]: err?.response?.data?.error || 'No s\'ha pogut esborrar el fitxer.' }))
+    }
+  }
 
   const handleRun = async (questionId: string) => {
     if (!session) return
@@ -367,7 +411,7 @@ export default function ExamTakePage() {
 
         {/* Respostes de text (SHORT, LONG, TEXT). Les de test només tenen les opcions: un text
             lliure hi substituiria la lletra triada */}
-        {!isExec && !isHtml && q.tipus !== 'CHOICE' && (
+        {!isExec && !isHtml && q.tipus !== 'CHOICE' && q.tipus !== 'FILE_UPLOAD' && (
           <textarea
             rows={q.tipus === 'SHORT' ? 3 : 6}
             value={answers[q.id] ?? ''}
@@ -377,6 +421,60 @@ export default function ExamTakePage() {
             className="w-full border rounded-lg px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-brand-400"
           />
         )}
+
+        {/* Lliurament de fitxer (Word, Excel, Packet Tracer…) */}
+        {q.tipus === 'FILE_UPLOAD' && (() => {
+          const fitxer = fitxers[q.id]
+          const formats = q.formatsPermesos ?? []
+          const pujadaActiva = config?.pujadaFitxersActiva !== false
+          return (
+            <div className="border border-dashed border-gray-300 rounded-lg p-4 space-y-3 bg-gray-50">
+              <p className="text-xs text-gray-600">
+                Puja un fitxer {llistaFormats(formats)} · màxim {Math.round(MIDA_MAXIMA_FITXER / (1024 * 1024))} MB.
+                {' '}Si en puges un altre, substitueix l'anterior.
+              </p>
+              {fitxer ? (
+                <div className="flex flex-wrap items-center gap-3 bg-white border rounded-lg px-3 py-2">
+                  <span className="text-lg" aria-hidden>📎</span>
+                  <span className="text-sm font-medium text-gray-800 break-all">{fitxer.nom}</span>
+                  <span className="text-xs text-gray-400">{formatMida(fitxer.mida)}</span>
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">✓ Pujat</span>
+                  <button type="button" onClick={() => session && descarregaFitxerResposta(session.id, q.id, fitxer.nom)}
+                    className="text-xs text-brand-600 hover:underline ml-auto">Descarregar</button>
+                  {!submitted && (
+                    <button type="button" onClick={() => handleEsborraFitxer(q)} disabled={pujant === q.id}
+                      className="text-xs text-red-600 hover:underline disabled:opacity-50">Esborrar</button>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 italic">{submitted ? 'No has pujat cap fitxer.' : 'Encara no has pujat cap fitxer.'}</p>
+              )}
+              {!submitted && !pujadaActiva && (
+                <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  La pujada de fitxers està desactivada. Consulta el professor.
+                </p>
+              )}
+              {!submitted && pujadaActiva && (
+                <label className={`inline-block text-sm px-4 py-2 rounded-lg cursor-pointer text-white
+                  ${pujant === q.id ? 'bg-gray-400 cursor-wait' : 'bg-brand-600 hover:bg-brand-700'}`}>
+                  {pujant === q.id ? 'Pujant…' : fitxer ? 'Substituir el fitxer' : 'Triar un fitxer'}
+                  <input type="file" className="sr-only" disabled={pujant !== null}
+                    accept={formats.map(f => '.' + f).join(',')}
+                    onChange={e => {
+                      const f = e.target.files?.[0]
+                      e.target.value = ''
+                      if (f) handlePuja(q, f)
+                    }} />
+                </label>
+              )}
+              {errorsFitxer[q.id] && (
+                <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  {errorsFitxer[q.id]}
+                </p>
+              )}
+            </div>
+          )
+        })()}
 
         {/* Opcions test */}
         {q.tipus === 'CHOICE' && q.choices && (

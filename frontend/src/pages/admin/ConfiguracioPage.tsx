@@ -19,6 +19,7 @@ export default function ConfiguracioPage() {
   const [focusLoss, setFocusLoss]               = useState(5)
   const [copiesLlindar, setCopiesLlindar]       = useState(80)
   const [copiesLlindarApunts, setCopiesLlindarApunts] = useState(95)
+  const [pujadaFitxers, setPujadaFitxers] = useState(true)
   const [gracePeriod, setGracePeriod]           = useState(30)
   const [dominisOauth, setDominisOauth]         = useState('')
 
@@ -33,6 +34,7 @@ export default function ConfiguracioPage() {
       setFocusLoss(c.focusLossThreshold ?? 5)
       setCopiesLlindar(c.copiesLlindar ?? 80)
       setCopiesLlindarApunts(c.copiesLlindarApunts ?? 95)
+      setPujadaFitxers(c.pujadaFitxersActiva ?? true)
       setGracePeriod(c.gracePeriodSeconds ?? 30)
       setDominisOauth(c.dominisOauth ?? '')
     })
@@ -50,6 +52,7 @@ export default function ConfiguracioPage() {
         focusLossThreshold: focusLoss,
         copiesLlindar,
         copiesLlindarApunts,
+        pujadaFitxersActiva: pujadaFitxers,
         gracePeriodSeconds: gracePeriod,
         dominisOauth,
       })
@@ -202,6 +205,23 @@ export default function ConfiguracioPage() {
               <p className="text-xs text-gray-400 mt-1">Temps extra al finalitzar el temps</p>
             </div>
           </div>
+        </section>
+
+        {/* Lliurament de fitxers */}
+        <section className="bg-white rounded-xl border border-gray-200 p-6 mb-6 space-y-3">
+          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Lliurament de fitxers</h2>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" checked={pujadaFitxers} onChange={e => setPujadaFitxers(e.target.checked)}
+              className="mt-1 accent-brand-600 w-4 h-4" />
+            <span>
+              <span className="block text-sm font-medium text-gray-700">Permet als alumnes pujar fitxers</span>
+              <span className="block text-xs text-gray-400 mt-0.5">
+                A les preguntes de tipus <code>[fitxer]</code> (Word, Excel, Packet Tracer…). Si es desactiva, ningú pot pujar-ne
+                ni substituir-ne cap; els ja pujats es conserven i els professors els poden descarregar.
+                Màxim 10 MB per fitxer.
+              </span>
+            </span>
+          </label>
         </section>
 
         {/* Còpies de seguretat */}

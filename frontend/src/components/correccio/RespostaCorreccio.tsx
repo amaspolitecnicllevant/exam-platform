@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import type { ReactNode, KeyboardEvent } from 'react'
 import type { Answer, Question, Session } from '../../types'
+import { descarregaFitxerResposta } from '../../api/respostaFitxer'
+import { formatMida } from '../../utils/fitxers'
 
 export const EXEC_TYPES: Question['tipus'][] = ['BASH_CMD', 'PS_CMD', 'BASH_SCRIPT', 'PS_SCRIPT', 'JAVA_PROG']
 export const TEXT_TYPES: Question['tipus'][] = ['TEXT', 'SHORT', 'LONG']
@@ -122,6 +124,21 @@ export default function RespostaCorreccio({ q, answer, session, titol, mostrarRe
               Correcta: {q.correctChoice.toUpperCase()}) {q.choices?.find(c => c.startsWith(q.correctChoice ?? ''))?.replace(/^[a-zA-Z]\)\s*/, '')}
             </span>
           )}
+        </div>
+      ) : q.tipus === 'FILE_UPLOAD' ? (
+        <div className="bg-gray-50 rounded-lg p-3 text-sm flex flex-wrap items-center gap-3">
+          {answer?.fitxerNom ? (
+            <>
+              <span aria-hidden>📎</span>
+              <span className="font-medium text-gray-800 break-all">{answer.fitxerNom}</span>
+              <span className="text-xs text-gray-400">{formatMida(answer.fitxerMida ?? 0)}</span>
+              <button type="button"
+                onClick={() => descarregaFitxerResposta(session.id, q.id, answer.fitxerNom ?? 'lliurament')}
+                className="text-xs bg-brand-600 text-white px-3 py-1 rounded hover:bg-brand-700 ml-auto">
+                Descarregar
+              </button>
+            </>
+          ) : <span className="text-gray-400 italic">no ha pujat cap fitxer</span>}
         </div>
       ) : (
         <div className="bg-gray-50 rounded-lg p-3 text-sm whitespace-pre-wrap font-mono text-gray-700 max-h-48 overflow-auto">

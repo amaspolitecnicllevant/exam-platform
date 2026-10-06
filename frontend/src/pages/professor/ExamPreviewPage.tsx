@@ -5,6 +5,7 @@ import Md from '../../components/Md'
 import { getExam, updateExamSettings, patchQuestion } from '../../api/exams'
 import { uploadQuestionFile, deleteQuestionFile, downloadQuestionFile } from '../../api/questionFiles'
 import type { Exam, Question, QuestionFile, QuestionType } from '../../types'
+import { llistaFormats } from '../../utils/fitxers'
 
 const DIF_COLORS: Record<string, string> = {
   baixa:   'bg-green-100 text-green-700',
@@ -19,6 +20,7 @@ const TYPE_LABEL: Partial<Record<QuestionType, string>> = {
   BASH_CMD: 'Comanda Bash', PS_CMD: 'Comanda PowerShell',
   BASH_SCRIPT: 'Script Bash', PS_SCRIPT: 'Script PowerShell',
   JAVA_PROG: 'Programa Java', HTML_CSS: 'HTML/CSS',
+  FILE_UPLOAD: 'Lliurament de fitxer',
 }
 
 type RaEdit = { ra: string; dif: string }
@@ -480,7 +482,15 @@ export default function ExamPreviewPage() {
                 </div>
               )}
 
-              {(isScript || isHtml) ? (
+              {q.tipus === 'FILE_UPLOAD' ? (
+                <div className="border border-dashed border-gray-300 rounded-lg p-3 bg-gray-50 text-xs text-gray-600 space-y-1">
+                  <p>
+                    <strong>Lliurament de fitxer.</strong> L'alumne hi puja un fitxer{' '}
+                    {llistaFormats(q.formatsPermesos ?? [])} (màxim 10 MB). Es corregeix a mà.
+                  </p>
+                  <p className="text-gray-400">Per canviar els formats, edita l'etiqueta <code>[formats:…]</code> del Markdown.</p>
+                </div>
+              ) : (isScript || isHtml) ? (
                 <textarea
                   rows={isML || isHtml ? 6 : 2}
                   value={draftAnswers[q.id] ?? ''}

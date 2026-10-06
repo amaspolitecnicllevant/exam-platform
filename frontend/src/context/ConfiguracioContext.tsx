@@ -19,6 +19,7 @@ const DEFAULT_CONFIG: ConfiguracioDto = {
   copiesLlindar: 80,
   copiesLlindarApunts: 95,
   googleActiu: false,
+  pujadaFitxersActiva: true,
 }
 
 const ConfiguracioContext = createContext<ConfiguracioContextValue>({
