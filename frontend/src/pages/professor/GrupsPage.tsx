@@ -7,6 +7,7 @@ import { getMatricules } from '../../api/matricules'
 import {
   FILTRE_BUIT, filtraAlumnes, filtraPerMatricula, filtreInicial,
   cursosDisponibles, modulsAmbMatricula, ciclesAmbMatricula,
+  filtraPerGrup, filtraGrups, GRUP_CAP,
   type FiltreAlumnes,
 } from '../../utils/filtreAlumnes'
 import type { Grup, User, Modul, Matricula } from '../../types'
@@ -37,6 +38,11 @@ export default function GrupsPage() {
   // Modal Alumnes — editar grups d'un alumne
   const [editingStudent, setEditingStudent]   = useState<User | null>(null)
   const [selectedGrups, setSelectedGrups]     = useState<Set<string>>(new Set())
+  const [cercaGrups, setCercaGrups]           = useState('')
+
+  // Pestanya Alumnes — filtres de la llista
+  const [filtreTab, setFiltreTab]             = useState<FiltreAlumnes>(FILTRE_BUIT)
+  const [filtreGrupTab, setFiltreGrupTab]     = useState('')
 
   useEffect(() => {
     // Si les matrícules no es poden carregar, la llista d'alumnes continua funcionant (sense filtres de matrícula)
@@ -65,6 +71,11 @@ export default function GrupsPage() {
   const cursosFiltre  = cursosDisponibles(matricules)
   const idsMatriculats = new Set(matricules.map(m => m.alumneId))
   const senseMatricula = allStudents.filter(a => !idsMatriculats.has(a.id)).length
+  const alumnesTab = filtraPerGrup(
+    filtraAlumnes(allStudents, matricules, moduls, filtreTab, new Set()), grups, filtreGrupTab)
+  const modulsFiltreTab = modulsAmbMatricula(moduls, matricules, filtreTab.cicleId)
+  const filtreTabActiu = filtreTab.text !== '' || filtraPerMatricula(filtreTab) || filtreGrupTab !== ''
+  const grupsVisiblesModal = filtraGrups(grups, cercaGrups)
   const filtreActiu = filtre.text !== '' || filtre.nomesSeleccionats || filtraPerMatricula(filtre)
   const seleccionatsFora = [...selectedStudents].filter(id => !alumnesVisibles.some(a => a.id === id)).length
 
@@ -131,6 +142,7 @@ export default function GrupsPage() {
   const openStudentEdit = (student: User) => {
     setEditingStudent(student)
     setSelectedGrups(grupIdsForStudent(student.id))
+    setCercaGrups('')
   }
 
   const handleSaveStudentGrups = async () => {
@@ -256,6 +268,56 @@ export default function GrupsPage() {
                   Encara no hi ha alumnes. Crea'ls a «Gestió d'usuaris».
                 </p>
               ) : (
+                <>
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-3 mb-3 space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    <input type="search" value={filtreTab.text}
+                      onChange={e => setFiltreTab(prev => ({ ...prev, text: e.target.value }))}
+                      placeholder="Cerca per nom o correu…"
+                      className="flex-1 min-w-[12rem] border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                    {matricules.length > 0 && (<>
+                      <select value={filtreTab.cicleId} aria-label="Cicle"
+                        onChange={e => setFiltreTab(prev => ({ ...prev, cicleId: e.target.value, modulId: '' }))}
+                        className="border border-gray-300 rounded-lg px-2 py-2 text-sm">
+                        <option value="">Tots els cicles</option>
+                        {ciclesFiltre.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+                      </select>
+                      <select value={filtreTab.modulId} aria-label="Mòdul"
+                        onChange={e => setFiltreTab(prev => ({ ...prev, modulId: e.target.value }))}
+                        className="border border-gray-300 rounded-lg px-2 py-2 text-sm">
+                        <option value="">Tots els mòduls</option>
+                        {modulsFiltreTab.map(m => <option key={m.id} value={m.id}>{m.codi} — {m.nom}</option>)}
+                      </select>
+                      <select value={filtreTab.curs} aria-label="Curs"
+                        onChange={e => setFiltreTab(prev => ({ ...prev, curs: e.target.value }))}
+                        className="border border-gray-300 rounded-lg px-2 py-2 text-sm">
+                        <option value="">Tots els cursos</option>
+                        {cursosFiltre.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </>)}
+                    <select value={filtreGrupTab} aria-label="Grup"
+                      onChange={e => setFiltreGrupTab(e.target.value)}
+                      className="border border-gray-300 rounded-lg px-2 py-2 text-sm">
+                      <option value="">Tots els grups</option>
+                      <option value={GRUP_CAP}>Sense grup</option>
+                      {grups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>Es mostren {alumnesTab.length} de {allStudents.length} alumnes</span>
+                    {filtreTabActiu && (
+                      <button type="button"
+                        onClick={() => { setFiltreTab(FILTRE_BUIT); setFiltreGrupTab('') }}
+                        className="hover:underline">Treure filtres</button>
+                    )}
+                  </div>
+                  {filtraPerMatricula(filtreTab) && senseMatricula > 0 && (
+                    <p className="text-xs text-amber-700">
+                      {senseMatricula} alumne{senseMatricula !== 1 ? 's' : ''} sense matrícula no surt{senseMatricula !== 1 ? 'en' : ''} amb
+                      el filtre de cicle, mòdul o curs.
+                    </p>
+                  )}
+                </div>
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-b border-gray-200">
@@ -267,7 +329,12 @@ export default function GrupsPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {allStudents.map(s => {
+                      {alumnesTab.length === 0 && (
+                        <tr><td colSpan={4} className="px-4 py-6 text-center text-gray-400">
+                          Cap alumne coincideix amb els filtres.
+                        </td></tr>
+                      )}
+                      {alumnesTab.map(s => {
                         const myGrups = grups.filter(g => g.students.some(x => x.id === s.id))
                         return (
                           <tr key={s.id} className="hover:bg-gray-50">
@@ -299,6 +366,7 @@ export default function GrupsPage() {
                     </tbody>
                   </table>
                 </div>
+                </>
               )}
           </div>
         )}
@@ -424,13 +492,23 @@ export default function GrupsPage() {
           onSave={handleSaveStudentGrups} saving={saving}>
           {grups.length === 0
             ? <p className="text-sm text-gray-400 text-center py-4">No hi ha grups. Crea'n un primer.</p>
-            : grups.map(g => (
-              <CheckRow key={g.id}
-                label={g.name}
-                sub={`${g.students.length} alumne${g.students.length !== 1 ? 's' : ''}`}
-                checked={selectedGrups.has(g.id)}
-                onChange={() => setSelectedGrups(prev => toggle(prev, g.id))} />
-            ))}
+            : <>
+              <div className="sticky top-0 bg-white pb-2 border-b border-gray-100 mb-1">
+                <input type="search" value={cercaGrups}
+                  onChange={e => setCercaGrups(e.target.value)}
+                  placeholder="Cerca un grup pel nom o el mòdul…"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              {grupsVisiblesModal.length === 0
+                ? <p className="text-sm text-gray-400 text-center py-4">Cap grup coincideix.</p>
+                : grupsVisiblesModal.map(g => (
+                  <CheckRow key={g.id}
+                    label={g.name}
+                    sub={`${g.modulNom ? g.modulNom + ' · ' : ''}${g.students.length} alumne${g.students.length !== 1 ? 's' : ''}`}
+                    checked={selectedGrups.has(g.id)}
+                    onChange={() => setSelectedGrups(prev => toggle(prev, g.id))} />
+                ))}
+            </>}
         </Modal>
       )}
     </Layout>

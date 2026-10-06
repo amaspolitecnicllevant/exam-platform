@@ -88,3 +88,28 @@ export function filtreInicial(modulId: string | undefined, matricules: Matricula
   const curs = cursosDisponibles(delModul)[0] ?? ''
   return { ...FILTRE_BUIT, cicleId, modulId, curs }
 }
+
+/** Valor especial del filtre per grup: alumnes que no són a cap grup. */
+export const GRUP_CAP = '__cap'
+
+/** Filtra per grup: '' = tots, GRUP_CAP = els que no són a cap grup, o l'id d'un grup. */
+export function filtraPerGrup(
+  alumnes: User[],
+  grups: { id: string; students: { id: string }[] }[],
+  grupId: string,
+): User[] {
+  if (grupId === '') return alumnes
+  if (grupId === GRUP_CAP) {
+    const enAlgunGrup = new Set(grups.flatMap(g => g.students.map(x => x.id)))
+    return alumnes.filter(a => !enAlgunGrup.has(a.id))
+  }
+  const ids = new Set((grups.find(g => g.id === grupId)?.students ?? []).map(x => x.id))
+  return alumnes.filter(a => ids.has(a.id))
+}
+
+/** Grups el nom o el mòdul dels quals contenen el text (sense accents ni majúscules). */
+export function filtraGrups<T extends { name: string; modulNom?: string }>(grups: T[], text: string): T[] {
+  const t = normalitza(text)
+  if (!t) return grups
+  return grups.filter(g => normalitza(g.name).includes(t) || normalitza(g.modulNom ?? '').includes(t))
+}
