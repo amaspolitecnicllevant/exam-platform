@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../../components/Layout'
-import { getMyExams, publishExam, unpublishExam, closeExam, deleteExam, duplicateExam, exportCsv, scheduleExam, unscheduleExam, assignModul, publicarNotes, ocultarNotes } from '../../api/exams'
+import { getMyExams, publishExam, unpublishExam, closeExam, deleteExam, duplicateExam, scheduleExam, unscheduleExam, assignModul, publicarNotes, ocultarNotes } from '../../api/exams'
 import { getGrups, assignExamToGrup } from '../../api/grups'
 import { getModuls } from '../../api/moduls'
 import { getAules, assignAulaExamen, removeAulaExamen } from '../../api/aules'
@@ -9,6 +9,7 @@ import FiltreGrups from '../../components/FiltreGrups'
 import {
   FILTRE_GRUPS_BUIT, filtraGrupsAssignacio, filtreGrupsInicial, type FiltreGrupsAssig,
 } from '../../utils/filtreGrupsAssignacio'
+import ExportarExamen from '../../components/ExportarExamen'
 import type { Exam, Grup, Modul, Aula } from '../../types'
 import { aInstantUtc, dataLocal, horaLocal } from '../../dates'
 import {
@@ -97,13 +98,6 @@ export default function ExamsPage() {
     }
   }
 
-  const handleExport = async (id: string, title: string) => {
-    const res = await exportCsv(id)
-    const url = URL.createObjectURL(res.data)
-    const a = document.createElement('a'); a.href = url
-    a.download = `examen-${title}.csv`; a.click()
-    URL.revokeObjectURL(url)
-  }
 
   const openSchedule = (exam: Exam) => {
     setScheduling(exam)
@@ -376,10 +370,8 @@ export default function ExamsPage() {
                           className="text-xs border border-brand-600 text-brand-600 px-3 py-1 rounded hover:bg-brand-50">
                           Estadístiques
                         </Link>
-                        <button onClick={() => handleExport(exam.id, exam.title)}
-                          className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
-                          Exportar CSV
-                        </button>
+                        <ExportarExamen examId={exam.id} titol={exam.title}
+                          teFitxers={!!exam.questions?.some(q => q.tipus === 'FILE_UPLOAD')} />
                       </>
                     )}
 

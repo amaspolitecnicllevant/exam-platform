@@ -62,9 +62,6 @@ export const acceptAllProposals = (examId: string, sessionId?: string) =>
   client.post<{ acceptades: number }>(`/executions/exam/${examId}/accept-all`, null,
     { params: sessionId ? { sessionId } : undefined }).then(r => r.data)
 
-export const exportCsv = (examId: string) =>
-  client.get(`/export/exam/${examId}/csv`, { responseType: 'blob' })
-
 export const assignModul = (examId: string, modulId: string): Promise<Exam> =>
   client.patch<Exam>(`/exams/${examId}/modul/${modulId}`).then(r => r.data)
 

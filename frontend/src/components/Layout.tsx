@@ -14,6 +14,7 @@ const NAV: { to: string; label: string; roles: string[] }[] = [
   { to: '/admin/matricules',   label: 'Matrícules',           roles: ['ADMIN'] },
   { to: '/admin/aules',        label: 'Aules',                roles: ['ADMIN'] },
   { to: '/admin/configuracio', label: 'Configuració',         roles: ['ADMIN'] },
+  { to: '/admin/emmagatzematge', label: 'Espai ocupat',       roles: ['ADMIN'] },
   { to: '/admin/audit',        label: 'Registre activitat',   roles: ['ADMIN'] },
   { to: '/student/exams',      label: 'Els meus examens',     roles: ['STUDENT'] },
   { to: '/student/historial',  label: 'Historial i notes',    roles: ['STUDENT'] },

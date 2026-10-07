@@ -34,3 +34,9 @@ export function llistaFormats(formats: string[]): string {
   const f = formats.map(x => '.' + x)
   return f.length <= 1 ? f.join('') : `${f.slice(0, -1).join(', ')} i ${f[f.length - 1]}`
 }
+
+/** Nom de fitxer per a una exportació, a partir del títol de l'examen: «Parcial UT1: Xarxes» → «Parcial_UT1_Xarxes_notes.csv». */
+export function nomExportacio(titol: string, sufix: string): string {
+  const base = titol.replace(/[^\p{L}\p{N}]+/gu, '_').replace(/^_+|_+$/g, '').slice(0, 60) || 'examen'
+  return `${base}_${sufix}`
+}

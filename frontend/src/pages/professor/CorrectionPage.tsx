@@ -5,11 +5,11 @@ import Md from '../../components/Md'
 import { getSessionsByExam, getSession } from '../../api/sessions'
 import { getExam, runAnswer, setManualScore, setComment, patchQuestion, acceptProposal, acceptAllProposals } from '../../api/exams'
 import type { Exam, Session, Answer, Question } from '../../types'
-import { descarrega } from '../../api/download'
 import { notaTotal, notaPerRa, puntsMaxims, sobreDeu } from '../../notes'
 import { useLlindarFocus } from '../../context/ConfiguracioContext'
 import RespostaCorreccio, { Referencia, isPendent } from '../../components/correccio/RespostaCorreccio'
 import type { AccionsCorreccio } from '../../components/correccio/RespostaCorreccio'
+import ExportarExamen from '../../components/ExportarExamen'
 
 type Tab = 'preguntes' | 'perPregunta' | 'alumnes'
 type FiltreAlumnes = 'tots' | 'pendents' | 'revisats' | 'noEntregats'
@@ -212,10 +212,8 @@ export default function CorrectionPage() {
             </Link>
           )}
           {examId && (
-            <button type="button" onClick={() => descarrega(`/export/exam/${examId}/csv`, `examen-${exam?.title ?? examId}.csv`)}
-              className="text-xs border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-50">
-              Descarregar CSV
-            </button>
+            <ExportarExamen examId={examId} titol={exam?.title ?? 'examen'}
+              teFitxers={!!exam?.questions?.some(q => q.tipus === 'FILE_UPLOAD')} />
           )}
           <div role="tablist" className="flex rounded-lg overflow-hidden border border-brand-200 text-sm">
             {tabs.map(t => (

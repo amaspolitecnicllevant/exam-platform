@@ -10,6 +10,7 @@ import MatriculesPage from './pages/admin/MatriculesPage'
 import AulesPage from './pages/admin/AulesPage'
 import ConfiguracioPage from './pages/admin/ConfiguracioPage'
 import AuditPage from './pages/admin/AuditPage'
+import EmmagatzematgePage from './pages/admin/EmmagatzematgePage'
 import ConvitsPage from './pages/professor/ConvitsPage'
 import AcceptarConvitPage from './pages/invitacio/AcceptarConvitPage'
 import ExamsPage from './pages/professor/ExamsPage'
@@ -58,6 +59,8 @@ export default function App() {
             <ProtectedRoute roles={['ADMIN']}><ConfiguracioPage /></ProtectedRoute>} />
           <Route path="/admin/audit" element={
             <ProtectedRoute roles={['ADMIN']}><AuditPage /></ProtectedRoute>} />
+          <Route path="/admin/emmagatzematge" element={
+            <ProtectedRoute roles={['ADMIN']}><EmmagatzematgePage /></ProtectedRoute>} />
           <Route path="/professor/exams" element={
             <ProtectedRoute roles={['PROFESSOR','ADMIN']}><ExamsPage /></ProtectedRoute>} />
           <Route path="/professor/exams/new" element={

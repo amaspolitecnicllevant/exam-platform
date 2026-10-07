@@ -47,6 +47,11 @@
 - A Configuració es veu l'estat de l'última còpia; si falla o fa més de 26 hores, tots els administradors veuen un avís a dalt de cada pàgina.
 - Scripts per fer una còpia ara, comprovar-ne una sense tocar res i restaurar (vegeu `infra/backup/`).
 
+### Espai ocupat pels exàmens
+- A *Espai ocupat* s'audita l'espai dels fitxers (adjunts a les preguntes i lliuraments dels alumnes) **per professor, departament, cicle, mòdul i examen**, amb recompte de fitxers i barra de proporció. Els exàmens sense mòdul surten a part.
+- Mostra l'espai lliure i total del disc del servidor i el compara amb el que registra la base de dades: avisa si hi ha fitxers orfes (més al disc que a la BD) o si en falten.
+- A *Configuració* hi ha l'interruptor **Permet als alumnes pujar fitxers**: desactivat, ningú no en pot pujar, però els ja pujats es conserven i es poden descarregar.
+
 ### Aules
 - Crear aules amb nom únic i rang d'adreces de xarxa en format **CIDR** (p.ex. `10.0.1.0/24`).
 - Editar i esborrar aules.
@@ -81,6 +86,13 @@
 - Cada canvi de resposta correcta o de bonus queda a l'auditoria amb el valor anterior i el nou ("resposta correcta: a → c") i el nombre de respostes re-corregides.
 - Assignar o editar el **RA (Resultat d'Aprenentatge)** i la **dificultat** (baixa/mitjana/alta) de cada pregunta, tant des del Markdown (`[ra:RA1] [dif:alta]`) com des de la previsualització de l'examen (edició inline per pregunta).
 - Veure un resum de distribució de preguntes per RA i per dificultat a la previsualització.
+- Preguntes de **lliurament de fitxer** (`[fitxer]` amb `[formats:docx,xlsx,pkt]`): l'alumne puja un document Word o Excel, una simulació de Packet Tracer, un PDF… (un fitxer per pregunta, màxim 10 MB, sense macros ni executables). Es corregeixen a mà: el professor descarrega el fitxer des de la correcció i hi posa la nota; mentre no la posi, la resposta és «pendent de revisar».
+
+#### Exportacions
+- El menú **Exportar** de cada examen ofereix: notes per alumne (CSV), notes per resultat d'aprenentatge (CSV), Excel amb notes, RA i respostes, informe de l'examen (`.md`) amb estadístiques per pregunta, **ZIP amb els fitxers lliurats** (un directori per alumne) i el CSV detallat d'una fila per resposta.
+- **Respostes per a una IA** (`.md`): anònimes per defecte (els alumnes surten com «Alumne 7F3A2C», un codi estable derivat de la sessió), amb les instruccions per a qui revisa i la resposta model. El fitxer de **claus** (CSV) a part lliga cada codi amb l'alumne real, per tornar a posar les notes. Només es pot incloure el nom i el correu si es demana explícitament.
+- Els CSV s'obren a Excel en català (`;`, coma decimal, UTF-8). Cap text d'alumne s'interpreta com a fórmula.
+- Cada exportació queda a l'auditoria (`EXAM_EXPORTED`), i les que porten noms hi consten com a tals.
 
 #### Correcció assistida
 - **Test (CHOICE)**: es corregeix automàticament en entregar, amb el factor de penalització de l'examen.
@@ -122,6 +134,7 @@
 - Afegir/treure alumnes d'un grup.
 - Assignar un mòdul a un grup (filtre de qui pot participar en exàmens d'aquell mòdul).
 - Assignar un examen publicat a un grup (crea sessions individuals per als alumnes elegibles).
+- Cerca i **filtres** per triar alumnes i grups: en assignar alumnes a un grup (nom o correu, cicle, mòdul i curs, amb «Marcar els visibles»), a la pestanya Alumnes (també per grup o «sense grup») i en triar el grup d'un examen (departament, cicle i mòdul). La llista d'exàmens es filtra per títol, estat, professor, cicle, mòdul, grup programat i dates. Un professor només veu les matrícules dels mòduls que imparteix.
 
 ### Links de convit (invitació d'alumnes)
 - Generar un **link de convit** per a un mòdul i curs acadèmic concret.
@@ -172,6 +185,7 @@
 - El **nom i email de l'alumne** es mostren a la capçalera de l'examen (mesura anti-suplantació).
 - Respondre preguntes de tipus: TEXT, SHORT, LONG, CHOICE (selecció múltiple), BASH_CMD, PS_CMD, BASH_SCRIPT, PS_SCRIPT.
 - Executar comandes/scripts directament des del navegador (tipus BASH/PS).
+- **Pujar un fitxer** a les preguntes de lliurament (Word, Excel, Packet Tracer…): es comprova el format i la mida, es pot substituir o esborrar fins a entregar l'examen, i es pot tornar a descarregar.
 - Les respostes es guarden automàticament amb un debounce de 500 ms.
 - Compte enrere visible en una barra fixa a dalt, amb l'estat del desament (pendent, desant, desat, error). Avisos quan queden 10 minuts i 1 minut. En arribar a 0, l'examen s'entrega automàticament.
 - Les preguntes es barregen de forma determinista per sessió (diferent ordre per a cada alumne, però consistent si es reprèn).
@@ -197,6 +211,7 @@
 Els següents esdeveniments queden registrats a la base de dades:
 - `EXAM_CREATED`, `EXAM_PUBLISHED`, `EXAM_CLOSED`, `EXAM_DELETED`
 - `EXAM_SUBMITTED` (per sessió d'alumne)
+- `EXAM_EXPORTED` (qualsevol exportació d'un examen)
 
 ---
 

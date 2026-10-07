@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Layout from '../../components/Layout'
 import { getAuditLogs, type AuditLogDto } from '../../api/audit'
 
-const ACTIONS = ['LOGIN', 'LOGOUT', 'EXAM_CREATE', 'EXAM_PUBLISH', 'SESSION_START', 'SESSION_SUBMIT', 'USER_CREATE', 'USER_DISABLE']
+const ACTIONS = ['LOGIN', 'LOGOUT', 'EXAM_CREATE', 'EXAM_PUBLISH', 'SESSION_START', 'SESSION_SUBMIT', 'USER_CREATE', 'USER_DISABLE', 'EXAM_EXPORTED', 'FILE_UPLOADED']
 
 export default function AuditPage() {
   const [logs, setLogs]         = useState<AuditLogDto[]>([])
