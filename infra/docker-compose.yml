@@ -37,6 +37,11 @@ services:
       SCRIPTS_HOST_PATH: /opt/exam-scripts
       FILES_HOST_PATH: /opt/exam-files
       JAVA_IMAGE: ${JAVA_IMAGE:-eclipse-temurin:21-jdk-alpine}
+      # Execució de codi dels alumnes (valors per defecte = els del backend). Només es passen aquests tres:
+      # EXEC_TIMEOUT, EXEC_CPUS, BASH_IMAGE i PS_IMAGE s'ignoren a propòsit (vegeu .env.example).
+      EXEC_MAX_CONCURRENT: ${EXEC_MAX_CONCURRENT:-4}
+      EXEC_QUEUE_WAIT: ${EXEC_QUEUE_WAIT:-30}
+      EXEC_MEMORY: ${EXEC_MEMORY:-128m}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       # Heap de la JVM proporcional al límit de memòria del contenidor
