@@ -1,7 +1,6 @@
 package com.examplatform.controller;
 
 import com.examplatform.domain.model.Exam;
-import com.examplatform.domain.model.ExamStatus;
 import com.examplatform.domain.model.User;
 import com.examplatform.domain.service.AuditLogService;
 import com.examplatform.domain.service.AudienciaExamenService;
@@ -44,15 +43,17 @@ public class AudienciaExamenController {
     public AlumneAccesDto.Llista afegeix(@PathVariable UUID examId, @RequestBody AfegeixRequest req,
                                          @AuthenticationPrincipal User user) {
         Exam exam = examGestionat(examId, user);
-        if (!exam.isRestringit()) {
-            throw new IllegalStateException("Aquest examen és per a tots els alumnes del mòdul: no cal afegir-hi ningú");
-        }
-        if (exam.getStatus() != ExamStatus.PUBLISHED) {
-            throw new IllegalStateException("L'examen ha d'estar actiu per afegir-hi alumnes");
-        }
-        int n = audiencia.assigna(exam, req.alumneIds());
+        int n = audiencia.afegeix(exam, req.alumneIds());
         auditLog.log(user.getId(), "EXAM_ALUMNES_AFEGITS", "examen " + examId + ": " + n + " alumne(s)");
         return audiencia.llista(exam);
+    }
+
+    /** Esborrany: torna a «tots els alumnes del mòdul» (treu els destinataris que encara no han començat). */
+    @DeleteMapping
+    public ResponseEntity<Void> tots(@PathVariable UUID examId, @AuthenticationPrincipal User user) {
+        audiencia.tots(examGestionat(examId, user));
+        auditLog.log(user.getId(), "EXAM_DESTINATARIS_TOTS", "examen " + examId);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{alumneId}")

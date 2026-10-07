@@ -101,9 +101,8 @@ class ExamServiceTest {
     }
 
     @Test
-    void publish_per_a_tots_no_restringeix_i_no_assigna_ningu() {
+    void publish_sense_destinataris_es_per_a_tots_i_no_assigna_ningu() {
         Exam exam = exam(ExamStatus.DRAFT, professor);
-        exam.setRestringit(true);   // d'una publicació anterior
         when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
         when(examRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -111,6 +110,43 @@ class ExamServiceTest {
 
         assertThat(exam.isRestringit()).isFalse();
         verifyNoInteractions(audiencia);
+    }
+
+    @Test
+    void publish_conserva_els_destinataris_triats_a_l_esborrany() {
+        Exam exam = exam(ExamStatus.DRAFT, professor);
+        exam.setRestringit(true);
+        when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
+        when(examRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(sessionRepository.existsByExamId(exam.getId())).thenReturn(true);
+
+        service.publish(exam.getId(), professor);
+
+        assertThat(exam.isRestringit()).isTrue();
+        assertThat(exam.getStatus()).isEqualTo(ExamStatus.PUBLISHED);
+    }
+
+    @Test
+    void publish_restringit_sense_cap_alumne_es_rebutja_perque_no_el_veuria_ningu() {
+        Exam exam = exam(ExamStatus.DRAFT, professor);
+        exam.setRestringit(true);
+        when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
+        when(sessionRepository.existsByExamId(exam.getId())).thenReturn(false);
+
+        assertThatThrownBy(() -> service.publish(exam.getId(), professor))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("cap de triat");
+        assertThat(exam.getStatus()).isEqualTo(ExamStatus.DRAFT);
+    }
+
+    @Test
+    void schedule_examen_amb_destinataris_concrets_es_rebutja() {
+        Exam exam = exam(ExamStatus.DRAFT, professor);
+        exam.setRestringit(true);
+        when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
+
+        assertThatThrownBy(() -> service.schedule(exam.getId(),
+                new com.examplatform.dto.ScheduleRequest(LocalDateTime.now().plusDays(1), UUID.randomUUID()), professor))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("destinataris");
     }
 
     @Test

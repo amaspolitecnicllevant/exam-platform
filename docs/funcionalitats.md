@@ -65,10 +65,12 @@
 - Crear un examen a partir d'un fitxer Markdown (`.md`) estructurat.
 - Llistar els propis exàmens, amb cerca per títol i filtres per estat i mòdul.
 - Editar el títol i, en esborrany, la durada (a Previsualitzar).
-- **Activar per a tots o per a alumnes concrets** (exàmens sense data programada): en «Activar» es tria «Tots els del mòdul» o una
-  llista d'alumnes (cerca per nom, o afegint un grup sencer). Un examen per a alumnes concrets només el veuen i el poden fer els
-  assignats; amb «Alumnes» se'n poden afegir més en qualsevol moment (p. ex. qui el fa un altre dia: el seu temps comença quan
-  l'obre) o treure els que encara no l'han obert. Els programats (grup + data) no canvien. Migració V35 (`exams.restringit`).
+- **Destinataris d'un examen** (exàmens sense data programada): a l'esborrany, «Destinataris» permet triar alumnes (cerca per nom, o
+  un grup sencer, p. ex. el d'una recuperació); en «Activar», només ells el veuran. Sense triar-ne cap, o amb «Tornar a Tots», és per
+  a tots els matriculats al mòdul. També es pot triar en el moment d'activar. Un examen per a alumnes concrets només el veuen i el
+  poden fer els assignats; un cop actiu, «Alumnes» permet afegir-ne més en qualsevol moment (p. ex. qui el fa un altre dia: el seu
+  temps comença quan l'obre) o treure els que encara no l'han obert. Els programats (grup + data) no canvien i no es poden combinar
+  amb destinataris concrets. Migració V35 (`exams.restringit`).
 - **Editor de contingut** (a Previsualitzar): mentre l'examen **no té cap sessió d'alumne**, es pot reescriure qualsevol pregunta
   (tipus, enunciat en Markdown, punts, opcions i resposta correcta, resposta model, criteri de sortida o script de test,
   conceptes clau, formats d'un lliurament, RA, dificultat, apunts), afegir-ne (a qualsevol posició), eliminar-ne i

@@ -125,8 +125,9 @@ public class ExamService {
     }
 
     /**
-     * Publica l'examen. Amb {@code alumneIds} null, per a tots els matriculats al mòdul; amb una llista,
-     * només per a aquests alumnes (se'ls crea la sessió i l'examen queda restringit; se'n poden afegir més després).
+     * Publica l'examen. Amb {@code alumneIds} amb llista, només per a aquests alumnes (se'ls crea la sessió i
+     * l'examen queda restringit; se'n poden afegir més després). Sense llista, per als destinataris que ja tingui
+     * triats a l'esborrany o, si no en té, per a tots els matriculats al mòdul.
      */
     @Transactional
     public ExamDto publish(UUID id, User requestingUser, java.util.Collection<UUID> alumneIds) {
@@ -144,10 +145,13 @@ public class ExamService {
             throw new IllegalStateException("No es pot publicar: la suma de punts és "
                     + total.stripTrailingZeros().toPlainString() + " i ha de ser exactament 10");
         }
-        if (alumneIds != null && exam.getScheduledAt() != null) {
+        if (alumneIds != null) exam.setRestringit(true);   // sense llista, es conserven els destinataris ja triats a l'esborrany
+        if (exam.isRestringit() && exam.getScheduledAt() != null) {
             throw new IllegalStateException("Un examen programat ja és per al grup triat: no es pot restringir a alumnes concrets");
         }
-        exam.setRestringit(alumneIds != null);
+        if (alumneIds == null && exam.isRestringit() && !sessionRepository.existsByExamId(id)) {
+            throw new IllegalStateException("L'examen és per a alumnes concrets però no n'hi ha cap de triat");
+        }
         exam.setStatus(ExamStatus.PUBLISHED);
         examRepository.save(exam);
         if (alumneIds != null) audiencia.assigna(exam, alumneIds);
@@ -227,6 +231,10 @@ public class ExamService {
         assertOwnership(exam, professor);
         if (exam.getStatus() != ExamStatus.DRAFT) {
             throw new IllegalStateException("Només es pot programar un examen en estat DRAFT");
+        }
+        if (exam.isRestringit()) {
+            throw new IllegalStateException("Aquest examen té alumnes concrets com a destinataris: no es pot programar per a un grup. "
+                    + "Torna'l a «Tots» als destinataris si vols programar-lo");
         }
         if (req.scheduledAt().isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("La data de programació ha de ser futura");

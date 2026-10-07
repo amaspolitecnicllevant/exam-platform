@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getMatricules } from '../api/matricules'
-import { afegeixAlumnesExamen, getAlumnesExamen, treuAlumneExamen, type AlumneAcces } from '../api/audiencia'
+import { afegeixAlumnesExamen, getAlumnesExamen, tornaATots, treuAlumneExamen, type AlumneAcces } from '../api/audiencia'
 import { publishExam } from '../api/exams'
 import type { Exam, Grup, Matricula } from '../types'
 import { candidatsDelModul, filtraCandidats, idsDelGrup } from '../utils/audiencia'
@@ -65,6 +65,14 @@ export default function AlumnesExamen({ exam, grups, mode, onClose, onFet }: Pro
     setAssignats(l.alumnes); setTriats(new Set()); onFet()
   })
 
+  const esEsborrany = exam.status === 'DRAFT'
+
+  const totsElsDelModul = () => executa(async () => {
+    if (!confirm('Tornar a «Tots els del mòdul»? Es treuen els alumnes triats que encara no han començat.')) return
+    await tornaATots(exam.id)
+    onFet(); onClose()
+  })
+
   const treu = (a: AlumneAcces) => executa(async () => {
     await treuAlumneExamen(exam.id, a.id)
     setAssignats(l => l.filter(x => x.id !== a.id)); onFet()
@@ -107,7 +115,9 @@ export default function AlumnesExamen({ exam, grups, mode, onClose, onFet }: Pro
           <h2 className="font-semibold">{mode === 'activar' ? `Activar «${exam.title}»` : `Alumnes de «${exam.title}»`}</h2>
           {mode === 'gestionar' && (
             <p className="text-xs text-gray-500 mt-0.5">
-              L'examen és només per a aquests alumnes. Pots afegir-ne més (p. ex. qui no l'ha fet): el seu temps comença quan l'obre.
+              {esEsborrany
+                ? 'Si hi tries alumnes (o un grup), quan activis l\'examen només el veuran ells. Si no en tries cap, serà per a tots els del mòdul.'
+                : 'L\'examen és només per a aquests alumnes. Pots afegir-ne més (p. ex. qui no l\'ha fet): el seu temps comença quan l\'obre.'}
             </p>
           )}
         </div>
@@ -154,6 +164,10 @@ export default function AlumnesExamen({ exam, grups, mode, onClose, onFet }: Pro
         </div>
 
         <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
+          {mode === 'gestionar' && esEsborrany && (exam.restringit || assignats.length > 0) && (
+            <button onClick={totsElsDelModul} disabled={enviant}
+              className="mr-auto text-sm text-brand-600 hover:underline disabled:opacity-50">Tornar a «Tots»</button>
+          )}
           <button onClick={onClose} className="border border-gray-300 rounded-lg px-4 py-2 text-sm">
             {mode === 'activar' ? 'Cancel·la' : 'Tanca'}
           </button>

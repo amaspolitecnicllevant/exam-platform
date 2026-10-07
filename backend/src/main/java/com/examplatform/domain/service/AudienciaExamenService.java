@@ -2,6 +2,7 @@ package com.examplatform.domain.service;
 
 import com.examplatform.domain.model.*;
 import com.examplatform.dto.AlumneAccesDto;
+import com.examplatform.infrastructure.persistence.ExamRepository;
 import com.examplatform.infrastructure.persistence.ExamSessionRepository;
 import com.examplatform.infrastructure.persistence.MatriculaRepository;
 import com.examplatform.infrastructure.persistence.UserRepository;
@@ -23,6 +24,7 @@ public class AudienciaExamenService {
     private final ExamSessionRepository sessionRepository;
     private final MatriculaRepository matriculaRepository;
     private final UserRepository userRepository;
+    private final ExamRepository examRepository;
 
     /**
      * Crea la sessió pendent dels alumnes que encara no en tenen i torna quants n'ha creat. Han de ser
@@ -55,6 +57,41 @@ public class AudienciaExamenService {
             creades++;
         }
         return creades;
+    }
+
+    /**
+     * Afegeix destinataris des de la gestió d'alumnes. En un esborrany, el primer que s'hi afegeix restringeix
+     * l'examen (quan s'activi, només el veuran ells); en un d'actiu, només si ja era restringit.
+     */
+    @Transactional
+    public int afegeix(Exam exam, Collection<UUID> alumneIds) {
+        if (exam.getStatus() == ExamStatus.DRAFT) {
+            if (exam.getScheduledAt() != null) {
+                throw new IllegalStateException("Aquest examen està programat per a un grup: anul·la la programació per triar-ne els alumnes");
+            }
+            if (!exam.isRestringit()) {
+                exam.setRestringit(true);
+                examRepository.save(exam);
+            }
+        } else if (exam.getStatus() != ExamStatus.PUBLISHED) {
+            throw new IllegalStateException("L'examen ja està tancat");
+        } else if (!exam.isRestringit()) {
+            throw new IllegalStateException("Aquest examen és per a tots els alumnes del mòdul: no cal afegir-hi ningú");
+        }
+        return assigna(exam, alumneIds);
+    }
+
+    /** Torna un esborrany a «tots els del mòdul»: treu els destinataris que encara no han obert l'examen. */
+    @Transactional
+    public void tots(Exam exam) {
+        if (exam.getStatus() != ExamStatus.DRAFT) {
+            throw new IllegalStateException("Només es pot tornar a «tots» un examen que encara no està actiu");
+        }
+        sessionRepository.findByExamId(exam.getId()).stream()
+                .filter(s -> s.getStartedAt() == null && s.getStatus() != SessionStatus.SUBMITTED)
+                .forEach(sessionRepository::delete);
+        exam.setRestringit(false);
+        examRepository.save(exam);
     }
 
     @Transactional(readOnly = true)

@@ -293,7 +293,7 @@ export default function ExamsPage() {
                         )}
                         {STATUS_LABELS[examVisualState(exam)]}
                       </span>
-                      {exam.restringit && exam.status === 'PUBLISHED' && (
+                      {exam.restringit && exam.status !== 'CLOSED' && (
                         <span className="text-xs bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full" title="Només els alumnes assignats hi poden entrar">
                           Alumnes concrets
                         </span>
@@ -362,7 +362,15 @@ export default function ExamsPage() {
                     )}
 
                     {exam.status === 'DRAFT' && (
-                      <button onClick={() => exam.scheduledAt ? publishExam(exam.id).then(refresh) : setAudiencia({ exam, mode: 'activar' })}
+                      <button onClick={() => {
+                          if (exam.scheduledAt) { publishExam(exam.id).then(refresh); return }
+                          // Amb destinataris ja triats a l'esborrany, s'activa directament per a ells
+                          if (exam.restringit) {
+                            if (confirm('Activar l\'examen només per als alumnes triats?')) publishExam(exam.id).then(refresh).catch(e => alert(e?.response?.data?.error || 'No s\'ha pogut activar'))
+                            return
+                          }
+                          setAudiencia({ exam, mode: 'activar' })
+                        }}
                         className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full bg-white/70 inline-block"></span>Activar
                       </button>
@@ -429,16 +437,16 @@ export default function ExamsPage() {
                       </>
                     )}
 
-                    {/* Alumnes d'un examen restringit (publicat): afegir-ne o treure'n */}
-                    {exam.status === 'PUBLISHED' && exam.restringit && (
+                    {/* Destinataris: a l'esborrany es trien abans d'activar; en un examen actiu restringit es poden ampliar */}
+                    {((exam.status === 'DRAFT' && !exam.scheduledAt) || (exam.status === 'PUBLISHED' && exam.restringit)) && (
                       <button onClick={() => setAudiencia({ exam, mode: 'gestionar' })}
                         className="text-xs bg-teal-600 text-white px-3 py-1 rounded hover:bg-teal-700">
-                        Alumnes
+                        {exam.status === 'DRAFT' ? 'Destinataris' : 'Alumnes'}
                       </button>
                     )}
 
                     {/* Assignar a grup (publicat) */}
-                    {exam.status === 'PUBLISHED' && (
+                    {exam.status === 'PUBLISHED' && !exam.restringit && (
                       <button onClick={() => { setFiltreGrups(filtreGrupsInicial(exam.modulId, grups, moduls)); setAssigning(exam) }}
                         className="text-xs bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700">
                         Assignar a grup

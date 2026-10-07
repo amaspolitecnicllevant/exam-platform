@@ -23,6 +23,8 @@ class AudienciaExamenServiceTest {
     ExamSessionRepository sessionRepository = mock(ExamSessionRepository.class);
     MatriculaRepository matriculaRepository = mock(MatriculaRepository.class);
     UserRepository userRepository = mock(UserRepository.class);
+    com.examplatform.infrastructure.persistence.ExamRepository examRepository =
+            mock(com.examplatform.infrastructure.persistence.ExamRepository.class);
     AudienciaExamenService service;
 
     Modul modul = Modul.builder().id(UUID.randomUUID()).nom("Sistemes").build();
@@ -35,7 +37,7 @@ class AudienciaExamenServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AudienciaExamenService(sessionRepository, matriculaRepository, userRepository);
+        service = new AudienciaExamenService(sessionRepository, matriculaRepository, userRepository, examRepository);
         when(userRepository.findAllById(any())).thenAnswer(inv -> {
             Iterable<UUID> ids = inv.getArgument(0);
             List<User> out = new java.util.ArrayList<>();
@@ -89,6 +91,65 @@ class AudienciaExamenServiceTest {
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Bernat")
                 .hasMessageNotContaining("Anna");
         verify(sessionRepository, never()).save(any());
+    }
+
+    @Test
+    void afegeix_a_un_esborrany_el_restringeix_i_assigna() {
+        Exam esborrany = Exam.builder().id(exam.getId()).modul(modul).status(ExamStatus.DRAFT).build();
+
+        int n = service.afegeix(esborrany, List.of(anna.getId()));
+
+        assertThat(n).isEqualTo(1);
+        assertThat(esborrany.isRestringit()).isTrue();
+        verify(examRepository).save(esborrany);
+    }
+
+    @Test
+    void afegeix_a_un_esborrany_programat_es_rebutja_i_no_assigna() {
+        Exam programat = Exam.builder().id(exam.getId()).modul(modul).status(ExamStatus.DRAFT)
+                .scheduledAt(LocalDateTime.now().plusDays(1)).build();
+
+        assertThatThrownBy(() -> service.afegeix(programat, List.of(anna.getId())))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("programat");
+        assertThat(programat.isRestringit()).isFalse();
+        verify(sessionRepository, never()).save(any());
+    }
+
+    @Test
+    void afegeix_a_un_examen_actiu_nomes_si_ja_es_restringit() {
+        Exam actiuPerATots = Exam.builder().id(exam.getId()).modul(modul).status(ExamStatus.PUBLISHED).build();
+        exam.setStatus(ExamStatus.PUBLISHED);
+        Exam tancat = Exam.builder().id(exam.getId()).modul(modul).status(ExamStatus.CLOSED).restringit(true).build();
+
+        assertThatThrownBy(() -> service.afegeix(actiuPerATots, List.of(anna.getId())))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("tots els alumnes");
+        assertThatThrownBy(() -> service.afegeix(tancat, List.of(anna.getId())))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("tancat");
+        assertThat(service.afegeix(exam, List.of(anna.getId()))).isEqualTo(1);   // actiu i restringit
+    }
+
+    @Test
+    void tots_treu_els_pendents_conserva_els_que_han_comencat_i_deixa_de_restringir() {
+        Exam esborrany = Exam.builder().id(exam.getId()).modul(modul).status(ExamStatus.DRAFT).restringit(true).build();
+        ExamSession pendent = ExamSession.builder().exam(esborrany).student(anna).build();
+        ExamSession començada = ExamSession.builder().exam(esborrany).student(bernat).startedAt(LocalDateTime.now()).build();
+        ExamSession entregada = ExamSession.builder().exam(esborrany).student(alumne("Carla")).startedAt(LocalDateTime.now())
+                .status(SessionStatus.SUBMITTED).build();
+        when(sessionRepository.findByExamId(exam.getId())).thenReturn(List.of(pendent, començada, entregada));
+
+        service.tots(esborrany);
+
+        verify(sessionRepository).delete(pendent);
+        verify(sessionRepository, never()).delete(començada);
+        verify(sessionRepository, never()).delete(entregada);
+        assertThat(esborrany.isRestringit()).isFalse();
+    }
+
+    @Test
+    void tots_nomes_en_un_esborrany() {
+        exam.setStatus(ExamStatus.PUBLISHED);
+        assertThatThrownBy(() -> service.tots(exam)).isInstanceOf(IllegalStateException.class);
+        assertThat(exam.isRestringit()).isTrue();
     }
 
     @Test
