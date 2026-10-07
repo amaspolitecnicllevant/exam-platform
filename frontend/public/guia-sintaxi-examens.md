@@ -442,6 +442,14 @@ La plataforma revisa tot el fitxer i, si troba un error, el rebutja indicant **l
 
 Els fitxers desats a Windows (salts de línia CRLF) o amb BOM s'accepten sense problemes. Les línies separadores (`---`, `***`) entre preguntes o seccions s'ignoren.
 
+### Després d'importar: imatges, canvis de text i destinataris
+
+El Markdown només serveix per **crear** l'examen. Un cop importat, no cal tornar-lo a pujar per fer canvis:
+
+- **Imatges:** el Markdown no admet imatges (una línia `![](…)` no mostraria res). S'hi afegeixen des de la plataforma: a **Previsualitzar → ✎ Editar** d'una pregunta, amb el botó «🖼 Afegir imatge» (PNG, JPG, GIF o WebP, màxim 5 MB).
+- **Canvis de text:** a **Previsualitzar** es pot editar qualsevol pregunta (enunciat, punts, opcions, resposta correcta, criteris de correcció…), afegir-ne, eliminar-ne i reordenar-les. Només és possible **mentre cap alumne no ha començat l'examen**; després, duplica l'examen per fer-ne una versió nova. Les regles són les mateixes d'aquesta guia, i la suma de punts ha de ser 10 per poder-lo activar.
+- **Destinataris:** a l'esborrany, el botó **Destinataris** permet que l'examen sigui només per a alumnes concrets o un grup (p. ex. una recuperació), i un cop actiu s'hi poden afegir més alumnes. Sense triar-ne, és per a tots els matriculats al mòdul.
+
 ---
 
 ## 9. Instruccions per a la IA que genera l'examen
@@ -459,4 +467,5 @@ Quan generis un examen seguint aquesta guia:
 - `bash-script` i `ps-script`: inclou `:::model` i un `:::test` robust que creï les seves dades a `/tmp` i comprovi el resultat de manera objectiva. Tria dades de prova amb què **una solució incorrecta però plausible falli** (p. ex. si es demana comptar recursivament, posa fitxers en subdirectoris perquè un `ls` sense recursió doni un altre resultat).
 - Tingues en compte l'entorn (§6.6): sense xarxa, només `/tmp` és escrivible, Linux (no Windows), 15 s per execució.
 - No usis `###` dins dels enunciats. Per a subtítols, usa negreta.
+- No incloguis imatges (`![](…)`): el format no les admet i no es mostrarien. Si una pregunta en necessita una, descriu-ne en el text què hauria de mostrar; el professor l'hi afegirà després des de la plataforma.
 - Escriu els enunciats en **català**, llevat que s'indiqui una altra llengua, i no hi incloguis la solució.
