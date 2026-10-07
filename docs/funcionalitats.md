@@ -2,6 +2,8 @@
 
 > Document viu. S'actualitza quan el producte canvia. Si hi ha contradiccions, s'indiquen al final de cada secció afectada.
 
+Guies d'ús per rol: [administrador](guia-administrador.md) · [professor](guia-professor.md) · [alumne](guia-alumne.md) (PDF a `docs/pdf/`).
+
 ---
 
 ## Rols del sistema
