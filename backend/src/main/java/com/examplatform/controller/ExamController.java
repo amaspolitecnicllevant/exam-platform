@@ -75,11 +75,17 @@ public class ExamController {
 
     @PostMapping("/{id}/publish")
     @PreAuthorize("hasAnyRole('PROFESSOR','ADMIN')")
-    public ExamDto publish(@PathVariable UUID id, @AuthenticationPrincipal User user) {
-        ExamDto result = examService.publish(id, user);
-        auditLog.log(user.getId(), "EXAM_PUBLISHED", id.toString());
+    public ExamDto publish(@PathVariable UUID id,
+                           @RequestBody(required = false) PublicaRequest req,
+                           @AuthenticationPrincipal User user) {
+        List<UUID> alumnes = req == null ? null : req.alumneIds();
+        ExamDto result = examService.publish(id, user, alumnes);
+        auditLog.log(user.getId(), "EXAM_PUBLISHED", id + (alumnes == null ? "" : " (només " + alumnes.size() + " alumne(s))"));
         return result;
     }
+
+    /** {@code alumneIds} null = per a tots els matriculats al mòdul; amb llista, només per a aquests alumnes. */
+    public record PublicaRequest(List<UUID> alumneIds) {}
 
     @PostMapping("/{id}/unpublish")
     @PreAuthorize("hasAnyRole('PROFESSOR','ADMIN')")

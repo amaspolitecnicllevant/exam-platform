@@ -6,6 +6,7 @@ import { getGrups, assignExamToGrup } from '../../api/grups'
 import { getModuls } from '../../api/moduls'
 import { getAules, assignAulaExamen, removeAulaExamen } from '../../api/aules'
 import FiltreGrups from '../../components/FiltreGrups'
+import AlumnesExamen from '../../components/AlumnesExamen'
 import {
   FILTRE_GRUPS_BUIT, filtraGrupsAssignacio, filtreGrupsInicial, type FiltreGrupsAssig,
 } from '../../utils/filtreGrupsAssignacio'
@@ -51,6 +52,8 @@ export default function ExamsPage() {
   const [moduls, setModuls]         = useState<Modul[]>([])
   const [aules, setAules]           = useState<Aula[]>([])
   const [assigning, setAssigning]   = useState<Exam | null>(null)
+  // activar per a tots o per a alumnes concrets, i gestionar-los després
+  const [audiencia, setAudiencia]   = useState<{ exam: Exam; mode: 'activar' | 'gestionar' } | null>(null)
   const [scheduling, setScheduling] = useState<Exam | null>(null)
   const [schedDate, setSchedDate]   = useState('')
   const [schedTime, setSchedTime]   = useState('')
@@ -290,6 +293,11 @@ export default function ExamsPage() {
                         )}
                         {STATUS_LABELS[examVisualState(exam)]}
                       </span>
+                      {exam.restringit && exam.status === 'PUBLISHED' && (
+                        <span className="text-xs bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full" title="Només els alumnes assignats hi poden entrar">
+                          Alumnes concrets
+                        </span>
+                      )}
                       {exam.scheduledAt && exam.status === 'DRAFT' && (
                         <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
                           {new Date(exam.scheduledAt).toLocaleString('ca-ES', {dateStyle:'short',timeStyle:'short'})} · {exam.scheduledGrupName}
@@ -354,7 +362,7 @@ export default function ExamsPage() {
                     )}
 
                     {exam.status === 'DRAFT' && (
-                      <button onClick={() => publishExam(exam.id).then(refresh)}
+                      <button onClick={() => exam.scheduledAt ? publishExam(exam.id).then(refresh) : setAudiencia({ exam, mode: 'activar' })}
                         className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full bg-white/70 inline-block"></span>Activar
                       </button>
@@ -419,6 +427,14 @@ export default function ExamsPage() {
                           </button>
                         )}
                       </>
+                    )}
+
+                    {/* Alumnes d'un examen restringit (publicat): afegir-ne o treure'n */}
+                    {exam.status === 'PUBLISHED' && exam.restringit && (
+                      <button onClick={() => setAudiencia({ exam, mode: 'gestionar' })}
+                        className="text-xs bg-teal-600 text-white px-3 py-1 rounded hover:bg-teal-700">
+                        Alumnes
+                      </button>
                     )}
 
                     {/* Assignar a grup (publicat) */}
@@ -580,6 +596,11 @@ export default function ExamsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {audiencia && (
+        <AlumnesExamen exam={audiencia.exam} grups={grups} mode={audiencia.mode}
+          onClose={() => setAudiencia(null)} onFet={refresh} />
       )}
 
       {/* Modal assignar a grup */}

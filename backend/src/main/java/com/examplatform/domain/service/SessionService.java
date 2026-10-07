@@ -84,6 +84,7 @@ public class SessionService {
                     }
                     assertFinestra(exam);
                     assertAulaPermesa(exam, clientIp);
+                    assertAssignatSiRestringit(exam);
                     assertMatriculaPermesa(exam, student);
                     assertGrupPermes(exam, student);
                     ExamSession session = ExamSession.builder()
@@ -130,6 +131,14 @@ public class SessionService {
         if (now.isAfter(end)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "El període d'accés ha tancat (finestra: " + accessWindowMinutes + " min des de les " + com.examplatform.util.HoraLocal.format(start, "HH:mm") + ").");
+        }
+    }
+
+    /** Un examen per a alumnes concrets només el poden fer els que tenen sessió assignada (aquí no n'hi ha). */
+    private static void assertAssignatSiRestringit(Exam exam) {
+        if (exam.isRestringit()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Aquest examen només és per a alumnes concrets i no hi estàs assignat");
         }
     }
 

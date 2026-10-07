@@ -37,6 +37,7 @@ class ExamServiceTest {
     @Mock QuestionFileRepository  questionFileRepository;
     @Mock com.examplatform.infrastructure.persistence.AnswerRepository answerRepository;
     @Mock com.examplatform.infrastructure.storage.FitxersRespostaStorage fitxersStorage;
+    @Mock AudienciaExamenService audiencia;
 
     ExamService service;
 
@@ -48,7 +49,7 @@ class ExamServiceTest {
     void setUp() {
         service = new ExamService(examRepository, examParser, grupRepository,
                 questionRepository, modulRepository, imparticioRepository, aulaRepository,
-                sessionRepository, questionFileRepository, answerRepository, fitxersStorage);
+                sessionRepository, questionFileRepository, answerRepository, fitxersStorage, audiencia);
         professor = user(Role.PROFESSOR);
         altreProf = user(Role.PROFESSOR);
         admin     = user(Role.ADMIN);
@@ -83,6 +84,56 @@ class ExamServiceTest {
         when(examRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         service.publish(exam.getId(), professor);
         assertThat(exam.getStatus()).isEqualTo(ExamStatus.PUBLISHED);
+    }
+
+    @Test
+    void publish_per_a_alumnes_concrets_restringeix_l_examen_i_els_assigna() {
+        Exam exam = exam(ExamStatus.DRAFT, professor);
+        when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
+        when(examRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        List<UUID> alumnes = List.of(UUID.randomUUID(), UUID.randomUUID());
+
+        service.publish(exam.getId(), professor, alumnes);
+
+        assertThat(exam.isRestringit()).isTrue();
+        assertThat(exam.getStatus()).isEqualTo(ExamStatus.PUBLISHED);
+        verify(audiencia).assigna(exam, alumnes);
+    }
+
+    @Test
+    void publish_per_a_tots_no_restringeix_i_no_assigna_ningu() {
+        Exam exam = exam(ExamStatus.DRAFT, professor);
+        exam.setRestringit(true);   // d'una publicació anterior
+        when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
+        when(examRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.publish(exam.getId(), professor);
+
+        assertThat(exam.isRestringit()).isFalse();
+        verifyNoInteractions(audiencia);
+    }
+
+    @Test
+    void publish_examen_programat_no_es_pot_restringir_a_alumnes() {
+        Exam exam = exam(ExamStatus.DRAFT, professor);
+        exam.setScheduledAt(LocalDateTime.now().plusDays(1));
+        when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
+
+        assertThatThrownBy(() -> service.publish(exam.getId(), professor, List.of(UUID.randomUUID())))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("programat");
+        assertThat(exam.getStatus()).isEqualTo(ExamStatus.DRAFT);
+    }
+
+    @Test
+    void publish_si_l_assignacio_falla_l_error_surt_perque_la_transaccio_es_desfaci() {
+        Exam exam = exam(ExamStatus.DRAFT, professor);
+        when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
+        when(examRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        List<UUID> alumnes = List.of(UUID.randomUUID());
+        when(audiencia.assigna(exam, alumnes)).thenThrow(new IllegalArgumentException("No estan matriculats"));
+
+        assertThatThrownBy(() -> service.publish(exam.getId(), professor, alumnes))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

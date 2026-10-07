@@ -70,6 +70,14 @@ public class Exam {
     @Builder.Default
     private boolean notesVisibles = false;
 
+    /**
+     * Si és cert, l'examen només és per als alumnes que hi tenen una sessió assignada (no per a tots els
+     * matriculats al mòdul): permet activar-lo per a alumnes concrets i afegir-ne més després.
+     */
+    @Column(name = "restringit", nullable = false)
+    @Builder.Default
+    private boolean restringit = false;
+
     /** Si és cert, l'alumne veu una sola pregunta per pantalla (navegació lliure). */
     @Column(name = "una_pregunta_per_pantalla", nullable = false)
     @Builder.Default

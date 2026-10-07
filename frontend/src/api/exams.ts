@@ -4,7 +4,9 @@ import type { Exam, ExecutionResult } from '../types'
 export const getMyExams   = () => client.get<Exam[]>('/exams/mine').then(r => r.data)
 export const getPublished = () => client.get<Exam[]>('/exams/published').then(r => r.data)
 export const getExam      = (id: string) => client.get<Exam>(`/exams/${id}`).then(r => r.data)
-export const publishExam   = (id: string) => client.post<Exam>(`/exams/${id}/publish`).then(r => r.data)
+/** Sense `alumneIds`, per a tots els matriculats al mòdul; amb llista, només per a aquests alumnes. */
+export const publishExam   = (id: string, alumneIds?: string[]) =>
+  client.post<Exam>(`/exams/${id}/publish`, alumneIds ? { alumneIds } : undefined).then(r => r.data)
 export const unpublishExam = (id: string) => client.post<Exam>(`/exams/${id}/unpublish`).then(r => r.data)
 export const closeExam     = (id: string) => client.post<Exam>(`/exams/${id}/close`).then(r => r.data)
 export const duplicateExam = (id: string) => client.post<Exam>(`/exams/${id}/duplicate`).then(r => r.data)

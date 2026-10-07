@@ -38,6 +38,7 @@ public class ExamService {
     private final QuestionFileRepository questionFileRepository;
     private final com.examplatform.infrastructure.persistence.AnswerRepository answerRepository;
     private final com.examplatform.infrastructure.storage.FitxersRespostaStorage fitxersStorage;
+    private final AudienciaExamenService audiencia;
 
     /** Durada màxima d'un examen en minuts (8 hores). */
     static final int DURADA_MAXIMA = 480;
@@ -120,6 +121,15 @@ public class ExamService {
 
     @Transactional
     public ExamDto publish(UUID id, User requestingUser) {
+        return publish(id, requestingUser, null);
+    }
+
+    /**
+     * Publica l'examen. Amb {@code alumneIds} null, per a tots els matriculats al mòdul; amb una llista,
+     * només per a aquests alumnes (se'ls crea la sessió i l'examen queda restringit; se'n poden afegir més després).
+     */
+    @Transactional
+    public ExamDto publish(UUID id, User requestingUser, java.util.Collection<UUID> alumneIds) {
         Exam exam = getEntity(id);
         assertOwnership(exam, requestingUser);
         if (exam.getStatus() != ExamStatus.DRAFT) {
@@ -134,8 +144,13 @@ public class ExamService {
             throw new IllegalStateException("No es pot publicar: la suma de punts és "
                     + total.stripTrailingZeros().toPlainString() + " i ha de ser exactament 10");
         }
+        if (alumneIds != null && exam.getScheduledAt() != null) {
+            throw new IllegalStateException("Un examen programat ja és per al grup triat: no es pot restringir a alumnes concrets");
+        }
+        exam.setRestringit(alumneIds != null);
         exam.setStatus(ExamStatus.PUBLISHED);
         examRepository.save(exam);
+        if (alumneIds != null) audiencia.assigna(exam, alumneIds);
 
         // Si l'examen té grup programat, crea les sessions pels alumnes que no en tenguin
         if (exam.getScheduledGrup() != null) {

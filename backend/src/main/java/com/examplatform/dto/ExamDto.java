@@ -27,6 +27,7 @@ public record ExamDto(
         String aulaCidr,
         boolean notesVisibles,
         boolean unaPreguntaPerPantalla,
+        boolean restringit,
         List<QuestionDto> questions
 ) {
     public static ExamDto from(Exam e, boolean includeAnswers) {
@@ -55,6 +56,7 @@ public record ExamDto(
                 e.getAula() != null ? e.getAula().getXarxaCidr() : null,
                 e.isNotesVisibles(),
                 e.isUnaPreguntaPerPantalla(),
+                e.isRestringit(),
                 qs);
     }
 }

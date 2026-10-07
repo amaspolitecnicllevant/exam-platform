@@ -28,7 +28,7 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
             LEFT JOIN ExamSession s ON s.exam = e AND s.student.id = :alumneId
             WHERE e.status = 'PUBLISHED'
               AND (
-                (e.scheduledAt IS NULL AND mt.id IS NOT NULL)
+                (e.scheduledAt IS NULL AND e.restringit = false AND mt.id IS NOT NULL)
                 OR s.id IS NOT NULL
               )
             """)

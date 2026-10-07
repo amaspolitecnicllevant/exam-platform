@@ -126,6 +126,34 @@ class SessionServiceTest {
     }
 
     @Test
+    void startOrResume_examen_restringit_sense_sessio_assignada_es_rebutja() {
+        Exam exam = exam(ExamStatus.PUBLISHED);
+        exam.setRestringit(true);
+        when(sessionRepository.findByExamIdAndStudentId(exam.getId(), student.getId())).thenReturn(Optional.empty());
+        when(examService.getEntity(exam.getId())).thenReturn(exam);
+
+        assertThatThrownBy(() -> service.startOrResume(exam.getId(), student, "127.0.0.1"))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("alumnes concrets");
+        verify(sessionRepository, never()).save(any());
+    }
+
+    @Test
+    void startOrResume_examen_restringit_amb_sessio_assignada_hi_entra_i_el_rellotge_comença_ara() {
+        Exam exam = exam(ExamStatus.PUBLISHED);
+        exam.setRestringit(true);
+        ExamSession assignada = ExamSession.builder().id(UUID.randomUUID()).exam(exam).student(student).build();
+        when(sessionRepository.findByExamIdAndStudentId(exam.getId(), student.getId())).thenReturn(Optional.of(assignada));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(answerRepository.findBySessionId(any())).thenReturn(List.of());
+
+        service.startOrResume(exam.getId(), student, "127.0.0.1");
+
+        assertThat(assignada.getStartedAt()).isNotNull()
+                .isCloseTo(LocalDateTime.now(), org.assertj.core.api.Assertions.within(5, java.time.temporal.ChronoUnit.SECONDS));
+    }
+
+    @Test
     void startOrResume_examenNoDraft_llanca_excepcio() {
         Exam exam = exam(ExamStatus.DRAFT);
         when(sessionRepository.findByExamIdAndStudentId(exam.getId(), student.getId()))

@@ -148,6 +148,8 @@ export interface Exam {
   notesVisibles: boolean
   /** L'alumne veu una sola pregunta per pantalla */
   unaPreguntaPerPantalla: boolean
+  /** Només per als alumnes que hi tenen accés assignat (no per a tots els del mòdul) */
+  restringit: boolean
   questions: Question[]
 }
 
