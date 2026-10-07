@@ -65,6 +65,14 @@
 - Crear un examen a partir d'un fitxer Markdown (`.md`) estructurat.
 - Llistar els propis exàmens, amb cerca per títol i filtres per estat i mòdul.
 - Editar el títol i, en esborrany, la durada (a Previsualitzar).
+- **Editor de contingut** (a Previsualitzar): mentre l'examen **no té cap sessió d'alumne**, es pot reescriure qualsevol pregunta
+  (tipus, enunciat en Markdown, punts, opcions i resposta correcta, resposta model, criteri de sortida o script de test,
+  conceptes clau, formats d'un lliurament, RA, dificultat, apunts), afegir-ne (a qualsevol posició), eliminar-ne i
+  reordenar-les. Cada pregunta passa pel mateix parser que la importació, així que les regles són les mateixes.
+  Amb sessions, l'examen queda bloquejat (es pot duplicar per fer-ne una versió nova). No es pot publicar si els punts no sumen 10.
+- **Imatges a l'enunciat**: botó «Afegir imatge» (PNG, JPG, GIF o WebP, màxim 5 MB; es comprova la signatura del fitxer; no
+  s'accepta SVG). S'inclouen a l'enunciat com `![text](fitxer:<id>)`, es mostren a l'alumne, a la correcció i als resultats,
+  i es copien en duplicar l'examen. Les imatges externes (URL) no es mostren.
 - **Duplicar** un examen: crea un esborrany "Còpia de …" amb les mateixes preguntes, configuració i fitxers de dades (sense la programació, les notes visibles ni els bonus).
 - Previsualitzar un examen.
 - **Publicar** un examen (DRAFT → PUBLISHED): l'examen es fa visible als alumnes.

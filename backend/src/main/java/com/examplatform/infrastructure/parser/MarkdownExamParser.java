@@ -61,6 +61,19 @@ public class MarkdownExamParser implements ExamParser {
         return exam;
     }
 
+    @Override
+    public Question parseQuestion(String mdPregunta) {
+        Exam provisional = Exam.builder().questions(new ArrayList<>()).build();
+        parseQuestions(normalitza(mdPregunta).lines().toList(), 1, provisional);
+        if (provisional.getQuestions().size() != 1) {
+            throw new IllegalArgumentException("El text ha de definir exactament una pregunta; "
+                    + "no hi pot haver línies que comencin per '## ' o '### ' a l'enunciat");
+        }
+        Question q = provisional.getQuestions().get(0);
+        q.setExam(null);
+        return q;
+    }
+
     /** Treu el BOM i converteix els salts de línia de Windows (CRLF) i Mac antic (CR) a LF. */
     private static String normalitza(String md) {
         String s = md.startsWith("﻿") ? md.substring(1) : md;

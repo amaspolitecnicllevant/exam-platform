@@ -24,6 +24,7 @@ public interface ExamSessionRepository extends JpaRepository<ExamSession, UUID> 
     List<UUID> findStudentIdsByExamId(@Param("examId") UUID examId);
 
     boolean existsByStudentId(UUID studentId);
+    boolean existsByExamId(UUID examId);
 
     @Query(value = """
             SELECT s.* FROM exam_sessions s

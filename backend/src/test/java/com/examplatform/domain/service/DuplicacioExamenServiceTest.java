@@ -60,6 +60,11 @@ class DuplicacioExamenServiceTest {
         origen.getQuestions().addAll(List.of(q1, q2));
 
         lenient().when(questionFileRepository.findByQuestionId(any())).thenReturn(List.of());
+        lenient().when(questionFileRepository.save(any())).thenAnswer(inv -> {
+            QuestionFile f = inv.getArgument(0);
+            f.setId(UUID.randomUUID());
+            return f;
+        });
         lenient().when(examService.getEntity(origen.getId())).thenReturn(origen);
         // save persisteix: assigna ids a l'examen i a les preguntes, com Hibernate
         lenient().when(examRepository.save(any())).thenAnswer(inv -> {
@@ -153,6 +158,28 @@ class DuplicacioExamenServiceTest {
         assertThat(qf.getValue().getStoredPath()).isEqualTo(esperat.toString());
         assertThat(qf.getValue().getFilename()).isEqualTo("dades.txt");
         assertThat(qf.getValue().getFileSize()).isEqualTo(5);
+    }
+
+    @Test
+    void les_imatges_de_l_enunciat_apunten_als_fitxers_copiats_i_no_als_de_l_original() throws Exception {
+        Path dirOrigen = Files.createDirectories(files.resolve("questions").resolve(q2.getId().toString()));
+        Path font = Files.write(dirOrigen.resolve("img.png"), new byte[]{1, 2, 3});
+        UUID idImatge = UUID.randomUUID();
+        UUID idAltre = UUID.randomUUID();   // referència a un fitxer que no es copia: es deixa tal qual
+        q2.setEnunciat("Mira ![esquema](fitxer:" + idImatge + ") i ![x](fitxer:" + idAltre + ")");
+        when(questionFileRepository.findByQuestionId(q2.getId())).thenReturn(List.of(QuestionFile.builder()
+                .id(idImatge).question(q2).filename("img.png").storedPath(font.toString())
+                .contentType("image/png").fileSize(3).build()));
+
+        service.duplica(origen.getId(), creador);
+
+        ArgumentCaptor<QuestionFile> qf = ArgumentCaptor.forClass(QuestionFile.class);
+        verify(questionFileRepository).save(qf.capture());
+        UUID idNou = qf.getValue().getId();
+        assertThat(idNou).isNotEqualTo(idImatge);
+        assertThat(copiaDesada().getQuestions().get(1).getEnunciat())
+                .isEqualTo("Mira ![esquema](fitxer:" + idNou + ") i ![x](fitxer:" + idAltre + ")");
+        assertThat(q2.getEnunciat()).contains(idImatge.toString());   // l'original no es toca
     }
 
     @Test

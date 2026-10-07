@@ -6,6 +6,9 @@ import { getExam, updateExamSettings, patchQuestion } from '../../api/exams'
 import { uploadQuestionFile, deleteQuestionFile, downloadQuestionFile } from '../../api/questionFiles'
 import type { Exam, Question, QuestionFile, QuestionType } from '../../types'
 import { llistaFormats } from '../../utils/fitxers'
+import EditorPregunta from '../../components/EditorPregunta'
+import { getEstatEdicio, eliminaPregunta, mouPregunta, type EstatEdicio } from '../../api/editor'
+import { idsReferenciats } from '../../utils/imatges'
 
 const DIF_COLORS: Record<string, string> = {
   baixa:   'bg-green-100 text-green-700',
@@ -43,9 +46,15 @@ export default function ExamPreviewPage() {
   const [questionFiles, setQuestionFiles] = useState<Record<string, QuestionFile[]>>({})
   const [uploadingFor, setUploadingFor] = useState<string | null>(null)
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  // editor de contingut: només mentre l'examen no té sessions d'alumnes
+  const [estatEdicio, setEstatEdicio] = useState<EstatEdicio | null>(null)
+  const [editor, setEditor] = useState<{ pregunta?: Question; posicio?: number } | null>(null)
+  const [errorEditor, setErrorEditor] = useState('')
 
-  useEffect(() => {
-    if (examId) getExam(examId).then(e => {
+  const carrega = () => {
+    if (!examId) return Promise.resolve()
+    getEstatEdicio(examId).then(setEstatEdicio).catch(() => setEstatEdicio(null))
+    return getExam(examId).then(e => {
       setExam(e)
       setPenalValue(e.penalitzacioChoice)
       // Inicialitzem fitxers des del DTO
@@ -53,7 +62,36 @@ export default function ExamPreviewPage() {
       e.questions.forEach(q => { fMap[q.id] = q.files ?? [] })
       setQuestionFiles(fMap)
     })
-  }, [examId])
+  }
+
+  useEffect(() => { carrega() }, [examId])   // eslint-disable-line react-hooks/exhaustive-deps
+
+  const potEditar = estatEdicio?.editable === true
+
+  const elimina = async (q: Question) => {
+    if (!examId || !confirm(`Eliminar ${q.tipus === 'SECTION' ? 'la secció' : 'la pregunta ' + q.ordre}? No es pot desfer.`)) return
+    setErrorEditor('')
+    try { await eliminaPregunta(examId, q.id); await carrega() }
+    catch (e: any) { setErrorEditor(e?.response?.data?.error || 'No s\'ha pogut eliminar') }
+  }
+
+  const mou = async (q: Question, posicio: number) => {
+    if (!examId) return
+    setErrorEditor('')
+    try { await mouPregunta(examId, q.id, posicio); await carrega() }
+    catch (e: any) { setErrorEditor(e?.response?.data?.error || 'No s\'ha pogut moure') }
+  }
+
+  /** Botons d'edició d'una pregunta o secció (només si l'examen és editable). */
+  const controls = (q: Question) => !potEditar || !exam ? null : (
+    <div className="flex items-center gap-1 text-xs flex-shrink-0">
+      <button onClick={() => setEditor({ pregunta: q })} className="px-2 py-0.5 rounded border border-gray-300 hover:bg-gray-50" title="Editar">✎ Editar</button>
+      <button onClick={() => mou(q, q.ordre - 1)} disabled={q.ordre <= 1} className="px-1.5 py-0.5 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-30" title="Pujar">↑</button>
+      <button onClick={() => mou(q, q.ordre + 1)} disabled={q.ordre >= exam.questions.length} className="px-1.5 py-0.5 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-30" title="Baixar">↓</button>
+      <button onClick={() => setEditor({ posicio: q.ordre + 1 })} className="px-2 py-0.5 rounded border border-gray-300 hover:bg-gray-50" title="Afegir una pregunta a continuació">＋ sota</button>
+      <button onClick={() => elimina(q)} className="px-1.5 py-0.5 rounded border border-red-200 text-red-600 hover:bg-red-50" title="Eliminar">🗑</button>
+    </div>
+  )
 
   const savePenal = async () => {
     if (!examId) return
@@ -277,6 +315,31 @@ export default function ExamPreviewPage() {
           {exam.instruccions && <p className="text-white/80 text-sm mt-2 whitespace-pre-wrap">{exam.instruccions}</p>}
         </div>
 
+        {/* Edició del contingut */}
+        {(() => {
+          const total = exam.questions.filter(q => q.tipus !== 'SECTION').reduce((s, q) => s + Number(q.punts), 0)
+          const quadra = Math.abs(total - 10) < 0.005
+          return (
+            <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm space-y-2">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className={`font-medium ${quadra ? 'text-gray-700' : 'text-red-600'}`}>
+                  Total: {Math.round(total * 100) / 100} / 10 punts
+                </span>
+                {!quadra && <span className="text-xs text-red-600">L'examen no es pot publicar fins que sumi exactament 10.</span>}
+                {potEditar && (
+                  <button onClick={() => setEditor({})} className="ml-auto bg-brand-600 text-white px-3 py-1 rounded text-xs hover:bg-brand-700">
+                    + Afegir pregunta
+                  </button>
+                )}
+              </div>
+              {estatEdicio && !estatEdicio.editable && (
+                <p className="text-xs text-gray-500">🔒 {estatEdicio.motiu}</p>
+              )}
+              {errorEditor && <p role="alert" className="text-xs text-red-600">{errorEditor}</p>}
+            </div>
+          )
+        })()}
+
         {/* Resum RA / dificultat */}
         {(() => {
           const real = exam.questions.filter(q => q.tipus !== 'SECTION')
@@ -328,6 +391,7 @@ export default function ExamPreviewPage() {
                   <span className="text-brand-700 font-semibold text-sm px-2">{q.enunciat}</span>
                   <div className="flex-1 h-px bg-brand-200" />
                 </div>
+                {potEditar && <div className="flex justify-center">{controls(q)}</div>}
                 {(() => {
                   const preguntes = preguntesDeSeccio(q.id)
                   if (preguntes.length === 0) return null
@@ -348,7 +412,9 @@ export default function ExamPreviewPage() {
           const isScript = SCRIPT_TYPES.includes(q.tipus)
           const isML     = MULTILINE_TYPES.includes(q.tipus)
           const isHtml   = q.tipus === 'HTML_CSS'
-          const files    = questionFiles[q.id] ?? []
+          // Les imatges que l'enunciat ja mostra no són «arxius de dades»
+          const mostrades = idsReferenciats(q.enunciat)
+          const files    = (questionFiles[q.id] ?? []).filter(f => !mostrades.has(f.id))
           const editing  = editingRa[q.id]
 
           return (
@@ -401,6 +467,7 @@ export default function ExamPreviewPage() {
                     </button>
                   )}
                 </div>
+                {controls(q)}
               </div>
 
               <Md className="text-gray-800">{q.enunciat}</Md>
@@ -488,7 +555,7 @@ export default function ExamPreviewPage() {
                     <strong>Lliurament de fitxer.</strong> L'alumne hi puja un fitxer{' '}
                     {llistaFormats(q.formatsPermesos ?? [])} (màxim 10 MB). Es corregeix a mà.
                   </p>
-                  <p className="text-gray-400">Per canviar els formats, edita l'etiqueta <code>[formats:…]</code> del Markdown.</p>
+                  <p className="text-gray-400">Els formats es canvien amb ✎ Editar.</p>
                 </div>
               ) : (isScript || isHtml) ? (
                 <textarea
@@ -527,6 +594,17 @@ export default function ExamPreviewPage() {
 
         <div className="pb-8 text-center text-xs text-gray-400">— Fi de la previsualització —</div>
       </div>
+      {editor && examId && (
+        <EditorPregunta
+          key={editor.pregunta?.id ?? `nova-${editor.posicio ?? 'final'}`}
+          examId={examId}
+          pregunta={editor.pregunta}
+          posicio={editor.posicio}
+          fitxers={editor.pregunta ? questionFiles[editor.pregunta.id] : undefined}
+          onClose={() => setEditor(null)}
+          onDesat={() => { carrega() }}
+        />
+      )}
     </Layout>
   )
 }

@@ -68,6 +68,24 @@ class ExamServiceTest {
     }
 
     @Test
+    void publish_amb_punts_que_no_sumen_10_es_rebutja_i_les_seccions_no_compten() {
+        Exam exam = exam(ExamStatus.DRAFT, professor);
+        exam.getQuestions().get(0).setPunts(new BigDecimal("7.5"));
+        exam.getQuestions().add(pregunta(exam, 2, QuestionType.SECTION, "0"));
+        when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
+
+        assertThatThrownBy(() -> service.publish(exam.getId(), professor))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("7.5").hasMessageContaining("10");
+        assertThat(exam.getStatus()).isEqualTo(ExamStatus.DRAFT);
+
+        exam.getQuestions().add(pregunta(exam, 3, QuestionType.SHORT, "2.5"));
+        when(examRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        service.publish(exam.getId(), professor);
+        assertThat(exam.getStatus()).isEqualTo(ExamStatus.PUBLISHED);
+    }
+
+    @Test
     void publish_noEsDraft_llanca_excepcio() {
         Exam exam = exam(ExamStatus.PUBLISHED, professor);
         when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
@@ -841,7 +859,13 @@ class ExamServiceTest {
         Exam e = Exam.builder().id(UUID.randomUUID()).title("Examen test")
                 .durada(60).status(status).createdBy(owner)
                 .penalitzacioChoice(BigDecimal.ZERO).build();
+        e.getQuestions().add(pregunta(e, 1, QuestionType.SHORT, "10"));
         return e;
+    }
+
+    private static Question pregunta(Exam e, int ordre, QuestionType tipus, String punts) {
+        return Question.builder().id(UUID.randomUUID()).exam(e).ordre(ordre).tipus(tipus)
+                .enunciat("P" + ordre).punts(new BigDecimal(punts)).build();
     }
 
     private Aula aula(String nom, String cidr) {

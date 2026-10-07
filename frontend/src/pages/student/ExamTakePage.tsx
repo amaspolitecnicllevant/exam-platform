@@ -1,3 +1,4 @@
+import { idsReferenciats } from '../../utils/imatges'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Editor from '@monaco-editor/react'
@@ -325,7 +326,10 @@ export default function ExamTakePage() {
     const isHtml   = q.tipus === 'HTML_CSS'
     const output   = outputs[q.id]
     const lang     = LANG_MAP[q.tipus] ?? 'plaintext'
-    const hasFiles = (q.files?.length ?? 0) > 0
+    // Les imatges que l'enunciat ja mostra no es llisten com a fitxers adjunts
+    const mostrades = idsReferenciats(q.enunciat)
+    const fitxersAdjunts = (q.files ?? []).filter(f => !mostrades.has(f.id))
+    const hasFiles = fitxersAdjunts.length > 0
 
     return (
       <div key={q.id} className="bg-white border rounded-xl p-6 space-y-3">
@@ -344,7 +348,7 @@ export default function ExamTakePage() {
         {hasFiles && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex flex-wrap gap-2 items-center">
             <span className="text-xs text-amber-700 font-medium">Arxius disponibles a <code className="bg-amber-100 px-1 rounded">/data/files/</code>:</span>
-            {q.files!.map(f => (
+            {fitxersAdjunts.map(f => (
               <button key={f.id} type="button"
                 onClick={() => downloadQuestionFile(f.id, f.filename)}
                 className="text-xs text-blue-600 hover:underline flex items-center gap-1 bg-white border border-blue-200 rounded px-2 py-0.5">

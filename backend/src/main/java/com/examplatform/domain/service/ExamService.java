@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.math.BigDecimal;
 import java.util.stream.Collectors;
 
 @Service
@@ -123,6 +124,15 @@ public class ExamService {
         assertOwnership(exam, requestingUser);
         if (exam.getStatus() != ExamStatus.DRAFT) {
             throw new IllegalStateException("Només es pot publicar un examen en estat DRAFT");
+        }
+        // Com a la importació: un examen es puntua sobre 10 (l'editor permet canviar els punts de cada pregunta)
+        BigDecimal total = exam.getQuestions().stream()
+                .filter(q -> q.getTipus() != QuestionType.SECTION)
+                .map(Question::getPunts)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (total.compareTo(BigDecimal.TEN) != 0) {
+            throw new IllegalStateException("No es pot publicar: la suma de punts és "
+                    + total.stripTrailingZeros().toPlainString() + " i ha de ser exactament 10");
         }
         exam.setStatus(ExamStatus.PUBLISHED);
         examRepository.save(exam);

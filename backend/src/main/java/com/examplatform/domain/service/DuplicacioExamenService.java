@@ -17,7 +17,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -79,9 +81,15 @@ public class DuplicacioExamenService {
 
         // Fitxers de dades: cada pregunta nova té la seva carpeta (el sandbox munta la de la pregunta)
         List<Path> copiats = new ArrayList<>();
+        Map<UUID, UUID> idsCopiats = new HashMap<>();
         try {
             for (int i = 0; i < origen.getQuestions().size(); i++) {
-                copiaFitxers(origen.getQuestions().get(i), desat.getQuestions().get(i), copiats);
+                copiaFitxers(origen.getQuestions().get(i), desat.getQuestions().get(i), copiats, idsCopiats);
+            }
+            // Les imatges de l'enunciat (![](fitxer:id)) han d'apuntar als fitxers copiats, no als de l'original
+            for (Question q : desat.getQuestions()) {
+                String text = ReferenciesImatge.remapeja(q.getEnunciat(), idsCopiats);
+                if (!text.equals(q.getEnunciat())) q.setEnunciat(text);
             }
         } catch (RuntimeException e) {
             // La transacció es desfà: esborrem els fitxers ja copiats perquè no quedin orfes
@@ -91,7 +99,7 @@ public class DuplicacioExamenService {
         return ExamDto.from(desat, true);
     }
 
-    private void copiaFitxers(Question origen, Question desti, List<Path> copiats) {
+    private void copiaFitxers(Question origen, Question desti, List<Path> copiats, Map<UUID, UUID> idsCopiats) {
         List<QuestionFile> fitxers = questionFileRepository.findByQuestionId(origen.getId());
         if (fitxers.isEmpty()) return;
         Path dir = Path.of(filesHostPath, "questions", desti.getId().toString());
@@ -106,13 +114,14 @@ public class DuplicacioExamenService {
                 Path nou = dir.resolve(font.getFileName().toString());
                 Files.copy(font, nou);
                 copiats.add(nou);
-                questionFileRepository.save(QuestionFile.builder()
+                QuestionFile desat = questionFileRepository.save(QuestionFile.builder()
                         .question(desti)
                         .filename(f.getFilename())
                         .storedPath(nou.toString())
                         .contentType(f.getContentType())
                         .fileSize(f.getFileSize())
                         .build());
+                idsCopiats.put(f.getId(), desat.getId());
             }
         } catch (IOException e) {
             throw new IllegalStateException("No s'han pogut copiar els fitxers de dades de la pregunta " + origen.getOrdre(), e);
