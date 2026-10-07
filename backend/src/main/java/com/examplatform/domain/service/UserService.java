@@ -84,4 +84,23 @@ public class UserService {
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
     }
+
+    /**
+     * Canvi de contrasenya pel mateix usuari: exigeix l'actual. Els comptes de Google (sense
+     * contrasenya local) no en poden canviar.
+     */
+    @Transactional
+    public void canviaContrasenya(UUID userId, String actual, String nova) {
+        User user = getEntityById(userId);
+        if (user.getPasswordHash() == null)
+            throw new IllegalArgumentException("Aquest compte entra amb Google i no té contrasenya pròpia");
+        if (actual == null || !passwordEncoder.matches(actual, user.getPasswordHash()))
+            throw new IllegalArgumentException("La contrasenya actual no és correcta");
+        if (nova == null || nova.length() < 8 || nova.length() > 72)
+            throw new IllegalArgumentException("La contrasenya nova ha de tenir entre 8 i 72 caràcters");
+        if (nova.equals(actual))
+            throw new IllegalArgumentException("La contrasenya nova ha de ser diferent de l'actual");
+        user.setPasswordHash(passwordEncoder.encode(nova));
+        userRepository.save(user);
+    }
 }

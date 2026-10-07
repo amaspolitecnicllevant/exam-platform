@@ -23,6 +23,7 @@ public class UserController {
     private final UserService userService;
     private final com.examplatform.domain.service.ImportacioUsuarisService importacioService;
     private final AuditLogService auditLog;
+    private final com.examplatform.config.LoginRateLimiter rateLimiter;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','PROFESSOR')")
@@ -51,6 +52,26 @@ public class UserController {
                                        @AuthenticationPrincipal com.examplatform.domain.model.User caller) {
         userService.delete(id, caller);
         auditLog.log(caller.getId(), "USER_DELETED", id.toString());
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Qualsevol usuari autenticat canvia la seva pròpia contrasenya (cal l'actual). */
+    @PostMapping("/me/password")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> canviaLaMevaContrasenya(
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal com.examplatform.domain.model.User caller,
+            jakarta.servlet.http.HttpServletRequest request) {
+        String ip = com.examplatform.util.IpUtil.clientIp(request);
+        rateLimiter.assertPermes(ip, caller.getEmail());
+        try {
+            userService.canviaContrasenya(caller.getId(), body.get("actual"), body.get("nova"));
+        } catch (IllegalArgumentException e) {
+            // Només l'error de l'actual compta com a intent fallit: evita provar contrasenyes amb un token robat
+            if (e.getMessage().contains("actual no és correcta")) rateLimiter.registraFallada(ip, caller.getEmail());
+            throw e;
+        }
+        auditLog.log(caller.getId(), "PASSWORD_CHANGED", caller.getId().toString());
         return ResponseEntity.noContent().build();
     }
 

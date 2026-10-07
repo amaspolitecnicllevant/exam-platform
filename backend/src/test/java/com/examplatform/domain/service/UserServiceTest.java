@@ -165,4 +165,64 @@ class UserServiceTest {
 
         assertThat(dto.role()).isEqualTo(Role.STUDENT);
     }
+
+    // ── canviaContrasenya ─────────────────────────────────────────────────────
+
+    private User ambContrasenya() {
+        User u = alumne();
+        u.setPasswordHash("hash-vell");
+        return u;
+    }
+
+    @Test
+    void canviaContrasenya_desa_el_hash_nou_si_l_actual_es_correcta() {
+        User u = ambContrasenya();
+        org.mockito.Mockito.when(passwordEncoder.matches("vella-1234", "hash-vell")).thenReturn(true);
+        org.mockito.Mockito.when(passwordEncoder.encode("nova-12345")).thenReturn("hash-nou");
+
+        service.canviaContrasenya(u.getId(), "vella-1234", "nova-12345");
+
+        org.assertj.core.api.Assertions.assertThat(u.getPasswordHash()).isEqualTo("hash-nou");
+        org.mockito.Mockito.verify(userRepository).save(u);
+    }
+
+    @Test
+    void canviaContrasenya_rebutja_l_actual_incorrecta_sense_canviar_res() {
+        User u = ambContrasenya();
+        org.mockito.Mockito.when(passwordEncoder.matches("mala", "hash-vell")).thenReturn(false);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.canviaContrasenya(u.getId(), "mala", "nova-12345"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("actual no és correcta");
+        org.assertj.core.api.Assertions.assertThat(u.getPasswordHash()).isEqualTo("hash-vell");
+        org.mockito.Mockito.verify(userRepository, org.mockito.Mockito.never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void canviaContrasenya_rebutja_nova_massa_curta_o_massa_llarga() {
+        User u = ambContrasenya();
+        org.mockito.Mockito.when(passwordEncoder.matches("vella-1234", "hash-vell")).thenReturn(true);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.canviaContrasenya(u.getId(), "vella-1234", "curta"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("8 i 72");
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.canviaContrasenya(u.getId(), "vella-1234", "x".repeat(73)))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("8 i 72");
+        org.mockito.Mockito.verify(userRepository, org.mockito.Mockito.never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void canviaContrasenya_rebutja_nova_igual_a_l_actual() {
+        User u = ambContrasenya();
+        org.mockito.Mockito.when(passwordEncoder.matches("vella-1234", "hash-vell")).thenReturn(true);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.canviaContrasenya(u.getId(), "vella-1234", "vella-1234"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("diferent");
+    }
+
+    @Test
+    void canviaContrasenya_compte_de_google_no_en_te() {
+        User u = alumne();   // sense passwordHash
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.canviaContrasenya(u.getId(), "x", "nova-12345"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Google");
+    }
 }

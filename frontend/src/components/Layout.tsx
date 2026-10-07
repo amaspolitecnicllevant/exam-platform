@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useConfiguracio } from '../context/ConfiguracioContext'
 import { getCopiesSeguretat } from '../api/configuracio'
 import { getLogoUrl } from '../api/configuracio'
+import CanviarContrasenya from './CanviarContrasenya'
 
 const NAV: { to: string; label: string; roles: string[] }[] = [
   { to: '/professor/exams',    label: 'Examens',              roles: ['PROFESSOR', 'ADMIN'] },
@@ -29,6 +30,7 @@ export default function Layout({ children, examMode = false }: LayoutProps) {
   const { user, logout } = useAuth()
   const { config } = useConfiguracio()
   const [avisCopies, setAvisCopies] = useState<string | null>(null)
+  const [canviantContrasenya, setCanviantContrasenya] = useState(false)
 
   // Els administradors veuen a totes les pàgines si les còpies de seguretat fallen
   useEffect(() => {
@@ -96,12 +98,17 @@ export default function Layout({ children, examMode = false }: LayoutProps) {
           <p className="text-xs text-brand-200 font-medium truncate">{user?.name}</p>
           <p className="text-xs text-brand-400 truncate">{user?.email}</p>
           <p className="text-xs text-brand-500 capitalize">{user?.role?.toLowerCase()}</p>
+          <button onClick={() => setCanviantContrasenya(true)}
+            className="w-full text-xs bg-brand-600 hover:bg-brand-500 text-brand-200 hover:text-white rounded px-2 py-1.5 transition-colors">
+            Canviar contrasenya
+          </button>
           <button onClick={() => { logout(); navigate('/login') }}
             className="w-full text-xs bg-brand-600 hover:bg-brand-500 text-brand-200 hover:text-white rounded px-2 py-1.5 transition-colors">
             Tancar sessió
           </button>
         </div>
       </aside>
+      {canviantContrasenya && <CanviarContrasenya onClose={() => setCanviantContrasenya(false)} />}
 
       {/* Contingut principal */}
       <div className="flex-1 ml-56 print:ml-0">

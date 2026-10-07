@@ -9,6 +9,9 @@ export const deleteUser  = (id: string) => client.delete(`/users/${id}`)
 export const resetPassword = (id: string, password: string) =>
   client.patch(`/users/${id}/password`, { password })
 
+export const canviaLaMevaContrasenya = (actual: string, nova: string) =>
+  client.post('/users/me/password', { actual, nova })
+
 export const importCsv = (file: File, role?: Role) => {
   const form = new FormData()
   form.append('file', file)
