@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ConfiguracioProvider } from './context/ConfiguracioContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import BloqueigAltresPestanyes from './components/BloqueigAltresPestanyes'
 import LoginPage from './pages/LoginPage'
 import OAuthCallbackPage from './pages/OAuthCallbackPage'
 import UsersPage from './pages/admin/UsersPage'
@@ -39,6 +40,7 @@ export default function App() {
   return (
     <ConfiguracioProvider>
     <AuthProvider>
+      <BloqueigAltresPestanyes />
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />

@@ -10,6 +10,7 @@ import { startSession, saveAnswer, submitSession, reportFocusLoss, restartSessio
 import { downloadQuestionFile } from '../../api/questionFiles'
 import { useAuth } from '../../context/AuthContext'
 import { useConfiguracio } from '../../context/ConfiguracioContext'
+import { agafaPestanyaExamen, avisaIntrusa, escoltaIntrusos, type EstatPestanya } from '../../utils/unaPestanya'
 import { pujaFitxerResposta, esborraFitxerResposta, descarregaFitxerResposta } from '../../api/respostaFitxer'
 import { errorFitxer, formatMida, llistaFormats, MIDA_MAXIMA_FITXER } from '../../utils/fitxers'
 import type { Exam, Session, QuestionType, ExecutionResult } from '../../types'
@@ -78,7 +79,40 @@ function shuffleWithinSections<T extends { tipus: QuestionType }>(questions: T[]
   return result
 }
 
+/** Només una pestanya pot fer l'examen: una segona còpia queda bloquejada i es registra. */
 export default function ExamTakePage() {
+  const [pestanya, setPestanya] = useState<EstatPestanya | null>(null)
+  useEffect(() => {
+    let viu = true
+    let allibera = () => {}
+    agafaPestanyaExamen().then(r => {
+      allibera = r.allibera
+      if (viu) setPestanya(r.estat); else r.allibera()
+    })
+    return () => { viu = false; allibera() }
+  }, [])
+
+  useEffect(() => { if (pestanya === 'duplicada') avisaIntrusa() }, [pestanya])
+
+  if (pestanya === null) return <Layout examMode><p className="text-gray-400 p-8">Carregant…</p></Layout>
+  if (pestanya === 'duplicada') {
+    return (
+      <Layout examMode>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-center px-4">
+          <div className="text-5xl">🚫</div>
+          <p className="text-xl font-semibold text-gray-800">Aquest examen ja és obert en una altra pestanya</p>
+          <p className="text-gray-600 max-w-md">
+            Només es pot tenir una pestanya oberta durant l'examen. Tanca aquesta i continua a l'altra.
+            Aquest intent ha quedat registrat.
+          </p>
+        </div>
+      </Layout>
+    )
+  }
+  return <ExamTake />
+}
+
+function ExamTake() {
   const { examId }              = useParams<{ examId: string }>()
   const navigate                = useNavigate()
   const { user: authUser }      = useAuth()
@@ -146,9 +180,19 @@ export default function ExamTakePage() {
     }
     document.addEventListener('visibilitychange', onVisibility)
     window.addEventListener('blur', onBlur)
+    // Una altra pestanya s'ha intentat obrir durant l'examen: també és una pèrdua de focus
+    let ultimaIntrusa = 0
+    const tancaCanal = escoltaIntrusos(() => {
+      const ara = Date.now()
+      if (ara - ultimaIntrusa < 5000) return
+      ultimaIntrusa = ara
+      setFocusWarning(true)
+      reportFocusLoss(session.id)
+    })
     return () => {
       document.removeEventListener('visibilitychange', onVisibility)
       window.removeEventListener('blur', onBlur)
+      tancaCanal()
     }
   }, [submitted, session])
 
