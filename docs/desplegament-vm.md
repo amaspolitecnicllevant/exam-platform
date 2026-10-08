@@ -193,7 +193,7 @@ variables. Convé fer una instantània de la VM a Proxmox abans de cada actualit
 | Símptoma | On mirar |
 |---|---|
 | El backend no arrenca | `docker compose logs backend`: sovint `JWT_SECRET` buit/curt o `DB_PASS` no definit |
-| Error de permisos a `/opt/exam-*` | `sudo chown -R $USER:$USER /opt/exam-scripts /opt/exam-files`; si continua, depèn de l'usuari del contenidor |
+| No s'executa cap codi o no es pot pujar cap fitxer (`AccessDeniedException` a `/opt/exam-*`) | Les carpetes han de ser de l'usuari del backend (uid 100, gid 101), **no** de l'usuari de la VM: `sudo chown 100:101 /opt/exam-scripts /opt/exam-files` |
 | `Permission denied (publickey)` al `git clone` | La *deploy key* no és afegida al repositori, o és de l'ordinador (ja usada) |
 | El frontend no carrega des d'un altre equip | UFW (`sudo ufw status`) i `FRONTEND_URL`/`APP_ALLOWED_ORIGINS` |
 | Les execucions de codi fallen o triguen | `EXEC_MAX_CONCURRENT`, `EXEC_QUEUE_WAIT`, i que les imatges del sandbox siguin descarregades |

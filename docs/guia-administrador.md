@@ -49,6 +49,8 @@ Quatre contenidors (`infra/docker-compose.yml`) i els que el backend llança per
 | `/opt/exam-scripts` | fitxers temporals de l'execució (es poden esborrar) |
 | `BACKUP_DIR` (per defecte `../backups`) | còpies de seguretat |
 
+**Les dues carpetes han de ser de l'usuari del backend** (uid 100, gid 101: `sudo chown 100:101 /opt/exam-files /opt/exam-scripts`), no de l'usuari de la màquina. Si no, el backend no hi pot escriure: **no s'executa cap codi d'alumne i no es pot pujar cap fitxer**, i el servidor ho amaga (respon «200» amb un error a dins de l'execució, o un error 500 en pujar). Comprova-ho després d'instal·lar: `docker compose exec backend sh -c 'touch /opt/exam-scripts/x && rm /opt/exam-scripts/x && echo OK'`.
+
 > El backend es comunica amb Docker pel *socket* (`/var/run/docker.sock`) per llançar els contenidors d'execució. Això dóna al
 > backend permisos equivalents a *root* a la màquina: no hi instal·lis res més que no sigui de confiança i no exposis el port 8080.
 
@@ -296,11 +298,12 @@ BACKUP_GID=1000
 |:--|:--|
 | El backend no arrenca | `JWT_SECRET` o `DB_PASS` buits o curts; mira `docker compose logs backend` |
 | No es pot entrar (el login «no fa res») | L'adreça que escriu l'usuari no és a `APP_ALLOWED_ORIGINS` |
-| Cap codi s'executa | `DOCKER_GID` incorrecte; o falten les imatges (`docker pull bash:5`) |
+| Cap codi s'executa | Les carpetes `/opt/exam-*` no són escrivibles pel backend (la causa més habitual; vegeu §2), `DOCKER_GID` incorrecte, o falten les imatges (`docker pull bash:5`) |
 | Les execucions fallen en entregar molts alhora | `EXEC_MAX_CONCURRENT` baix o `EXEC_QUEUE_WAIT` curt |
 | Els scripts de bash fallen | `BASH_IMAGE` apuntant a una imatge sense bash (o l'imatge no baixada) |
 | El navegador avisa del certificat | Falta instal·lar `ca.crt` a l'ordinador ([https.md](https.md)) |
 | `Permission denied` al servei de còpies | `BACKUP_DIR` creat per Docker (és de *root*); canvia'n el propietari a `BACKUP_UID` i recrea el servei |
 | Un alumne rep un error de «aula» | La seva IP no és al rang de l'aula de l'examen |
 | Un canvi al `.env` no té efecte | Has fet `restart` en lloc de `up -d`, o la variable és de la §4.8 |
+| Pujar un fitxer dona un error 500 | Les carpetes `/opt/exam-*` no són escrivibles pel backend: vegeu §2 |
 | Un lliurament «ja no està disponible» | El fitxer ha desaparegut del disc; restaura `/opt/exam-files` d'una còpia (mira *Espai ocupat*) |

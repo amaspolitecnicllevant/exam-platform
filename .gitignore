@@ -12,3 +12,7 @@ backend/target/
 frontend/node_modules/
 frontend/dist/
 backend/app.jar
+
+# Prova de càrrega: informes generats i cau de Python
+infra/prova-carrega/resultats/
+__pycache__/

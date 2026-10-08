@@ -40,8 +40,10 @@ sudo systemctl enable --now docker
 sudo usermod -aG docker "$USER"
 
 echo "==> 3/5 Directoris de dades de l'aplicació"
+# El backend corre dins el contenidor com a uid 100 / gid 101 (usuari «appuser»). Aquestes carpetes han de ser
+# SEVES: si són de l'usuari de la VM, no s'executa cap codi d'alumne i no es pot pujar cap fitxer (AccessDeniedException).
 sudo mkdir -p /opt/exam-scripts /opt/exam-files
-sudo chown "$USER:$USER" /opt/exam-scripts /opt/exam-files
+sudo chown 100:101 /opt/exam-scripts /opt/exam-files
 
 echo "==> 4/5 Imatges del sandbox i de la BD"
 sudo docker pull bash:5
