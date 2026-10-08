@@ -131,7 +131,7 @@ export default function ExamsPage() {
   const handlePublicarNotes = async (exam: Exam) => {
     try {
       const updated = await publicarNotes(exam.id)
-      setExams(prev => prev.map(x => x.id === updated.id ? updated : x))
+      setExams(prev => prev.map(x => x.id === updated.id ? { ...updated, teSessions: x.teSessions } : x))
     } catch (err: any) {
       // p. ex. 409 si hi ha respostes pendents de revisar
       setFeedback(err.response?.data?.error || 'Error publicant les notes')
@@ -158,7 +158,7 @@ export default function ExamsPage() {
     if (!assigningModul || !selectedModul) return
     try {
       const updated = await assignModul(assigningModul.id, selectedModul)
-      setExams(prev => prev.map(e => e.id === updated.id ? updated : e))
+      setExams(prev => prev.map(e => e.id === updated.id ? { ...updated, teSessions: e.teSessions } : e))
       setAssigningModul(null)
     } catch {
       setFeedback('Error assignant el mòdul')
@@ -171,7 +171,7 @@ export default function ExamsPage() {
       const updated = selectedAula
         ? await assignAulaExamen(assigningAula.id, selectedAula)
         : await removeAulaExamen(assigningAula.id)
-      setExams(prev => prev.map(e => e.id === updated.id ? updated : e))
+      setExams(prev => prev.map(e => e.id === updated.id ? { ...updated, teSessions: e.teSessions } : e))
       setAssigningAula(null)
     } catch {
       setFeedback('Error assignant l\'aula')
@@ -350,6 +350,8 @@ export default function ExamsPage() {
                           className="text-xs border border-brand-600 text-brand-600 px-3 py-1 rounded hover:bg-brand-50">
                           Estadístiques
                         </Link>
+                        <ExportarExamen examId={exam.id} titol={exam.title}
+                          teFitxers={!!exam.questions?.some(q => q.tipus === 'FILE_UPLOAD')} />
                         <button onClick={() => unpublishExam(exam.id).then(refresh)}
                           className="text-xs bg-orange-500 text-white px-3 py-1 rounded hover:bg-orange-600 flex items-center gap-1">
                           <span className="w-2 h-2 rounded-full bg-white inline-block animate-pulse"></span>Desactivar
@@ -376,7 +378,8 @@ export default function ExamsPage() {
                       </button>
                     )}
 
-                    {exam.status === 'CLOSED' && (
+                    {/* Desactivat (o tancat) amb alumnes que ja l'han fet: les dades continuen accessibles */}
+                    {(exam.status === 'CLOSED' || (exam.status === 'DRAFT' && exam.teSessions)) && (
                       <>
                         <Link to={`/professor/exams/${exam.id}/corrections`}
                           className="text-xs bg-brand-600 text-white px-3 py-1 rounded hover:bg-brand-700">
@@ -453,10 +456,10 @@ export default function ExamsPage() {
                       </button>
                     )}
 
-                    {/* Publicar / ocultar notes (exàmens actius o tancats) */}
-                    {(exam.status === 'PUBLISHED' || exam.status === 'CLOSED') && (
+                    {/* Publicar / ocultar notes (exàmens actius, tancats o desactivats amb sessions) */}
+                    {(exam.status === 'PUBLISHED' || exam.status === 'CLOSED' || exam.teSessions) && (
                       exam.notesVisibles ? (
-                        <button onClick={() => ocultarNotes(exam.id).then(e => setExams(prev => prev.map(x => x.id === e.id ? e : x)))}
+                        <button onClick={() => ocultarNotes(exam.id).then(e => setExams(prev => prev.map(x => x.id === e.id ? { ...e, teSessions: x.teSessions } : x)))}
                           className="text-xs border border-amber-300 text-amber-700 px-3 py-1 rounded hover:bg-amber-50">
                           Ocultar notes als alumnes
                         </button>

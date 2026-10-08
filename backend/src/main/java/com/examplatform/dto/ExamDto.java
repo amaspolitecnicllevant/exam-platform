@@ -28,8 +28,16 @@ public record ExamDto(
         boolean notesVisibles,
         boolean unaPreguntaPerPantalla,
         boolean restringit,
+        boolean teSessions,
         List<QuestionDto> questions
 ) {
+    /** Còpia amb la marca «ja té sessions d'alumnes» (només la calcula el llistat del professor). */
+    public ExamDto ambSessions(boolean teSessions) {
+        return new ExamDto(id, title, durada, instruccions, status, createdByName, createdAt, scheduledAt,
+                scheduledGrupId, scheduledGrupName, penalitzacioChoice, modulId, modulNom, cicleNom, aulaId,
+                aulaNom, aulaCidr, notesVisibles, unaPreguntaPerPantalla, restringit, teSessions, questions);
+    }
+
     public static ExamDto from(Exam e, boolean includeAnswers) {
         return from(e, includeAnswers, Map.of());
     }
@@ -57,6 +65,7 @@ public record ExamDto(
                 e.isNotesVisibles(),
                 e.isUnaPreguntaPerPantalla(),
                 e.isRestringit(),
+                false,
                 qs);
     }
 }

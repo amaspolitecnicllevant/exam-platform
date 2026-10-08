@@ -12,6 +12,11 @@ import java.util.UUID;
 
 public interface ExamRepository extends JpaRepository<Exam, UUID> {
     List<Exam> findByCreatedById(UUID professorId);
+
+    /** Exàmens que un professor pot gestionar: els que ha creat i els dels mòduls que imparteix. */
+    @Query("SELECT e FROM Exam e WHERE e.createdBy.id = :professorId OR e.modul.id IN "
+            + "(SELECT i.modul.id FROM Imparticio i WHERE i.professor.id = :professorId)")
+    List<Exam> findGestionablesPer(@Param("professorId") UUID professorId);
     List<Exam> findByStatus(ExamStatus status);
 
     boolean existsByCreatedById(UUID userId);

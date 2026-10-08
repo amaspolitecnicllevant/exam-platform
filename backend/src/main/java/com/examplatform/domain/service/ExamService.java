@@ -53,8 +53,12 @@ public class ExamService {
 
     @Transactional(readOnly = true)
     public List<ExamDto> findByProfessor(UUID professorId) {
-        return examRepository.findByCreatedById(professorId).stream()
-                .map(e -> ExamDto.from(e, true)).toList();
+        List<Exam> exams = examRepository.findGestionablesPer(professorId);
+        // Un examen desactivat o tancat amb sessions continua tenint dades per veure i exportar
+        Set<UUID> ambSessions = exams.isEmpty() ? Set.of()
+                : new HashSet<>(sessionRepository.findExamIdsAmbSessions(exams.stream().map(Exam::getId).toList()));
+        return exams.stream()
+                .map(e -> ExamDto.from(e, true).ambSessions(ambSessions.contains(e.getId()))).toList();
     }
 
     @Transactional(readOnly = true)

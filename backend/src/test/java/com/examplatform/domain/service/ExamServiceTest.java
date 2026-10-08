@@ -55,6 +55,30 @@ class ExamServiceTest {
         admin     = user(Role.ADMIN);
     }
 
+    // ── llistat del professor ─────────────────────────────────────────────────
+
+    @Test
+    void findByProfessor_marca_els_examens_que_tenen_sessions_tambe_si_estan_desactivats() {
+        Exam desactivatAmbSessions = exam(ExamStatus.DRAFT, professor);
+        Exam esborranyNou = exam(ExamStatus.DRAFT, professor);
+        when(examRepository.findGestionablesPer(professor.getId()))
+                .thenReturn(List.of(desactivatAmbSessions, esborranyNou));
+        when(sessionRepository.findExamIdsAmbSessions(any()))
+                .thenReturn(List.of(desactivatAmbSessions.getId()));
+
+        List<ExamDto> llista = service.findByProfessor(professor.getId());
+
+        assertThat(llista).extracting(ExamDto::teSessions).containsExactly(true, false);
+    }
+
+    @Test
+    void findByProfessor_sense_examens_no_consulta_les_sessions() {
+        when(examRepository.findGestionablesPer(professor.getId())).thenReturn(List.of());
+
+        assertThat(service.findByProfessor(professor.getId())).isEmpty();
+        verify(sessionRepository, never()).findExamIdsAmbSessions(any());
+    }
+
     // ── publish ───────────────────────────────────────────────────────────────
 
     @Test

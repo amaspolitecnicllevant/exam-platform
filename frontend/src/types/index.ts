@@ -150,6 +150,8 @@ export interface Exam {
   unaPreguntaPerPantalla: boolean
   /** Només per als alumnes que hi tenen accés assignat (no per a tots els del mòdul) */
   restringit: boolean
+  /** Ja té sessions d'alumnes (només ve informat al llistat del professor) */
+  teSessions?: boolean
   questions: Question[]
 }
 

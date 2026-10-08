@@ -26,6 +26,10 @@ public interface ExamSessionRepository extends JpaRepository<ExamSession, UUID> 
     boolean existsByStudentId(UUID studentId);
     boolean existsByExamId(UUID examId);
 
+    /** Dels exàmens indicats, els ids dels que tenen alguna sessió d'alumne. */
+    @Query("SELECT DISTINCT s.exam.id FROM ExamSession s WHERE s.exam.id IN :examIds")
+    List<UUID> findExamIdsAmbSessions(@Param("examIds") java.util.Collection<UUID> examIds);
+
     @Query(value = """
             SELECT s.* FROM exam_sessions s
             JOIN exams e ON s.exam_id = e.id

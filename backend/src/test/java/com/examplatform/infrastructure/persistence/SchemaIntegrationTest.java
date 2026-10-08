@@ -40,6 +40,7 @@ class SchemaIntegrationTest {
     @Autowired MatriculaRepository   matriculaRepository;
     @Autowired UserRepository        userRepository;
     @Autowired GrupRepository        grupRepository;
+    @Autowired ExamRepository        examRepository;
 
     // ── Flyway + entitats noves ───────────────────────────────────────────────
 
@@ -91,6 +92,32 @@ class SchemaIntegrationTest {
 
         assertThat(imparticioRepository.professorImparteixModul(professor.getId(), modul.getId())).isTrue();
         assertThat(imparticioRepository.professorImparteixModul(professor.getId(), dep.getId())).isFalse();
+    }
+
+    @Test
+    void findGestionablesPer_inclou_els_creats_i_els_dels_moduls_que_imparteix_i_cap_altre() {
+        Departament dep = departamentRepository.save(Departament.builder().nom("Dep G").build());
+        Cicle cicle     = cicleRepository.save(Cicle.builder().codi("GST").nom("GST").departament(dep).build());
+        Modul meu       = modulRepository.save(Modul.builder().codi("G001").nom("Meu").cicle(cicle).build());
+        Modul altre     = modulRepository.save(Modul.builder().codi("G002").nom("Altre").cicle(cicle).build());
+
+        User jo     = userRepository.save(User.builder().name("Jo").email("jo-g@test.cat").role(Role.PROFESSOR).build());
+        User colega = userRepository.save(User.builder().name("Colega").email("colega-g@test.cat").role(Role.PROFESSOR).build());
+        imparticioRepository.save(Imparticio.builder().professor(jo).modul(meu).curs("2026-27").build());
+        imparticioRepository.save(Imparticio.builder().professor(colega).modul(altre).curs("2026-27").build());
+
+        Exam creat = examRepository.save(Exam.builder().title("Creat per mi").durada(60).createdBy(jo).rawMd("x").build());
+        Exam delMeuModul = examRepository.save(Exam.builder().title("Del colega, mòdul meu").durada(60)
+                .createdBy(colega).modul(meu).rawMd("x").build());
+        Exam alie = examRepository.save(Exam.builder().title("Del colega, mòdul d'ell").durada(60)
+                .createdBy(colega).modul(altre).rawMd("x").build());
+        Exam senseModul = examRepository.save(Exam.builder().title("Del colega, sense mòdul").durada(60)
+                .createdBy(colega).rawMd("x").build());
+
+        assertThat(examRepository.findGestionablesPer(jo.getId()))
+                .extracting(Exam::getId)
+                .containsExactlyInAnyOrder(creat.getId(), delMeuModul.getId())
+                .doesNotContain(alie.getId(), senseModul.getId());
     }
 
     @Test
