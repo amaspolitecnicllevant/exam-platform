@@ -177,6 +177,14 @@ export default function RespostaCorreccio({ q, answer, session, titol, mostrarRe
           )}
         </div>
       )}
+      {answer?.revisioIa && (
+        <div className="text-xs bg-violet-50 border border-violet-200 rounded-lg px-3 py-2 text-violet-900">
+          <strong>Revisada amb IA</strong>
+          {' · '}{answer.revisioIa.notaAbans != null ? `${fmtPts(answer.revisioIa.notaAbans)} → ` : 'sense nota → '}
+          <strong>{answer.manualScore != null ? fmtPts(answer.manualScore) : '—'}</strong>
+          {answer.revisioIa.justificacio && <span className="block text-violet-800/90 mt-0.5">{answer.revisioIa.justificacio}</span>}
+        </div>
+      )}
       {!isChoice && !q.anulada && answer?.autoScore == null && answer?.contingut?.trim()
         && EXEC_TYPES.includes(q.tipus) && session.status === 'SUBMITTED' && (
         <p className="text-xs text-gray-500 italic">

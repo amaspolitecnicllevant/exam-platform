@@ -49,6 +49,18 @@ public class Answer {
 
     private LocalDateTime correctedAt;
 
+    /** Quan es va aplicar una nota proposada per una IA (importada pel professor); null si no n'hi ha. */
+    @Column(name = "revisio_ia_el")
+    private LocalDateTime revisioIaEl;
+
+    /** Nota que tenia la resposta abans d'aplicar la revisió de la IA (null si encara no en tenia). */
+    @Column(name = "revisio_ia_nota_abans", precision = 4, scale = 2)
+    private BigDecimal revisioIaNotaAbans;
+
+    /** Justificació de la IA. Només per al professor: no s'ha d'enviar mai a l'alumne. */
+    @Column(name = "revisio_ia_justificacio", columnDefinition = "TEXT")
+    private String revisioIaJustificacio;
+
     /** Fitxer pujat per l'alumne (preguntes FILE_UPLOAD): nom original, ruta al disc, mida i empremta. */
     @Column(name = "fitxer_nom", length = 255)
     private String fitxerNom;

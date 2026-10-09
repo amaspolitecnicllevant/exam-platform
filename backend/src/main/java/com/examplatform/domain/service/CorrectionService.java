@@ -166,7 +166,7 @@ public class CorrectionService {
         }
         answer.setManualScore(score);
         answer.setCorrectedAt(LocalDateTime.now());
-        return AnswerDto.from(answerRepository.save(answer));
+        return AnswerDto.fromProfessor(answerRepository.save(answer));
     }
 
     static final int MAX_COMENTARI = 2000;
@@ -181,7 +181,7 @@ public class CorrectionService {
             throw new IllegalArgumentException("El comentari no pot superar " + MAX_COMENTARI + " caràcters");
         }
         answer.setComentari(net);
-        return AnswerDto.from(answerRepository.save(answer));
+        return AnswerDto.fromProfessor(answerRepository.save(answer));
     }
 
     /** El professor accepta la nota proposada d'una resposta: passa a ser la nota revisada. */
@@ -193,7 +193,7 @@ public class CorrectionService {
             throw new IllegalStateException("Aquesta resposta no té nota proposada");
         }
         accepta(answer);
-        return AnswerDto.from(answerRepository.save(answer));
+        return AnswerDto.fromProfessor(answerRepository.save(answer));
     }
 
     /**

@@ -238,7 +238,7 @@ public class SessionService {
         return sessionRepository.findByExamIdWithDetails(examId).stream()
                 .map(s -> {
                     List<AnswerDto> answers = answerRepository.findBySessionId(s.getId())
-                            .stream().map(AnswerDto::from).toList();
+                            .stream().map(AnswerDto::fromProfessor).toList();
                     return SessionDto.from(s, answers);
                 }).toList();
     }
@@ -304,8 +304,10 @@ public class SessionService {
         }
         boolean amagaNotes = requestingUser.getRole() == com.examplatform.domain.model.Role.STUDENT
                 && !s.getExam().isNotesVisibles();
+        boolean esAlumne = requestingUser.getRole() == com.examplatform.domain.model.Role.STUDENT;
         List<AnswerDto> answers = answerRepository.findBySessionId(sessionId)
-                .stream().map(a -> amagaNotes ? AnswerDto.senseNotes(a) : AnswerDto.from(a)).toList();
+                .stream().map(a -> amagaNotes ? AnswerDto.senseNotes(a)
+                        : esAlumne ? AnswerDto.from(a) : AnswerDto.fromProfessor(a)).toList();
         return SessionDto.from(s, answers);
     }
 

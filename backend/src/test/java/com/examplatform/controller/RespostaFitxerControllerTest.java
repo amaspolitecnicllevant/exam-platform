@@ -57,7 +57,7 @@ class RespostaFitxerControllerTest {
     }
 
     private AnswerDto resposta(String nom, long mida) {
-        return new AnswerDto(UUID.randomUUID(), pregunta, nom, null, null, null, null, null, nom, mida);
+        return new AnswerDto(UUID.randomUUID(), pregunta, nom, null, null, null, null, null, nom, mida, null);
     }
 
     private MockMultipartFile fitxer() {

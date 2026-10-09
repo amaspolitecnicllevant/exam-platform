@@ -169,6 +169,8 @@ export interface Answer {
   /** Fitxer pujat (preguntes de lliurament): nom original i mida en bytes */
   fitxerNom?: string
   fitxerMida?: number
+  /** Revisió amb IA aplicada (només la veu el professor) */
+  revisioIa?: { el: string; notaAbans?: number | null; justificacio?: string | null }
 }
 
 export interface PreguntaStats {

@@ -244,4 +244,32 @@ class AnswerRepositoryIntegrationTest {
 
         assertThat(answerRepository.findBySessionId(s.getId())).isEmpty();
     }
+
+    @Test
+    void la_revisio_amb_ia_es_desa_i_es_llegeix_i_nomes_el_dto_del_professor_la_porta() {
+        ExamSession s = session(SessionStatus.SUBMITTED);
+        Answer a = answer(s, curta, "DHCP", "2");
+        a.setRevisioIaEl(java.time.LocalDateTime.of(2026, 10, 9, 12, 0));
+        a.setRevisioIaNotaAbans(new BigDecimal("1.25"));
+        a.setRevisioIaJustificacio("Cita el protocol però no explica què fa.");
+        answerRepository.saveAndFlush(a);
+
+        Answer llegida = answerRepository.findBySessionId(s.getId()).get(0);
+
+        assertThat(llegida.getRevisioIaNotaAbans()).isEqualByComparingTo("1.25");
+        assertThat(llegida.getRevisioIaJustificacio()).startsWith("Cita el protocol");
+        assertThat(llegida.getRevisioIaEl()).isNotNull();
+        assertThat(com.examplatform.dto.AnswerDto.fromProfessor(llegida).revisioIa().justificacio()).startsWith("Cita");
+        // L'alumne no la veu mai: ni amb les notes publicades ni sense
+        assertThat(com.examplatform.dto.AnswerDto.from(llegida).revisioIa()).isNull();
+        assertThat(com.examplatform.dto.AnswerDto.senseNotes(llegida).revisioIa()).isNull();
+    }
+
+    @Test
+    void una_resposta_sense_revisio_ia_no_en_porta_al_dto_del_professor() {
+        ExamSession s = session(SessionStatus.SUBMITTED);
+        Answer a = answer(s, curta, "DHCP", "2");
+
+        assertThat(com.examplatform.dto.AnswerDto.fromProfessor(a).revisioIa()).isNull();
+    }
 }

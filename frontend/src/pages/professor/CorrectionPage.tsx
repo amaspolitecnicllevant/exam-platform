@@ -10,6 +10,7 @@ import { useLlindarFocus } from '../../context/ConfiguracioContext'
 import RespostaCorreccio, { Referencia, isPendent } from '../../components/correccio/RespostaCorreccio'
 import type { AccionsCorreccio } from '../../components/correccio/RespostaCorreccio'
 import ExportarExamen from '../../components/ExportarExamen'
+import ImportarRevisioIa from '../../components/ImportarRevisioIa'
 
 type Tab = 'preguntes' | 'perPregunta' | 'alumnes'
 type FiltreAlumnes = 'tots' | 'pendents' | 'revisats' | 'noEntregats'
@@ -214,6 +215,9 @@ export default function CorrectionPage() {
           {examId && (
             <ExportarExamen examId={examId} titol={exam?.title ?? 'examen'}
               teFitxers={!!exam?.questions?.some(q => q.tipus === 'FILE_UPLOAD')} />
+          )}
+          {examId && (
+            <ImportarRevisioIa examId={examId} onAplicat={m => { setAvis(m); reload() }} />
           )}
           <div role="tablist" className="flex rounded-lg overflow-hidden border border-brand-200 text-sm">
             {tabs.map(t => (
