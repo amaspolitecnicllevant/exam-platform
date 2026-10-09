@@ -214,6 +214,26 @@ informar* (fa més de 45 minuts que no informa: és normal fora d'hora); *Fa N d
 3. Als pocs minuts, l'ordinador surt a *Aules → Ordinadors*. Quan un ordinador net i validat (el de prova) hi sigui, prem **Fixar com a referència** a la seva fila:
    a partir d'aquí, tots els altres es comparen amb ell. Si canvies alguna cosa a l'script, torna a fixar la referència.
 
+**Restaurar un ordinador des de l'aplicació**
+
+A *Aules → Ordinadors*, els administradors veuen el botó **Restaurar** a cada ordinador que no estigui *Preparat*. Prémer-lo **no envia cap codi** a
+l'ordinador: només marca «restauració pendent». En el seu proper informe (fins a 15 minuts), la resposta de la plataforma és «RESTAURA» i l'ordinador executa
+la **seva pròpia còpia local** de l'script (`/usr/local/sbin/examen-prepara`) amb la configuració que es va desar en instal·lar-lo
+(`/etc/examen/instalacio.conf`). Com que l'script és idempotent, torna a crear els usuaris, les regles, els scripts i l'informador que falten o s'hagin alterat.
+Després l'ordinador informa del resultat (*feta correctament* o el motiu de l'error), que es veu a la fila, i la petició es tanca.
+
+Què cal i què no cobreix:
+- Només funciona en ordinadors instal·lats amb **`--tot`** (és el que desa la còpia local de l'script i la configuració; si no, l'ordinador respon que no pot).
+  Els ordinadors instal·lats abans d'aquesta funció s'han de tornar a passar pel pas de l'apartat 3b una vegada.
+- **L'ordinador ha d'estar encès i l'informador ha de continuar existint.** Si algú ha esborrat l'informador, l'script local o el temporitzador, no hi ha ningú que
+  rebi l'ordre: s'ha de tornar a passar l'script des de fora (apartat 3b) o reclonar l'ordinador.
+- La petició **caduca als 24 hores** si l'ordinador no l'ha recollida (per exemple, perquè estava apagat). L'ordinador no fa més d'una restauració cada 10 minuts.
+- La configuració desada conté la contrasenya dels usuaris d'examen i el testimoni; és de `root` amb permisos 600. L'administrador d'un ordinador ja pot llegir-ho
+  tot, i els alumnes coneixen la contrasenya d'examen de totes maneres.
+- Una restauració no és una garantia contra algú amb permisos d'administrador que sàpiga trucar-la: la garantia forta continua sent reclonar.
+
+**Quantes dades envia cada ordinador**: vegeu l'apartat 7.
+
 **Seguretat i límits**
 - El testimoni és **compartit per tots els ordinadors**. Un ordinador no l'envia a la línia d'ordres (queda en un fitxer de `root`, `/etc/examen/informe.conf`),
   però un administrador d'aquell ordinador el pot llegir. Per això l'aplicació **només accepta informes des de la xarxa d'una aula**, limita la freqüència
@@ -268,6 +288,7 @@ CONTRASENYA="${EXAMEN_CONTRASENYA:-}"
 TOT=0
 DESFES=0
 ESBORRA_USUARI=0
+CONFIG=""
 P="${PREFIX:-}"               # només per a proves: arrel falsa on escriure (no crea usuaris ni munta res)
 
 ús() {
@@ -285,10 +306,22 @@ P="${PREFIX:-}"               # només per a proves: arrel falsa on escriure (no
   --informe-url URL   Adreça de la plataforma on enviar l'informe d'estat (per defecte, la de --url)
   --informe-token T   Testimoni (EQUIPS_TOKEN de la plataforma); o variable EXAMEN_INFORME_TOKEN. Activa l'informe
   --contrasenya PWD   Contrasenya dels usuaris (o variable EXAMEN_CONTRASENYA). Només s'estableix si es dona o l'usuari és nou
+  --config FITXER     Llegeix les opcions d'un fitxer de configuració (el que desa --tot a /etc/examen/instalacio.conf).
+                      És el que fa servir la restauració demanada des de l'aplicació. Les opcions de la línia d'ordres el sobreescriuen
   --desfes            Treu la configuració (amb --esborra-usuari també els usuaris)
 EOF
 }
 error() { echo "ERROR: $*" >&2; exit 1; }
+
+# --config: es llegeix primer, perquè les altres opcions el puguin sobreescriure
+for ((i = 1; i <= $#; i++)); do
+  if [ "${!i}" = "--config" ]; then j=$((i + 1)); CONFIG="${!j:-}"; fi
+done
+if [ -n "$CONFIG" ]; then
+  [ -f "$CONFIG" ] || error "no trobo el fitxer de configuració: $CONFIG"
+  # shellcheck disable=SC1090
+  . "$CONFIG"
+fi
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -304,6 +337,7 @@ while [ $# -gt 0 ]; do
     --informe-url)    INFORME_URL="${2:?}"; shift 2 ;;
     --informe-token)  INFORME_TOKEN="${2:?}"; shift 2 ;;
     --contrasenya)    CONTRASENYA="${2:?}"; shift 2 ;;
+    --config)         shift 2 ;;
     --desfes)         DESFES=1; shift ;;
     --esborra-usuari) ESBORRA_USUARI=1; shift ;;
     -h|--help)        ús; exit 0 ;;
@@ -451,6 +485,8 @@ prepara_comuns() {
   fi
   mkdir -p "$USUARIS_DIR" "$P/usr/local/sbin" "$(dirname "$LIGHTDM_CONF")"
   if [ -n "$CA" ]; then escriu_fitxer "$CONF_DIR/ca.crt" 644 "certificat del centre" <"$CA"; fi
+  # Còpia local d'aquest script: és el que executa l'ordinador quan es demana una restauració des de l'aplicació
+  escriu_fitxer "$P/usr/local/sbin/examen-prepara" 755 "còpia local de l'script (per a la restauració)" <"$0"
 
   # Muntatge de la casa en memòria a l'entrada i desmuntatge a la sortida. «required»: si no es pot muntar, no entra
   # (millor que deixar entrar amb una casa que conserva el que s'hi gravi).
@@ -634,6 +670,20 @@ EOF
   fi
 }
 
+# Comprova si la contrasenya donada ja és la de l'usuari (compara amb el hash de /etc/shadow). Si no es pot saber
+# (sense python3 o sense el mòdul crypt), diu que no, i la contrasenya s'estableix igualment. Res no va per la línia d'ordres.
+contrasenya_correcta() {
+  local hash
+  hash=$(getent shadow "$1" 2>/dev/null | cut -d: -f2) || return 1
+  case "$hash" in ''|'!'*|'*'*) return 1 ;; esac
+  command -v python3 >/dev/null || return 1
+  printf '%s\n%s\n' "$CONTRASENYA" "$hash" | python3 -W ignore -c '
+import crypt, sys
+pw = sys.stdin.readline().rstrip("\n")
+h = sys.stdin.readline().rstrip("\n")
+sys.exit(0 if crypt.crypt(pw, h) == h else 1)' 2>/dev/null
+}
+
 # ── Un usuari d'examen ────────────────────────────────────────────────────────
 # Usa USUARI, PERFIL, MENU, NAVEGADOR, URL i ISARD_URL tal com estiguin en cridar-la.
 prepara_usuari() {
@@ -653,8 +703,9 @@ prepara_usuari() {
       read -r -s -p "Contrasenya dels usuaris d'examen: " CONTRASENYA; echo
       [ -n "$CONTRASENYA" ] || error "la contrasenya no pot ser buida"
     fi
-    if [ -n "$CONTRASENYA" ]; then echo "$USUARI:$CONTRASENYA" | chpasswd; fet "contrasenya de $USUARI establerta"
-    else ja "contrasenya de $USUARI (no es canvia: no se n'ha donat cap)"; fi
+    if [ -z "$CONTRASENYA" ]; then ja "contrasenya de $USUARI (no es canvia: no se n'ha donat cap)"
+    elif [ "$nou" -eq 0 ] && contrasenya_correcta "$USUARI"; then ja "contrasenya de $USUARI (ja és la que toca)"
+    else echo "$USUARI:$CONTRASENYA" | chpasswd; fet "contrasenya de $USUARI establerta"; fi
 
     # La casa és el punt de muntatge de la memòria. Si hi ha una sessió oberta (és muntada), NO s'hi toca res.
     if mountpoint -q "$casa"; then ja "casa de $USUARI (hi ha una sessió oberta: no es toca)"
@@ -673,6 +724,34 @@ URL="$URL"
 MENU=$MENU
 ISARD_URL="$ISARD_URL"
 EOF
+}
+
+# ── Configuració per a la restauració (només amb --tot) ───────────────────────
+# Es desa tot el que cal per tornar a executar aquest script sense ningú: ho llegeix la restauració demanada des de l'aplicació.
+# Conté la contrasenya dels usuaris d'examen i el testimoni: és de root i amb permisos 600 (qui és administrador de l'ordinador ja
+# pot llegir-ho tot, i els alumnes coneixen la contrasenya d'examen de totes maneres).
+desa_instalacio() {
+  [ "$TOT" -eq 1 ] || { echo "==> Restauració remota: només amb --tot (no es desa la configuració)"; return 0; }
+  echo "==> Configuració per a la restauració"
+  local f="$CONF_DIR/instalacio.conf" ca="" pw="$CONTRASENYA" tk="$INFORME_TOKEN"
+  [ -f "$CONF_DIR/ca.crt" ] && ca="$CONF_DIR/ca.crt"
+  # Si ara no s'han donat la contrasenya o el testimoni, es conserven els que ja hi havia (així no es perd la capacitat de restaurar)
+  if [ -f "$f" ]; then
+    [ -n "$pw" ] || pw=$( . "$f"; printf '%s' "${CONTRASENYA:-}" )
+    [ -n "$tk" ] || tk=$( . "$f"; printf '%s' "${INFORME_TOKEN:-}" )
+  fi
+  escriu_fitxer "$f" 600 "configuració per a la restauració" < <(
+    printf 'TOT=1\n'
+    printf 'USUARI=%q\n' "$USUARI_QUIOSC"
+    printf 'USUARI_FITXERS=%q\n' "$USUARI_FITXERS"
+    printf 'URL=%q\n' "$URL"
+    printf 'NAVEGADOR=%q\n' "$NAVEGADOR"
+    printf 'ISARD_URL=%q\n' "$ISARD_URL"
+    printf 'INFORME_URL=%q\n' "$INFORME_URL"
+    printf 'INFORME_TOKEN=%q\n' "$tk"
+    printf 'CONTRASENYA=%q\n' "$pw"
+    printf 'CA=%q\n' "$ca"
+  )
 }
 
 # ── Informe d'estat a la plataforma ───────────────────────────────────────────
@@ -703,13 +782,39 @@ UPT=$(cut -d. -f1 /proc/uptime)
 DINS=$(who | wc -l)
 INTEGRITAT=$(/usr/local/sbin/examen-comprova)
 
+# Envia l'informe i escriu la resposta de la plataforma (OK o RESTAURA). $1 = resultat d'una restauració (opcional).
 # El testimoni va per un fitxer de configuració de curl (-K -) i no a la línia d'ordres, que qualsevol usuari pot veure amb «ps»
-printf 'header = "X-Equip-Token: %s"\n' "$TOKEN" | curl -s -o /dev/null --max-time 30 $CERT -K - \
-  --data-urlencode "nom=$(hostname)" --data-urlencode "integritat=$INTEGRITAT" \
-  --data-urlencode "arribaPlataforma=$PLAT" ${ISARD:+--data-urlencode "arribaIsard=$ISARD"} \
-  --data-urlencode "navegador=$NAV" --data-urlencode "discLliureMb=$DISC" \
-  --data-urlencode "uptimeSegons=$UPT" --data-urlencode "usuarisDins=$DINS" \
-  "$BASE_URL/api/equips/informe"
+envia() {
+  printf 'header = "X-Equip-Token: %s"\n' "$TOKEN" | curl -s --max-time 30 $CERT -K - \
+    --data-urlencode "nom=$(hostname)" --data-urlencode "integritat=$INTEGRITAT" \
+    --data-urlencode "arribaPlataforma=$PLAT" ${ISARD:+--data-urlencode "arribaIsard=$ISARD"} \
+    --data-urlencode "navegador=$NAV" --data-urlencode "discLliureMb=$DISC" \
+    --data-urlencode "uptimeSegons=$UPT" --data-urlencode "usuarisDins=$DINS" \
+    ${1:+--data-urlencode "restauracio=$1"} \
+    "$BASE_URL/api/equips/informe" 2>/dev/null
+}
+
+# Restauració demanada des de l'aplicació. La plataforma NOMÉS diu «RESTAURA»: no envia codi. L'ordinador executa la seva
+# còpia local de l'script (idempotent), amb la configuració que es va desar en instal·lar-lo. Com a màxim un cop cada 10 minuts.
+restaura() {
+  GUARDA=/run/examen-restaura.ultima
+  if [ -f "$GUARDA" ] && [ -n "$(find "$GUARDA" -mmin -10 2>/dev/null)" ]; then return 0; fi
+  : >"$GUARDA"
+  if [ ! -x /usr/local/sbin/examen-prepara ] || [ ! -f /etc/examen/instalacio.conf ]; then
+    echo "no hi ha la còpia local de l'script o la seva configuració (cal tornar-lo a instal·lar amb --tot)"; return 0
+  fi
+  if /usr/local/sbin/examen-prepara --config /etc/examen/instalacio.conf >/var/log/examen-prepara.log 2>&1; then echo ok
+  else echo "l'script ha fallat (vegeu /var/log/examen-prepara.log)"; fi
+}
+
+if [ "$(envia)" = "RESTAURA" ]; then
+  RESULTAT=$(restaura)
+  if [ -n "$RESULTAT" ]; then
+    # La restauració pot haver canviat coses: es calcula de nou la llista d'integritat i s'informa del resultat
+    INTEGRITAT=$(/usr/local/sbin/examen-comprova)
+    envia "$RESULTAT" >/dev/null
+  fi
+fi
 EOF
   escriu_fitxer "$P/etc/systemd/system/examen-informa.service" 644 "servei de l'informe" <<'EOF'
 [Unit]
@@ -747,6 +852,7 @@ EOF
 
 # ── Execució ──────────────────────────────────────────────────────────────────
 prepara_comuns
+USUARI_QUIOSC="$USUARI"
 if [ "$TOT" -eq 1 ]; then
   prepara_usuari                                  # quiosc, amb menú
   USUARI="$USUARI_FITXERS"; PERFIL=escriptori; MENU=0
@@ -758,6 +864,7 @@ if [ -n "$INFORME_TOKEN" ]; then prepara_informe
 else echo "==> Informe d'estat: no s'instal·la (no hi ha testimoni)"; fi
 echo "==> Regles d'accés"
 escriu_llistes
+desa_instalacio
 
 # LightDM només llegeix la configuració en arrencar: si el fitxer és més nou que el procés, cal reiniciar
 if [ -z "$P" ]; then
@@ -782,6 +889,12 @@ if [ "${#FET[@]}" -eq 0 ]; then echo "RESULTAT: al-dia"; else echo "RESULTAT: ca
 ```
 
 ## 7. Notes tècniques i limitacions conegudes
+
+- **Dades que envia cada ordinador (estimació, no mesura):** cada informe pesa uns **6–12 KB**, sobretot la llista d'integritat (unes 30 línies d'uns 95 bytes, que en
+  enviar-se com a formulari ocupen el doble), més la negociació TLS. Amb un informe cada 15 minuts, són **uns 40 KB per hora i ordinador**; un ordinador encès 8 hores
+  al dia envia **menys d'1 MB al dia**, i una aula de 30 ordinadors, **uns 10–30 MB al dia en total**. A més, cada informe fa una petició a la plataforma i una a Isard per saber
+  si hi arriben: baixen la pàgina d'inici (uns quants KB cadascuna). La resposta de la plataforma és de dos o vuit bytes (`OK` o `RESTAURA`). A la plataforma només es desa **l'últim
+  informe de cada ordinador** (uns 4 KB), sense historial. Per mesurar-ho de debò en un ordinador: `sudo /usr/local/sbin/examen-comprova | wc -c` (mida de la llista).
 
 - **Navegador:** les preferències de Firefox d'aquest script (fitxer `user.js`) són una protecció addicional, no una garantia: el que realment
   impedeix sortir és que la sessió no té escriptori, menús ni programes. El Chrome s'inicia en mode quiosc i incògnit amb una casa nova.

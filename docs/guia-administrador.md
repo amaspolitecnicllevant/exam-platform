@@ -365,6 +365,10 @@ aquesta configuració abans de l'examen. Cal **reclonar** els ordinadors des de 
 des d'un ordinador d'administració, comparant-los amb un ordinador de referència net (vegeu l'apartat 5b de la guia dels usuaris d'examen).
 Aquesta comprovació detecta descuits i manipulacions normals, però no a algú amb `root` que sàpiga falsejar-la.
 
+**Restaurar un ordinador des de l'aplicació.** A *Aules → Ordinadors*, el botó **Restaurar** marca una petició (no envia cap codi); l'ordinador, en el seu proper informe
+(fins a 15 minuts), executa la seva còpia local de l'script de preparació, que és idempotent, i n'informa el resultat. Cal que l'ordinador estigui encès, tingui l'informador i s'hagi
+instal·lat amb `--tot`. Si l'informador s'ha esborrat, no hi ha ningú que rebi l'ordre: cal tornar a passar l'script des de fora o reclonar. Vegeu l'apartat 5c de la guia dels usuaris d'examen.
+
 **Què no cobreix.** No protegeix de l'accés físic a l'ordinador (arrencar des d'un USB, canviar la BIOS: cal contrasenya de la BIOS i
 arrencada només des del disc) ni del que l'alumne tingui fora de l'ordinador (el mòbil). Cap mesura tècnica ho substitueix: la vigilància
 a l'aula continua sent necessària.
