@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { esborraEquip, fixaReferenciaEquip, getEquipsAula, type Equip, type EquipsAula, type EstatEquip } from '../api/equips'
+import { cancelaRestauracio, demanaRestauracio, esborraEquip, fixaReferenciaEquip, getEquipsAula, type Equip, type EquipsAula, type EstatEquip } from '../api/equips'
 import { useAuth } from '../context/AuthContext'
 
 const ORDRE: Record<EstatEquip, number> = { ALTERAT: 0, SENSE_PLATAFORMA: 1, SENSE_NOTICIES: 2, SENSE_REFERENCIA: 3, PREPARAT: 4 }
@@ -64,6 +64,13 @@ export default function EstatAula({ aulaId, resum = false }: { aulaId: string; r
     if (!confirm(`Tots els altres ordinadors es compararan amb «${e.nom}».\nNomés ho facis si està net i validat. Vols continuar?`)) return
     try { await fixaReferenciaEquip(e.id); carrega() } catch (err: any) { setError(err?.response?.data?.error || 'No s\'ha pogut fixar la referència.') }
   }
+  const restaura = async (e: Equip) => {
+    if (!confirm(`Restaurar «${e.nom}»?\n\nNo s'hi envia cap codi: l'ordinador executarà la seva còpia local de l'script de preparació en el seu proper informe (fins a 15 minuts) i tornarà a posar al dia els usuaris d'examen i l'informador. Només funciona si l'ordinador és encès i l'informador hi continua. Si l'ordinador no ho fa en 24 hores, la petició caduca.`)) return
+    try { await demanaRestauracio(e.id); carrega() } catch (err: any) { setError(err?.response?.data?.error || 'No s\'ha pogut demanar la restauració.') }
+  }
+  const cancelaRestaura = async (e: Equip) => {
+    try { await cancelaRestauracio(e.id); carrega() } catch (err: any) { setError(err?.response?.data?.error || 'No s\'ha pogut cancel·lar.') }
+  }
   const esborra = async (e: Equip) => {
     if (!confirm(`Esborrar «${e.nom}» de la llista? Tornarà a sortir si envia un informe.`)) return
     try { await esborraEquip(e.id); carrega() } catch (err: any) { setError(err?.response?.data?.error || 'No s\'ha pogut esborrar.') }
@@ -118,7 +125,7 @@ export default function EstatAula({ aulaId, resum = false }: { aulaId: string; r
           {equips.map(e => {
             const et = etiqueta(e)
             const dins = detall === e.id
-            const teDetall = e.avisos.length > 0 || e.diferencies.length > 0 || e.navegador
+            const teDetall = e.avisos.length > 0 || e.diferencies.length > 0 || e.navegador || e.restauracioPendent || e.restauracioResultat
             return (
               <tr key={e.id} className="border-t border-gray-100 align-top">
                 <td className="px-3 py-2 font-mono text-gray-800">{e.nom}</td>
@@ -138,6 +145,14 @@ export default function EstatAula({ aulaId, resum = false }: { aulaId: string; r
                       {e.diferencies.length > 0 && (
                         <pre className="bg-gray-50 border rounded p-2 text-[11px] whitespace-pre-wrap break-all max-h-40 overflow-auto">{e.diferencies.join('\n')}</pre>
                       )}
+                      {e.restauracioPendent && (
+                        <p className="text-blue-700">⟳ Restauració demanada {fa(e.restauracioDemanadaEl!)}: l'ordinador la farà en el seu proper informe.</p>
+                      )}
+                      {e.restauracioResultat && (
+                        <p className={e.restauracioResultat === 'OK' ? 'text-green-700' : 'text-red-700'}>
+                          Última restauració ({e.restauracioResultatEl ? fa(e.restauracioResultatEl) : '—'}): {e.restauracioResultat === 'OK' ? 'feta correctament' : `ha fallat: ${e.restauracioResultat}`}
+                        </p>
+                      )}
                       <p className="text-gray-500">
                         {e.navegador ?? 'Sense navegador'}
                         {e.discLliureMb != null && ` · ${Math.round(e.discLliureMb / 1024)} GB lliures`}
@@ -149,6 +164,12 @@ export default function EstatAula({ aulaId, resum = false }: { aulaId: string; r
                 </td>
                 {esAdmin && (
                   <td className="px-3 py-2 whitespace-nowrap">
+                    {e.restauracioPendent ? (
+                      <button type="button" onClick={() => cancelaRestaura(e)} title="Restauració demanada: pendent que l'ordinador la faci"
+                        className="text-blue-700 hover:underline mr-3">⟳ Pendent · Cancel·la</button>
+                    ) : e.estat !== 'PREPARAT' && (
+                      <button type="button" onClick={() => restaura(e)} className="text-amber-700 hover:underline mr-3">Restaurar</button>
+                    )}
                     <button type="button" onClick={() => fixa(e)} className="text-brand-600 hover:underline mr-3">Fixar com a referència</button>
                     <button type="button" onClick={() => esborra(e)} className="text-red-600 hover:underline">Esborrar</button>
                   </td>

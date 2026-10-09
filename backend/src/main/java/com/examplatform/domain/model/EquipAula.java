@@ -54,6 +54,17 @@ public class EquipAula {
     @Column(name = "usuaris_dins")
     private Integer usuarisDins;
 
+    /** Quan un administrador va demanar restaurar-lo; null si no hi ha cap restauració pendent. */
+    @Column(name = "restauracio_demanada_el")
+    private LocalDateTime restauracioDemanadaEl;
+
+    /** Resultat de l'última restauració que l'ordinador ha informat: «OK» o el motiu de l'error. */
+    @Column(name = "restauracio_resultat", length = 200)
+    private String restauracioResultat;
+
+    @Column(name = "restauracio_resultat_el")
+    private LocalDateTime restauracioResultatEl;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

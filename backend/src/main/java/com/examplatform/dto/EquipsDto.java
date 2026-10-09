@@ -38,6 +38,12 @@ public record EquipsDto(
             /** Avisos que no impedeixen l'examen (Isard no respon, poc disc…). */
             List<String> avisos,
             /** Si l'estat és ALTERAT: què és diferent de la referència ('+' és d'aquest ordinador, '−' és de la referència). */
-            List<String> diferencies
+            List<String> diferencies,
+            /** Hi ha una restauració demanada (i no ha caducat) que l'ordinador encara no ha fet. */
+            boolean restauracioPendent,
+            LocalDateTime restauracioDemanadaEl,
+            /** «OK» o el motiu de l'error de l'última restauració informada per l'ordinador. */
+            String restauracioResultat,
+            LocalDateTime restauracioResultatEl
     ) {}
 }

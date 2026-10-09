@@ -21,6 +21,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class EquipsControllerTest {
@@ -33,6 +35,7 @@ class EquipsControllerTest {
     void setUp() {
         servei = mock(EquipsService.class);
         limitador = mock(InformeEquipsRateLimiter.class);
+        when(servei.registraInforme(any(), any(), any(), any())).thenReturn(new EquipsService.Resposta(false));
         mvc = MockMvcBuilders.standaloneSetup(new EquipsController(servei, limitador))
                 .setControllerAdvice(new GlobalExceptionHandler()).build();
     }
@@ -44,11 +47,11 @@ class EquipsControllerTest {
     }
 
     @Test
-    void un_informe_correcte_respon_204_i_passa_les_dades_al_servei_amb_la_ip_d_origen() throws Exception {
+    void un_informe_correcte_respon_ok_i_passa_les_dades_al_servei_amb_la_ip_d_origen() throws Exception {
         mvc.perform(informe().param("nom", "pc19").param("integritat", "a  x\nb  y").param("arribaPlataforma", "true")
                         .param("arribaIsard", "false").param("navegador", "Firefox 155").param("discLliureMb", "20000")
                         .param("uptimeSegons", "3600").param("usuarisDins", "0"))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk()).andExpect(content().string("OK"));
 
         verify(limitador).consumeix("10.100.94.19");
         ArgumentCaptor<EquipsService.Informe> c = ArgumentCaptor.forClass(EquipsService.Informe.class);
@@ -63,7 +66,7 @@ class EquipsControllerTest {
 
     @Test
     void nomes_el_nom_es_obligatori() throws Exception {
-        mvc.perform(informe().param("nom", "pc19")).andExpect(status().isNoContent());
+        mvc.perform(informe().param("nom", "pc19")).andExpect(status().isOk());
         mvc.perform(informe()).andExpect(status().isBadRequest());
     }
 
@@ -112,5 +115,40 @@ class EquipsControllerTest {
     void l_informe_no_demana_sessio_perque_l_envien_els_ordinadors() {
         assertThat(preAuthorize("informe")).isNull();
         assertThat(UUID.randomUUID()).isNotNull();
+    }
+
+    // ── Restauració ───────────────────────────────────────────────────────────
+
+    @Test
+    void amb_una_restauracio_pendent_la_resposta_a_l_informe_es_restaura_en_text_pla_i_res_mes() throws Exception {
+        when(servei.registraInforme(any(), any(), any(), any())).thenReturn(new EquipsService.Resposta(true));
+
+        mvc.perform(informe().param("nom", "pc19")).andExpect(status().isOk()).andExpect(content().string("RESTAURA"));
+    }
+
+    @Test
+    void el_resultat_de_la_restauracio_arriba_al_servei() throws Exception {
+        mvc.perform(informe().param("nom", "pc19").param("restauracio", "ok")).andExpect(status().isOk());
+
+        ArgumentCaptor<EquipsService.Informe> c = ArgumentCaptor.forClass(EquipsService.Informe.class);
+        verify(servei).registraInforme(any(), any(), c.capture(), any());
+        assertThat(c.getValue().restauracio()).isEqualTo("ok");
+    }
+
+    @Test
+    void demanar_i_cancel_lar_la_restauracio_responen_204_i_criden_el_servei() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        mvc.perform(post("/api/equips/" + id + "/restaura")).andExpect(status().isNoContent());
+        mvc.perform(delete("/api/equips/" + id + "/restaura")).andExpect(status().isNoContent());
+
+        verify(servei).demanaRestauracio(eq(id), any(), any());
+        verify(servei).cancelaRestauracio(eq(id), any());
+    }
+
+    @Test
+    void demanar_i_cancel_lar_la_restauracio_nomes_ho_fa_l_administrador() {
+        assertThat(preAuthorize("demanaRestauracio")).isEqualTo("hasRole('ADMIN')");
+        assertThat(preAuthorize("cancelaRestauracio")).isEqualTo("hasRole('ADMIN')");
     }
 }

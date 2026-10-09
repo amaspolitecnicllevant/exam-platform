@@ -52,7 +52,7 @@ class EquipsServiceTest {
     }
 
     private static Informe informe(String nom, String integritat) {
-        return new Informe(nom, integritat, true, true, "Firefox 155", 20000, 3600L, 0);
+        return new Informe(nom, integritat, true, true, "Firefox 155", 20000, 3600L, 0, null);
     }
 
     private void aulaConeguda() {
@@ -183,7 +183,7 @@ class EquipsServiceTest {
         when(equipRepository.findByAulaIdAndNom(aula.getId(), "pc19")).thenReturn(Optional.empty());
         when(equipRepository.countByAulaId(aula.getId())).thenReturn(0L);
 
-        service.registraInforme(TOKEN, "10.100.94.19", new Informe("pc19", null, null, null, null, null, null, null), ARA);
+        service.registraInforme(TOKEN, "10.100.94.19", new Informe("pc19", null, null, null, null, null, null, null, null), ARA);
 
         EquipAula e = desat();
         assertThat(e.getIntegritat()).isEmpty();
@@ -370,4 +370,124 @@ class EquipsServiceTest {
         assertThat(d.faTemps()).isZero();
     }
 
+
+    // ── Restauració demanada des de l'aplicació ───────────────────────────────
+
+    private void informaIDesa(String nom, String restauracio, LocalDateTime ara, EquipAula existent) {
+        aulaConeguda();
+        when(equipRepository.findByAulaIdAndNom(aula.getId(), nom)).thenReturn(Optional.of(existent));
+        service.registraInforme(TOKEN, "10.100.94.19", new Informe(nom, LLISTA, true, true, "Firefox", 20000, 60L, 0, restauracio), ara);
+    }
+
+    @Test
+    void demanar_la_restauracio_nomes_marca_l_ordinador_i_ho_deixa_a_l_auditoria() {
+        EquipAula e = equip("pc19", LLISTA, ARA, true);
+        when(equipRepository.findById(e.getId())).thenReturn(Optional.of(e));
+
+        service.demanaRestauracio(e.getId(), admin, ARA);
+
+        assertThat(e.getRestauracioDemanadaEl()).isEqualTo(ARA);
+        verify(equipRepository).save(e);
+        verify(auditLog).log(eq(admin.getId()), eq("EQUIP_RESTAURACIO_DEMANADA"), contains("pc19"));
+    }
+
+    @Test
+    void amb_una_restauracio_pendent_la_resposta_a_l_informe_diu_que_restauri() {
+        EquipAula e = equip("pc19", LLISTA, ARA, true);
+        e.setRestauracioDemanadaEl(ARA.minusMinutes(5));
+
+        informaIDesa("pc19", null, ARA, e);
+
+        // La resposta la dona el servei; aquí es comprova que la petició segueix pendent fins que l'ordinador n'informi
+        assertThat(e.getRestauracioDemanadaEl()).isEqualTo(ARA.minusMinutes(5));
+    }
+
+    @Test
+    void el_servei_respon_restaura_nomes_si_hi_ha_una_restauracio_pendent_no_caducada() {
+        aulaConeguda();
+        EquipAula pendent = equip("pc1", LLISTA, ARA, true);
+        pendent.setRestauracioDemanadaEl(ARA.minusHours(23));
+        EquipAula caducada = equip("pc2", LLISTA, ARA, true);
+        caducada.setRestauracioDemanadaEl(ARA.minusHours(25));
+        EquipAula res = equip("pc3", LLISTA, ARA, true);
+        when(equipRepository.findByAulaIdAndNom(aula.getId(), "pc1")).thenReturn(Optional.of(pendent));
+        when(equipRepository.findByAulaIdAndNom(aula.getId(), "pc2")).thenReturn(Optional.of(caducada));
+        when(equipRepository.findByAulaIdAndNom(aula.getId(), "pc3")).thenReturn(Optional.of(res));
+
+        assertThat(service.registraInforme(TOKEN, "10.100.94.1", informe("pc1", LLISTA), ARA).restaura()).isTrue();
+        assertThat(service.registraInforme(TOKEN, "10.100.94.2", informe("pc2", LLISTA), ARA).restaura()).isFalse();
+        assertThat(service.registraInforme(TOKEN, "10.100.94.3", informe("pc3", LLISTA), ARA).restaura()).isFalse();
+    }
+
+    @Test
+    void quan_l_ordinador_informa_que_ha_restaurat_es_tanca_la_peticio_i_es_desa_el_resultat() {
+        EquipAula e = equip("pc19", LLISTA, ARA.minusMinutes(10), true);
+        e.setRestauracioDemanadaEl(ARA.minusMinutes(10));
+
+        informaIDesa("pc19", "ok", ARA, e);
+
+        assertThat(e.getRestauracioDemanadaEl()).isNull();
+        assertThat(e.getRestauracioResultat()).isEqualTo("OK");
+        assertThat(e.getRestauracioResultatEl()).isEqualTo(ARA);
+        verify(auditLog).log(isNull(), eq("EQUIP_RESTAURAT"), contains("pc19"));
+        assertThat(EquipsService.restauracioPendent(e, ARA)).isFalse();
+    }
+
+    @Test
+    void si_la_restauracio_falla_es_desa_el_motiu_i_no_es_torna_a_demanar_sola() {
+        EquipAula e = equip("pc19", LLISTA, ARA.minusMinutes(10), true);
+        e.setRestauracioDemanadaEl(ARA.minusMinutes(10));
+
+        informaIDesa("pc19", "no trobo l'script local\nde preparació", ARA, e);
+
+        assertThat(e.getRestauracioDemanadaEl()).isNull();
+        assertThat(e.getRestauracioResultat()).isEqualTo("no trobo l'script local de preparació");
+        verify(auditLog).log(isNull(), eq("EQUIP_RESTAURACIO_FALLIDA"), contains("no trobo l'script local"));
+    }
+
+    @Test
+    void un_motiu_d_error_massa_llarg_es_retalla() {
+        EquipAula e = equip("pc19", LLISTA, ARA, true);
+        e.setRestauracioDemanadaEl(ARA);
+
+        informaIDesa("pc19", "x".repeat(1000), ARA, e);
+
+        assertThat(e.getRestauracioResultat()).hasSize(200);
+    }
+
+    @Test
+    void cancel_lar_la_restauracio_la_treu_i_ho_deixa_a_l_auditoria() {
+        EquipAula e = equip("pc19", LLISTA, ARA, true);
+        e.setRestauracioDemanadaEl(ARA);
+        when(equipRepository.findById(e.getId())).thenReturn(Optional.of(e));
+
+        service.cancelaRestauracio(e.getId(), admin);
+
+        assertThat(e.getRestauracioDemanadaEl()).isNull();
+        verify(auditLog).log(eq(admin.getId()), eq("EQUIP_RESTAURACIO_CANCELADA"), contains("pc19"));
+    }
+
+    @Test
+    void la_consulta_diu_si_hi_ha_una_restauracio_pendent_i_el_darrer_resultat() {
+        EquipAula pendent = equip("pc1", LLISTA, ARA.minusMinutes(5), true);
+        pendent.setRestauracioDemanadaEl(ARA.minusMinutes(2));
+        pendent.setRestauracioResultat("OK");
+        pendent.setRestauracioResultatEl(ARA.minusDays(1));
+        EquipAula caducada = equip("pc2", LLISTA, ARA.minusMinutes(5), true);
+        caducada.setRestauracioDemanadaEl(ARA.minusHours(30));
+
+        EquipsDto d = consulta(referencia(LLISTA), pendent, caducada);
+
+        assertThat(d.equips().get(0).restauracioPendent()).isTrue();
+        assertThat(d.equips().get(0).restauracioResultat()).isEqualTo("OK");
+        assertThat(d.equips().get(1).restauracioPendent()).isFalse();
+    }
+
+    @Test
+    void demanar_o_cancel_lar_una_restauracio_d_un_ordinador_inexistent_es_un_error() {
+        when(equipRepository.findById(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.demanaRestauracio(UUID.randomUUID(), admin, ARA)).isInstanceOf(NoSuchElementException.class);
+        assertThatThrownBy(() -> service.cancelaRestauracio(UUID.randomUUID(), admin)).isInstanceOf(NoSuchElementException.class);
+    }
 }

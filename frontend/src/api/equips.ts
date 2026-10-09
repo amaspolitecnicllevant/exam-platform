@@ -20,6 +20,12 @@ export interface Equip {
   avisos: string[]
   /** Si és ALTERAT: «+» és d'aquest ordinador, «−» és de la referència */
   diferencies: string[]
+  /** Hi ha una restauració demanada que l'ordinador encara no ha fet */
+  restauracioPendent: boolean
+  restauracioDemanadaEl?: string | null
+  /** «OK» o el motiu de l'error de l'última restauració */
+  restauracioResultat?: string | null
+  restauracioResultatEl?: string | null
 }
 
 export interface EquipsAula {
@@ -37,6 +43,12 @@ export const getEquipsAula = (aulaId: string) =>
 
 export const fixaReferenciaEquip = (equipId: string) =>
   client.post(`/equips/${equipId}/referencia`).then(() => {})
+
+export const demanaRestauracio = (equipId: string) =>
+  client.post(`/equips/${equipId}/restaura`).then(() => {})
+
+export const cancelaRestauracio = (equipId: string) =>
+  client.delete(`/equips/${equipId}/restaura`).then(() => {})
 
 export const esborraEquip = (equipId: string) =>
   client.delete(`/equips/${equipId}`).then(() => {})

@@ -97,6 +97,22 @@ class EquipAulaRepositoryIntegrationTest {
     }
 
     @Test
+    void la_restauracio_es_desa_i_es_llegeix() {
+        EquipAula e = equip(aula, "pc1");
+        e.setRestauracioDemanadaEl(LocalDateTime.of(2026, 10, 9, 13, 0));
+        e.setRestauracioResultat("no trobo l'script local");
+        e.setRestauracioResultatEl(LocalDateTime.of(2026, 10, 8, 9, 0));
+        equipRepository.saveAndFlush(e);
+        em.clear();
+
+        EquipAula llegit = equipRepository.findByAulaIdAndNom(aula.getId(), "pc1").orElseThrow();
+
+        assertThat(llegit.getRestauracioDemanadaEl()).isEqualTo(LocalDateTime.of(2026, 10, 9, 13, 0));
+        assertThat(llegit.getRestauracioResultat()).isEqualTo("no trobo l'script local");
+        assertThat(llegit.getRestauracioResultatEl()).isEqualTo(LocalDateTime.of(2026, 10, 8, 9, 0));
+    }
+
+    @Test
     void nomes_pot_haver_hi_una_referencia() {
         referenciaRepository.saveAndFlush(EquipsReferencia.builder().id(EquipsReferencia.ID).integritat("x")
                 .integritatResum("r".repeat(64)).origenNom("pc19").fixadaEl(LocalDateTime.now()).build());

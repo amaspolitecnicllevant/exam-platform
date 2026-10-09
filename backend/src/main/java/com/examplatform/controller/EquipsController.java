@@ -28,8 +28,9 @@ public class EquipsController {
     private final InformeEquipsRateLimiter limitador;
 
     /** Informe d'un ordinador (formulari, perquè el script de l'ordinador no hagi d'escapar JSON). */
-    @PostMapping(path = "/api/equips/informe", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ResponseEntity<Void> informe(@RequestHeader(name = "X-Equip-Token", required = false) String token,
+    @PostMapping(path = "/api/equips/informe", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+                 produces = MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<String> informe(@RequestHeader(name = "X-Equip-Token", required = false) String token,
                                         @RequestParam String nom,
                                         @RequestParam(required = false) String integritat,
                                         @RequestParam(required = false) Boolean arribaPlataforma,
@@ -38,12 +39,15 @@ public class EquipsController {
                                         @RequestParam(required = false) Integer discLliureMb,
                                         @RequestParam(required = false) Long uptimeSegons,
                                         @RequestParam(required = false) Integer usuarisDins,
+                                        @RequestParam(required = false) String restauracio,
                                         HttpServletRequest request) {
         String ip = IpUtil.clientIp(request);
         limitador.consumeix(ip);
-        servei.registraInforme(token, ip, new EquipsService.Informe(nom, integritat, arribaPlataforma, arribaIsard,
-                navegador, discLliureMb, uptimeSegons, usuarisDins), LocalDateTime.now());
-        return ResponseEntity.noContent().build();
+        EquipsService.Resposta r = servei.registraInforme(token, ip, new EquipsService.Informe(nom, integritat,
+                arribaPlataforma, arribaIsard, navegador, discLliureMb, uptimeSegons, usuarisDins, restauracio),
+                LocalDateTime.now());
+        // Text pla i curt perquè el script de l'ordinador el pugui llegir: RESTAURA o OK. Mai codi.
+        return ResponseEntity.ok(r.restaura() ? "RESTAURA" : "OK");
     }
 
     /** Els professors també la veuen: abans d'un examen han de saber quins ordinadors fa temps que no s'encenen. */
@@ -57,6 +61,21 @@ public class EquipsController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> fixaReferencia(@PathVariable UUID equipId, @AuthenticationPrincipal User admin) {
         servei.fixaReferencia(equipId, admin, LocalDateTime.now());
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Demana restaurar un ordinador. No envia codi: només el marca perquè l'ordinador executi la seva còpia local de l'script. */
+    @PostMapping("/api/equips/{equipId}/restaura")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> demanaRestauracio(@PathVariable UUID equipId, @AuthenticationPrincipal User admin) {
+        servei.demanaRestauracio(equipId, admin, LocalDateTime.now());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/api/equips/{equipId}/restaura")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> cancelaRestauracio(@PathVariable UUID equipId, @AuthenticationPrincipal User admin) {
+        servei.cancelaRestauracio(equipId, admin);
         return ResponseEntity.noContent().build();
     }
 

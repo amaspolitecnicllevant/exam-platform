@@ -38,6 +38,8 @@ public class EquipsService {
 
     static final Pattern NOM = Pattern.compile("^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$");
     public static final int MAX_INTEGRITAT = 100_000;
+    /** Una restauració demanada que l'ordinador no ha recollit en tant de temps es considera caducada. */
+    public static final Duration CADUCITAT_RESTAURACIO = Duration.ofHours(24);
     static final int MAX_DIFERENCIES = 20;
     static final int DISC_MINIM_MB = 2000;
 
@@ -68,12 +70,17 @@ public class EquipsService {
 
     /** Un informe tal com el rep l'API. Els camps opcionals poden ser null. */
     public record Informe(String nom, String integritat, Boolean arribaPlataforma, Boolean arribaIsard,
-                          String navegador, Integer discLliureMb, Long uptimeSegons, Integer usuarisDins) {}
+                          String navegador, Integer discLliureMb, Long uptimeSegons, Integer usuarisDins,
+                          /** Si l'ordinador acaba d'intentar una restauració: «ok» o el motiu de l'error. */
+                          String restauracio) {}
+
+    /** El que se li respon a l'ordinador: només si ha de restaurar-se (mai codi ni dades). */
+    public record Resposta(boolean restaura) {}
 
     // ── Recepció d'informes ───────────────────────────────────────────────────
 
     @Transactional
-    public void registraInforme(String tokenRebut, String ip, Informe inf, LocalDateTime ara) {
+    public Resposta registraInforme(String tokenRebut, String ip, Informe inf, LocalDateTime ara) {
         if (token.isBlank()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La recepció d'informes d'ordinadors no està activada");
         }
@@ -108,7 +115,22 @@ public class EquipsService {
         equip.setDiscLliureMb(inf.discLliureMb());
         equip.setArrencada(inf.uptimeSegons() == null || inf.uptimeSegons() < 0 ? null : ara.minusSeconds(inf.uptimeSegons()));
         equip.setUsuarisDins(inf.usuarisDins());
+        if (inf.restauracio() != null && !inf.restauracio().isBlank()) {
+            // L'ordinador acaba d'intentar la restauració que se li havia demanat: es tanca la petició
+            boolean ok = inf.restauracio().strip().equalsIgnoreCase("ok");
+            equip.setRestauracioResultat(ok ? "OK" : retalla(inf.restauracio(), 200));
+            equip.setRestauracioResultatEl(ara);
+            equip.setRestauracioDemanadaEl(null);
+            auditLog.log(null, ok ? "EQUIP_RESTAURAT" : "EQUIP_RESTAURACIO_FALLIDA",
+                    "ordinador " + equip.getNom() + " (" + aula.getNom() + ")" + (ok ? "" : ": " + equip.getRestauracioResultat()));
+        }
         equipRepository.save(equip);
+        return new Resposta(restauracioPendent(equip, ara));
+    }
+
+    static boolean restauracioPendent(EquipAula e, LocalDateTime ara) {
+        return e.getRestauracioDemanadaEl() != null
+                && e.getRestauracioDemanadaEl().plus(CADUCITAT_RESTAURACIO).isAfter(ara);
     }
 
     private Optional<Aula> aulaDe(String ip) {
@@ -149,7 +171,8 @@ public class EquipsService {
         return new EquipsDto.Equip(e.getId(), e.getNom(), e.getIp(), e.getDarrerInforme(), estat,
                 sense.compareTo(faTemps) >= 0, Math.max(0, sense.toDays()),
                 e.getArribaPlataforma(), e.getArribaIsard(), e.getNavegador(), e.getDiscLliureMb(), e.getArrencada(),
-                e.getUsuarisDins(), avisos(e), estat == Estat.ALTERAT ? diferencies(ref.getIntegritat(), e.getIntegritat()) : List.of());
+                e.getUsuarisDins(), avisos(e), estat == Estat.ALTERAT ? diferencies(ref.getIntegritat(), e.getIntegritat()) : List.of(),
+                restauracioPendent(e, ara), e.getRestauracioDemanadaEl(), e.getRestauracioResultat(), e.getRestauracioResultatEl());
     }
 
     Estat estat(EquipAula e, EquipsReferencia ref, LocalDateTime ara) {
@@ -209,6 +232,25 @@ public class EquipsService {
         ref.setFixadaEl(ara);
         referenciaRepository.save(ref);
         auditLog.log(admin.getId(), "EQUIPS_REFERENCIA_FIXADA", "ordinador " + e.getNom() + " (" + e.getAula().getNom() + ")");
+    }
+
+    /** Demana restaurar un ordinador: només es marca. L'ordinador ho farà en el seu proper informe (≤ 15 min). */
+    @Transactional
+    public void demanaRestauracio(UUID equipId, User admin, LocalDateTime ara) {
+        EquipAula e = equipRepository.findById(equipId)
+                .orElseThrow(() -> new NoSuchElementException("Ordinador no trobat: " + equipId));
+        e.setRestauracioDemanadaEl(ara);
+        equipRepository.save(e);
+        auditLog.log(admin.getId(), "EQUIP_RESTAURACIO_DEMANADA", "ordinador " + e.getNom() + " (" + e.getAula().getNom() + ")");
+    }
+
+    @Transactional
+    public void cancelaRestauracio(UUID equipId, User admin) {
+        EquipAula e = equipRepository.findById(equipId)
+                .orElseThrow(() -> new NoSuchElementException("Ordinador no trobat: " + equipId));
+        e.setRestauracioDemanadaEl(null);
+        equipRepository.save(e);
+        auditLog.log(admin.getId(), "EQUIP_RESTAURACIO_CANCELADA", "ordinador " + e.getNom() + " (" + e.getAula().getNom() + ")");
     }
 
     @Transactional
