@@ -121,6 +121,9 @@ Els altres usuaris els crees des de *Gestió d'usuaris* (un a un o important un 
 | `APP_ALLOWED_ORIGINS` | `http://localhost:3000` | Orígens des d'on es pot fer servir l'aplicació (CORS), separats per comes. Han de ser **exactament** el que escriuen els usuaris al navegador: esquema, nom o IP i port (`https://10.0.0.5:3443`). Si falta l'adreça que es fa servir, el navegador bloqueja les peticions i **el login falla**. Si s'hi entra per IP i per nom, posa-les totes dues. |
 | `FRONTEND_URL` | `http://localhost:3000` | URL pública, sense barra final. **Només la fa servir el login amb Google** (a on redirigeix en acabar). Amb usuari i contrasenya no té efecte. |
 | `COMPOSE_FILE` | *(només `docker-compose.yml`)* | Quins fitxers de compose s'apliquen, separats per «:». Serveix per activar l'HTTPS (`docker-compose.https.yml`) i la còpia remota (`docker-compose.copies-remotes.yml`). |
+| `EQUIPS_TOKEN` | *(buit: desactivat)* | Testimoni compartit amb els ordinadors de les aules perquè enviïn l'informe del seu estat (pantalla *Aules*). Genera'l amb `openssl rand -hex 24`. Sense valor, la recepció d'informes no funciona. |
+| `EQUIPS_SENSE_NOTICIES_MIN` | `45` | Minuts sense cap informe a partir dels quals un ordinador surt com a «sense notícies». Els ordinadors n'envien un cada 15. |
+| `EQUIPS_AVIS_DIES` | `7` | Dies sense cap informe a partir dels quals es diu que un ordinador **fa temps que no s'encén**. Els professors ho veuen en preparar un examen amb aula i han de demanar que s'encenguin. |
 | `HTTPS_PORT` | `3443` | Port de l'HTTPS. Vegeu [https.md](https.md) (certificats, instal·lació de `ca.crt` als ordinadors, renovació). |
 
 Amb l'HTTPS actiu, el port 3000 només redirigeix al 3443.
@@ -332,6 +335,10 @@ Tots dos usuaris:
 - **no poden muntar un pendrive** ni fer cap acció privilegiada (regla de polkit);
 - en el perfil quiosc, no poden canviar a una consola (Ctrl+Alt+F1…).
 
+El perfil quiosc pot tenir un **menú d'entrada** (opció `--menu` / `--isard-url` de l'script) amb *Plataforma d'exàmens*, *Isard* (web) i
+*Aturar l'ordinador*. Si s'activa, aquest usuari té l'única excepció de poder **apagar** l'ordinador. El menú surt una vegada per sessió:
+en tancar el navegador la sessió s'acaba i es buida la casa.
+
 La **sortida a internet** durant l'examen no la gestiona aquesta aplicació: es fa amb el programa de l'institut que limita la connexió.
 
 **Com es fa.** A cada ordinador (Linux Mint o Ubuntu amb LightDM), amb un usuari administrador, es fa servir l'script `prepara-usuari-examen.sh`,
@@ -347,6 +354,16 @@ que és a la guia [Usuaris d'examen als ordinadors de l'aula](usuari-examen-linu
 
 > **Atenció.** L'script **no s'ha provat en cap ordinador real**. Pot dependre de la versió de LightDM, del gestor de finestres i del
 > navegador. Fes la prova en un ordinador abans d'estendre'l, i recorda que el Firefox ha de ser el `.deb` (no el `snap`).
+
+**Estat dels ordinadors a l'aplicació.** La pantalla *Aules* pot mostrar si els ordinadors de cada aula estan preparats: cada ordinador envia cada 15 minuts un
+informe d'estat (no cal que l'aplicació s'hi connecti ni guardi credencials). Els professors, en preparar un examen amb aula, veuen quins ordinadors **fa temps
+que no s'encenen** perquè demanin que els encenguin i es puguin comprovar. Es configura amb `EQUIPS_TOKEN` (§4.3) i amb una opció de l'script dels usuaris
+d'examen; vegeu l'apartat 5c d'aquella guia.
+
+**Alumnes amb permisos d'administrador.** Si alguns alumnes (per exemple, els de superior) són administradors dels ordinadors, poden desfer
+aquesta configuració abans de l'examen. Cal **reclonar** els ordinadors des de la imatge abans de cada examen, i/o **comprovar-ne la integritat**
+des d'un ordinador d'administració, comparant-los amb un ordinador de referència net (vegeu l'apartat 5b de la guia dels usuaris d'examen).
+Aquesta comprovació detecta descuits i manipulacions normals, però no a algú amb `root` que sàpiga falsejar-la.
 
 **Què no cobreix.** No protegeix de l'accés físic a l'ordinador (arrencar des d'un USB, canviar la BIOS: cal contrasenya de la BIOS i
 arrencada només des del disc) ni del que l'alumne tingui fora de l'ordinador (el mòbil). Cap mesura tècnica ho substitueix: la vigilància
