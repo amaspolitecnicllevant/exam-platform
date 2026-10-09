@@ -150,6 +150,15 @@ function ExamTake() {
   // cada segon s'endarrereix quan la pestanya és en segon pla
   const [deadline, setDeadline] = useState<number | null>(null)
   const avisosMostrats = useRef({ deu: false, un: false })
+  // Els diàlegs natius (confirm) fan perdre el focus a la finestra: no és una sortida de l'examen.
+  // Fins a aquest instant (ms) no es registren pèrdues de focus.
+  const ignoraFocusFins = useRef(0)
+  /** confirm() sense que el diàleg compti com a pèrdua de focus (l'esdeveniment arriba quan es tanca). */
+  const confirmaSenseFocus = (missatge: string): boolean => {
+    const resposta = window.confirm(missatge)
+    ignoraFocusFins.current = Date.now() + 1000
+    return resposta
+  }
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
@@ -165,6 +174,7 @@ function ExamTake() {
     let lastLoss = 0
     const onLoss = () => {
       const now = Date.now()
+      if (now < ignoraFocusFins.current) return
       if (now - lastLoss < 1000) return
       lastLoss = now
       setFocusWarning(true)
@@ -316,7 +326,7 @@ function ExamTake() {
 
   const handleEsborraFitxer = async (q: Q) => {
     if (!session || submitted) return
-    if (!confirm('Vols esborrar el fitxer pujat?')) return
+    if (!confirmaSenseFocus('Vols esborrar el fitxer pujat?')) return
     try {
       await esborraFitxerResposta(session.id, q.id)
       setFitxers(prev => { const n = { ...prev }; delete n[q.id]; return n })
@@ -592,7 +602,7 @@ function ExamTake() {
     const avis = senseResposta > 0
       ? `Tens ${senseResposta} ${senseResposta === 1 ? 'pregunta' : 'preguntes'} sense resposta. `
       : ''
-    if (!confirm(`${avis}Enviar l'examen? No es podran modificar les respostes.`)) return
+    if (!confirmaSenseFocus(`${avis}Enviar l'examen? No es podran modificar les respostes.`)) return
     setSubmit(true)
     await desaTot()
     try {
