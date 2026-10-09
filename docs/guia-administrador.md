@@ -5,7 +5,7 @@ l'aplicació, com està muntada i, sobretot, **què es pot configurar** i on: al
 *Configuració* de l'aplicació o, per a uns pocs valors, al `docker-compose.yml`.
 
 Altres guies: [professor](guia-professor.md) · [alumne](guia-alumne.md) · [desplegament en una VM](desplegament-vm.md) ·
-[HTTPS](https.md) · [còpies de seguretat](copies-seguretat.md) · [funcionalitats per rol](funcionalitats.md).
+[HTTPS](https.md) · [còpies de seguretat](copies-seguretat.md) · [usuaris d'examen als ordinadors](usuari-examen-linux.md) · [funcionalitats per rol](funcionalitats.md).
 
 ---
 
@@ -307,4 +307,47 @@ BACKUP_GID=1000
 | El bloqueig de la segona pestanya no funciona | Només funciona amb HTTPS o `localhost` (necessita un context segur del navegador). Accedint per `http://IP` el navegador no ho permet i només queda el registre de pèrdues de focus. Activa l'[HTTPS](https.md) |
 | Un canvi al `.env` no té efecte | Has fet `restart` en lloc de `up -d`, o la variable és de la §4.8 |
 | Pujar un fitxer dona un error 500 | Les carpetes `/opt/exam-*` no són escrivibles pel backend: vegeu §2 |
+| Els alumnes tenen altres programes oberts durant l'examen | La plataforma no ho pot veure ni impedir. Cal que facin l'examen amb un usuari d'examen tancat als ordinadors de l'aula: vegeu §9 |
 | Un lliurament «ja no està disponible» | El fitxer ha desaparegut del disc; restaura `/opt/exam-files` d'una còpia (mira *Espai ocupat*) |
+
+---
+
+## 9. Els ordinadors de l'aula: usuaris d'examen
+
+La plataforma només pot vigilar el que passa **dins del navegador**: detecta quan l'alumne canvia de pestanya o de finestra i bloqueja una
+segona pestanya, però **no pot veure ni impedir** que tingui altres programes oberts (un navegador no ho permet). Perquè l'examen es faci
+sense altres programes, cal preparar els **ordinadors** de l'aula. Per això, **a cada ordinador s'ha de crear una sèrie d'usuaris
+per als exàmens**, que els alumnes fan servir en lloc del seu usuari habitual. La contrasenya d'aquests usuaris la saben els alumnes, de
+manera que la seguretat **no pot dependre que sigui secreta**: l'usuari ha d'estar tancat de manera que no hi puguin fer res.
+
+| Usuari (suggerit) | Perfil | Per a quins exàmens | Què pot fer |
+|:--|:--|:--|:--|
+| `examen` | **quiosc** | Sense lliurament de fitxer | Només el navegador, a pantalla completa, amb la plataforma. Sense escriptori, menús, terminal ni altres programes. Tancar el navegador tanca la sessió |
+| `examen-fitxers` | **escriptori** | Amb lliurament de fitxer (Word, Packet Tracer…) | L'escriptori i els programes de l'ordinador, però sense permisos |
+
+Tots dos usuaris:
+
+- tenen la **casa a la memòria**, que es buida a cada sessió: res del que s'hi gravi (documents, descàrregues…) es conserva;
+- **no tenen shell** (no s'hi pot entrar per consola ni per SSH), ni grups, ni `sudo`, ni `cron`;
+- **no poden muntar un pendrive** ni fer cap acció privilegiada (regla de polkit);
+- en el perfil quiosc, no poden canviar a una consola (Ctrl+Alt+F1…).
+
+La **sortida a internet** durant l'examen no la gestiona aquesta aplicació: es fa amb el programa de l'institut que limita la connexió.
+
+**Com es fa.** A cada ordinador (Linux Mint o Ubuntu amb LightDM), amb un usuari administrador, es fa servir l'script `prepara-usuari-examen.sh`,
+que és a la guia [Usuaris d'examen als ordinadors de l'aula](usuari-examen-linux.md) (apartat 6). En resum:
+
+1. Es copia el `ca.crt` del centre a l'ordinador (el de `infra/tls/certs/`; vegeu [https.md](https.md)).
+2. Es crea l'script amb el contingut de la guia i s'executa un cop per usuari:
+   `sudo ./prepara-usuari-examen.sh --url https://<adreça de la plataforma> --ca ~/ca.crt` (quiosc) i
+   `sudo ./prepara-usuari-examen.sh --perfil escriptori --usuari examen-fitxers` (escriptori).
+3. **Es reinicia l'ordinador** (`sudo reboot`): LightDM només llegeix la configuració en arrencar; sense reiniciar, el mode quiosc no s'activa.
+   Els usuaris d'examen **no surten a la llista** de la pantalla d'entrada: els alumnes han de triar l'opció d'escriure l'usuari i posar-hi el nom (`examen`).
+4. **Es prova en UN sol ordinador** amb la llista de comprovació de la guia (apartat 4), i només després es repeteix a la resta.
+
+> **Atenció.** L'script **no s'ha provat en cap ordinador real**. Pot dependre de la versió de LightDM, del gestor de finestres i del
+> navegador. Fes la prova en un ordinador abans d'estendre'l, i recorda que el Firefox ha de ser el `.deb` (no el `snap`).
+
+**Què no cobreix.** No protegeix de l'accés físic a l'ordinador (arrencar des d'un USB, canviar la BIOS: cal contrasenya de la BIOS i
+arrencada només des del disc) ni del que l'alumne tingui fora de l'ordinador (el mòbil). Cap mesura tècnica ho substitueix: la vigilància
+a l'aula continua sent necessària.
