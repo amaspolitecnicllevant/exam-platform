@@ -345,10 +345,10 @@ La **sortida a internet** durant l'examen no la gestiona aquesta aplicació: es 
 que és a la guia [Usuaris d'examen als ordinadors de l'aula](usuari-examen-linux.md) (apartat 6). En resum:
 
 1. Es copia el `ca.crt` del centre a l'ordinador (el de `infra/tls/certs/`; vegeu [https.md](https.md)).
-2. Es crea l'script amb el contingut de la guia i s'executa un cop per usuari:
-   `sudo ./prepara-usuari-examen.sh --url https://<adreça de la plataforma> --ca ~/ca.crt` (quiosc) i
-   `sudo ./prepara-usuari-examen.sh --perfil escriptori --usuari examen-fitxers` (escriptori).
-3. **Es reinicia l'ordinador** (`sudo reboot`): LightDM només llegeix la configuració en arrencar; sense reiniciar, el mode quiosc no s'activa.
+2. Es crea l'script amb el contingut de la guia i s'executa amb `--tot`: una sola ordre crea l'usuari de quiosc (amb menú), l'usuari d'escriptori i
+   l'informe d'estat. És **idempotent**: només fa el que falta, de manera que es pot tornar a passar a tots els ordinadors (també als que ja estan preparats) per posar-los al dia.
+   En acabar diu què ha fet (`[fet]`), què ja hi era (`[ja]`) i si cal reiniciar. L'apartat 3b de la guia mostra com passar-lo a tota l'aula amb una llista d'adreces.
+3. **Es reinicia l'ordinador** si l'script ho demana (`sudo reboot`): LightDM només llegeix la configuració en arrencar; sense reiniciar, el mode quiosc no s'activa.
    Els usuaris d'examen **no surten a la llista** de la pantalla d'entrada: els alumnes han de triar l'opció d'escriure l'usuari i posar-hi el nom (`examen`).
 4. **Es prova en UN sol ordinador** amb la llista de comprovació de la guia (apartat 4), i només després es repeteix a la resta.
 

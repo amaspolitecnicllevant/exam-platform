@@ -49,39 +49,61 @@ Els alumnes continuen tenint el seu usuari habitual per a la resta de classes.
 
 ## 3. Instal·lar-ho
 
-Fes-ho amb un usuari administrador de l'ordinador.
+Fes-ho amb un usuari administrador de l'ordinador. **Una sola ordre ho fa tot**, i és **idempotent**: cada pas comprova si ja està fet i, si ho
+està, no el torna a fer. Es pot executar tantes vegades com calgui (per posar-se al dia, canviar una opció o repetir-ho a tota l'aula) i només
+es toca el que falta o ha canviat. En acabar diu què ha fet, què ja hi era, i si cal reiniciar l'ordinador.
 
 1. Copia el `ca.crt` a l'ordinador (per exemple a `~/ca.crt`).
 2. Crea el fitxer `prepara-usuari-examen.sh` amb **el contingut de l'apartat 6** d'aquest document i dona-li permís d'execució:
    `chmod +x prepara-usuari-examen.sh`.
-3. Crea l'usuari de **quiosc** (demanarà la contrasenya que els alumnes faran servir; **no ha de ser la de cap usuari real**):
+3. Executa'l amb `--tot`. Crea **l'usuari de quiosc `examen`** (amb el menú Plataforma d'exàmens / Isard / Aturar l'ordinador), **l'usuari
+   d'escriptori `examen-fitxers`** (per als exàmens amb fitxers) i, si dones el testimoni, **l'informe d'estat** a la plataforma:
 
    ```
-   sudo ./prepara-usuari-examen.sh --url https://examens.politecnicllevant.cat:3443 --ca ~/ca.crt
+   sudo EXAMEN_CONTRASENYA='la-contrasenya-dels-alumnes' EXAMEN_INFORME_TOKEN='el-testimoni' ./prepara-usuari-examen.sh --tot \
+        --url https://examens.politecnicllevant.cat:3443 --ca ~/ca.crt --isard-url https://isard.politecnicllevant.cat
    ```
 
-   Amb el **menú** (Plataforma d'exàmens / Isard / Aturar l'ordinador):
+   - La contrasenya (`EXAMEN_CONTRASENYA`) és la que faran servir els alumnes per als dos usuaris; **no ha de ser la de cap usuari real**. Només s'estableix si
+     l'usuari és nou o si la dones; si no la dones i els usuaris ja existeixen, **no es canvia**. Si no la dones i cal crear un usuari, la demana.
+   - El testimoni (`EXAMEN_INFORME_TOKEN`) és l'`EQUIPS_TOKEN` de la plataforma (apartat 5c). Sense testimoni no s'instal·la l'informe.
+   - Per defecte, el navegador és `firefox`; per a Chrome, `--navegador chrome`. Els noms dels usuaris es poden canviar amb `--usuari` i `--usuari-fitxers`.
+   - Sense `--tot`, es pot crear un sol usuari: `--perfil quiosc` (per defecte, amb `--menu` o `--isard-url` per al menú) o `--perfil escriptori --usuari NOM`.
+4. **Mira el final de la sortida.** Cada pas surt com `[fet]` (s'ha fet ara) o `[ja]` (ja hi era). Les dues últimes línies diuen si cal reiniciar
+   (`REINICI: cal` o `REINICI: no cal`) i el resultat (`RESULTAT: al-dia` si no ha calgut fer res, o `RESULTAT: canvis=N`).
+5. **Si diu que cal reiniciar, reinicia l'ordinador** (`sudo reboot`). No et saltis aquest pas: LightDM només llegeix la seva configuració quan arrenca, i
+   mentre no es reiniciï no farà servir el mode quiosc (l'usuari entraria amb un escriptori complet i podria fallar l'entrada). L'script ho sap veure: si
+   la configuració de LightDM és més nova que el servei en marxa, ho diu encara que la configuració no hagi canviat en aquesta execució.
 
-   ```
-   sudo ./prepara-usuari-examen.sh --url https://examens.politecnicllevant.cat:3443 --ca ~/ca.crt \
-        --isard-url https://isard.politecnicllevant.cat
-   ```
+**Mentre hi ha una sessió oberta d'un usuari d'examen**, tornar a executar l'script no li toca la casa (és en memòria) ni res del que està fent.
 
-   (Només `--menu`, sense `--isard-url`, mostra el menú sense l'entrada d'Isard.) Torna a executar-lo amb aquestes opcions per afegir el menú
-   a un usuari que ja existeix; no cal reiniciar si ja has reiniciat abans.
+### 3b. Fer-ho a tots els ordinadors de l'aula
 
-   Per defecte l'usuari és `examen`, el perfil `quiosc` i el navegador `firefox`. Per a Chrome: `--navegador chrome`.
-4. Crea l'usuari per als **exàmens amb fitxers** (perfil escriptori):
+Com que l'script només fa el que falta, es pot passar tal qual a **tots** els ordinadors, també als que ja estaven preparats. Des de l'ordinador d'administració
+(en un terminal normal), amb la llista d'adreces a `ordinadors.txt`:
 
-   ```
-   sudo ./prepara-usuari-examen.sh --perfil escriptori --usuari examen-fitxers
-   ```
+```
+read -r -s -p "Contrasenya de sudo d'lmadmin: " SPW; echo
+read -r -s -p "Contrasenya dels usuaris d'examen (sense cometes simples): " PW; echo
+read -r -s -p "Testimoni de l'informe (EQUIPS_TOKEN): " TOKEN; echo
+ORDRES="cd /home/lmadmin && chmod +x prepara-usuari-examen.sh && EXAMEN_CONTRASENYA='$PW' EXAMEN_INFORME_TOKEN='$TOKEN' ./prepara-usuari-examen.sh --tot --url https://examens.politecnicllevant.cat:3443 --ca /home/lmadmin/ca.crt --isard-url https://isard.politecnicllevant.cat"
+: > resultat-aula.txt
+for ip in $(cat ordinadors.txt); do
+  if ! scp -q -o ConnectTimeout=5 ca.crt prepara-usuari-examen.sh lmadmin@$ip:; then echo "$ip: NO RESPON" | tee -a resultat-aula.txt; continue; fi
+  SORTIDA=$(printf '%s\n' "$SPW" | ssh lmadmin@$ip "sudo -S -p '' bash -c \"$ORDRES\"" 2>&1)
+  RES=$(printf '%s\n' "$SORTIDA" | sed -n 's/^RESULTAT: //p' | tail -1)
+  REINICI=$(printf '%s\n' "$SORTIDA" | sed -n 's/^REINICI: //p' | tail -1)
+  if [ -z "$RES" ]; then echo "$ip: ERROR"; printf '%s\n' "$SORTIDA" | tail -5; echo "$ip: ERROR" >> resultat-aula.txt
+  else echo "$ip: $RES · reinici: $REINICI" | tee -a resultat-aula.txt; fi
+done
+```
 
-5. **Reinicia l'ordinador** (`sudo reboot`). **No et saltis aquest pas:** LightDM només llegeix la seva configuració quan arrenca, i
-   mentre no es reiniciï no farà servir el mode quiosc (l'usuari entraria amb un escriptori complet i podria fallar l'entrada).
+Cada línia final diu, per ordinador: `al-dia` (no ha calgut fer res), `canvis=N` (n'ha fet N), `NO RESPON` o `ERROR` (amb les últimes línies de la sortida). Els que diguin
+`reinici: cal` s'han de reiniciar (`ssh lmadmin@IP 'sudo reboot'`, millor quan no hi hagi ningú). Per saber **quins ordinadors estan al dia sense tocar res**, no cal fer res
+de diferent: n'hi ha prou amb mirar quins surten `al-dia`.
 
-L'script es pot tornar a executar sense problema (per canviar la contrasenya, la URL o el navegador). Després de tornar-lo a executar
-amb una configuració de LightDM nova, també cal reiniciar.
+Les contrasenyes viatgen per l'entrada estàndard (la de `sudo`) i per la línia d'ordres (la dels alumnes i el testimoni, que no són secrets de l'administrador però
+sí del testimoni compartit: vegeu «Seguretat i límits» de l'apartat 5c). L'ordre es pot repetir sempre que vulguis posar-los tots al dia.
 
 ## 4. Prova-ho en UN ordinador abans de continuar
 
@@ -106,8 +128,9 @@ Si res d'això no passa, **no ho repeteixis a la resta** i digues-ho (pot depend
 ## 5. Treure-ho
 
 ```
-sudo ./prepara-usuari-examen.sh --usuari examen --desfes                      # treu la configuració
-sudo ./prepara-usuari-examen.sh --usuari examen --desfes --esborra-usuari     # i esborra l'usuari
+sudo ./prepara-usuari-examen.sh --tot --desfes                               # treu la configuració dels dos usuaris (i l'informe)
+sudo ./prepara-usuari-examen.sh --tot --desfes --esborra-usuari               # i esborra els usuaris
+sudo ./prepara-usuari-examen.sh --usuari examen --desfes                      # només un usuari
 ```
 
 Quan es treu l'últim usuari d'examen, també es treuen els fitxers comuns i la línia afegida a `/etc/pam.d/lightdm`.
@@ -185,15 +208,9 @@ informar* (fa més de 45 minuts que no informa: és normal fora d'hora); *Fa N d
 **Activar-ho (un cop)**
 1. A la plataforma (`infra/.env`), posa un testimoni: `EQUIPS_TOKEN=` el resultat de `openssl rand -hex 24`. Aplica-ho amb `docker compose up -d backend`.
    Sense testimoni, la recepció d'informes està desactivada.
-2. A cada ordinador, executa l'script amb el testimoni (millor per variable d'entorn, perquè no quedi a l'historial):
-
-   ```
-   sudo EXAMEN_INFORME_TOKEN='el-testimoni' ./prepara-usuari-examen.sh --url https://examens.politecnicllevant.cat:3443 --ca ~/ca.crt \
-        --isard-url https://isard.politecnicllevant.cat
-   ```
-
-   (Amb `--informe-token` també funciona, però el testimoni queda a l'historial i a la llista de processos.) Instal·la `examen-informa` i un temporitzador
-   de systemd que s'activa 2 minuts després d'arrencar i cada 15 minuts. Si els ordinadors només tenen el perfil `escriptori`, afegeix `--informe-url` amb l'adreça de la plataforma.
+2. A cada ordinador, executa l'script de l'apartat 3 amb el testimoni (`EXAMEN_INFORME_TOKEN`, millor per variable d'entorn que no pas per `--informe-token`, perquè no quedi a
+   l'historial ni a la llista de processos). Instal·la `examen-informa` i un temporitzador de systemd que s'activa 2 minuts després d'arrencar i cada 15 minuts. Si l'ordinador ja
+   estava preparat, només s'hi afegeix l'informe. Si només tens el perfil `escriptori`, afegeix `--informe-url` amb l'adreça de la plataforma.
 3. Als pocs minuts, l'ordinador surt a *Aules → Ordinadors*. Quan un ordinador net i validat (el de prova) hi sigui, prem **Fixar com a referència** a la seva fila:
    a partir d'aquí, tots els altres es comparen amb ell. Si canvies alguna cosa a l'script, torna a fixar la referència.
 
@@ -212,27 +229,33 @@ Guarda'l com a `prepara-usuari-examen.sh`.
 
 ```bash
 #!/usr/bin/env bash
-# Prepara un ordinador de l'aula (Linux Mint / Ubuntu amb LightDM) amb un usuari «d'examen» que, encara que
-# els alumnes en sàpiguen la contrasenya, no pot deixar res gravat ni sortir del que se li permet.
+# Prepara un ordinador de l'aula (Linux Mint / Ubuntu amb LightDM) amb usuaris «d'examen» que, encara que els
+# alumnes en sàpiguen la contrasenya, no poden deixar res gravat ni sortir del que se'ls permet.
 #
-# Dos perfils (es poden crear tots dos, amb noms diferents):
-#   quiosc      L'usuari només té el navegador a pantalla completa amb la plataforma. Sense escriptori, menús,
-#               terminal ni programes; tancar el navegador tanca la sessió. Per als exàmens sense fitxers.
+# És IDEMPOTENT: cada pas comprova si ja està fet i, si ho està, no el torna a fer. Es pot executar tantes vegades
+# com calgui (per posar-se al dia, canviar una opció o repetir-ho a tota l'aula): només es toca el que falta o ha canviat.
+# En acabar diu què ha fet, què ja hi era, i si cal reiniciar l'ordinador.
+#
+# Dos perfils:
+#   quiosc      L'usuari només té el navegador a pantalla completa amb la plataforma (opcionalment, un menú amb
+#               Plataforma d'exàmens / Isard / Aturar l'ordinador). Sense escriptori, menús, terminal ni programes.
 #   escriptori  Escriptori normal amb els programes de l'ordinador (Word, Packet Tracer…), per als exàmens amb
 #               lliurament de fitxer. Se li treuen els permisos, però no els programes.
-# El perfil quiosc pot tenir un MENÚ en entrar (--menu / --isard-url): Plataforma d'exàmens, Isard i Aturar l'ordinador.
-# Amb --informe-token, l'ordinador també informa cada 15 minuts del seu estat a la plataforma (pantalla Aules).
-# Tots dos: casa a la memòria (tmpfs) que es buida a cada sessió (res no es conserva), sense shell, sense grups,
-# sense permisos de polkit (no pot muntar un pendrive) i sense cron/at.
+# Tots dos: casa a la memòria (tmpfs) que es buida a cada sessió, sense shell, sense grups, sense permisos de polkit
+# (no pot muntar un pendrive) i sense cron/at. Amb un testimoni, l'ordinador informa del seu estat a la plataforma.
 #
-# S'executa com a root, un cop a cada ordinador:
+# TOT EN UN (el normal): crea l'usuari de quiosc amb menú, l'usuari d'escriptori i l'informe d'estat:
+#     sudo EXAMEN_CONTRASENYA='…' EXAMEN_INFORME_TOKEN='…' ./prepara-usuari-examen.sh --tot \
+#          --url https://examens.centre.cat:3443 --ca ca.crt --isard-url https://isard.centre.cat
+# Un sol usuari:
 #     sudo ./prepara-usuari-examen.sh --url https://examens.centre.cat:3443 --ca ca.crt
 #     sudo ./prepara-usuari-examen.sh --perfil escriptori --usuari examen-fitxers
-#     sudo ./prepara-usuari-examen.sh --usuari examen --desfes            (ho desfà; --esborra-usuari l'esborra)
-# Es pot tornar a executar sense problema (és idempotent).
+# Desfer:
+#     sudo ./prepara-usuari-examen.sh --tot --desfes [--esborra-usuari]
 set -euo pipefail
 
-USUARI=examen
+USUARI=examen                 # usuari de quiosc (o l'únic, si no es fa servir --tot)
+USUARI_FITXERS=examen-fitxers # usuari d'escriptori (amb --tot)
 PERFIL=quiosc
 URL=""
 NAVEGADOR=firefox
@@ -242,15 +265,18 @@ ISARD_URL=""
 INFORME_URL=""
 INFORME_TOKEN="${EXAMEN_INFORME_TOKEN:-}"
 CONTRASENYA="${EXAMEN_CONTRASENYA:-}"
+TOT=0
 DESFES=0
 ESBORRA_USUARI=0
-P="${PREFIX:-}"            # només per a proves: arrel falsa on escriure (no crea usuaris ni munta res)
+P="${PREFIX:-}"               # només per a proves: arrel falsa on escriure (no crea usuaris ni munta res)
 
 ús() {
   cat <<EOF
 Ús: sudo $0 [opcions]
-  --usuari NOM        Nom de l'usuari (per defecte: examen)
-  --perfil quiosc|escriptori   (per defecte: quiosc)
+  --tot               Crea l'usuari de quiosc (amb menú) i l'usuari d'escriptori, i l'informe d'estat si hi ha testimoni
+  --usuari NOM        Usuari de quiosc, o l'únic si no hi ha --tot (per defecte: examen)
+  --usuari-fitxers NOM  Usuari d'escriptori amb --tot (per defecte: examen-fitxers)
+  --perfil quiosc|escriptori   Sense --tot (per defecte: quiosc)
   --url URL           Adreça de la plataforma (obligatòria al perfil quiosc), p. ex. https://examens.centre.cat:3443
   --navegador firefox|chrome|chromium   Perfil quiosc (per defecte: firefox)
   --ca FITXER         ca.crt del centre, perquè el navegador de l'usuari confiï en la plataforma
@@ -258,39 +284,44 @@ P="${PREFIX:-}"            # només per a proves: arrel falsa on escriure (no cr
   --isard-url URL     Afegeix «Isard» al menú (i activa el menú), p. ex. https://isard.centre.cat
   --informe-url URL   Adreça de la plataforma on enviar l'informe d'estat (per defecte, la de --url)
   --informe-token T   Testimoni (EQUIPS_TOKEN de la plataforma); o variable EXAMEN_INFORME_TOKEN. Activa l'informe
-  --contrasenya PWD   Contrasenya de l'usuari (o variable EXAMEN_CONTRASENYA; si no, la demana)
-  --desfes            Treu la configuració d'aquest usuari (amb --esborra-usuari també l'usuari)
+  --contrasenya PWD   Contrasenya dels usuaris (o variable EXAMEN_CONTRASENYA). Només s'estableix si es dona o l'usuari és nou
+  --desfes            Treu la configuració (amb --esborra-usuari també els usuaris)
 EOF
 }
 error() { echo "ERROR: $*" >&2; exit 1; }
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --usuari)      USUARI="${2:?}"; shift 2 ;;
-    --perfil)      PERFIL="${2:?}"; shift 2 ;;
-    --url)         URL="${2:?}"; shift 2 ;;
-    --navegador)   NAVEGADOR="${2:?}"; shift 2 ;;
-    --ca)          CA="${2:?}"; shift 2 ;;
-    --menu)        MENU=1; shift ;;
-    --isard-url)   ISARD_URL="${2:?}"; MENU=1; shift 2 ;;
-    --informe-url)   INFORME_URL="${2:?}"; shift 2 ;;
-    --informe-token) INFORME_TOKEN="${2:?}"; shift 2 ;;
-    --contrasenya) CONTRASENYA="${2:?}"; shift 2 ;;
-    --desfes)      DESFES=1; shift ;;
+    --tot)            TOT=1; shift ;;
+    --usuari)         USUARI="${2:?}"; shift 2 ;;
+    --usuari-fitxers) USUARI_FITXERS="${2:?}"; shift 2 ;;
+    --perfil)         PERFIL="${2:?}"; shift 2 ;;
+    --url)            URL="${2:?}"; shift 2 ;;
+    --navegador)      NAVEGADOR="${2:?}"; shift 2 ;;
+    --ca)             CA="${2:?}"; shift 2 ;;
+    --menu)           MENU=1; shift ;;
+    --isard-url)      ISARD_URL="${2:?}"; MENU=1; shift 2 ;;
+    --informe-url)    INFORME_URL="${2:?}"; shift 2 ;;
+    --informe-token)  INFORME_TOKEN="${2:?}"; shift 2 ;;
+    --contrasenya)    CONTRASENYA="${2:?}"; shift 2 ;;
+    --desfes)         DESFES=1; shift ;;
     --esborra-usuari) ESBORRA_USUARI=1; shift ;;
-    -h|--help)     ús; exit 0 ;;
+    -h|--help)        ús; exit 0 ;;
     *) ús >&2; error "opció desconeguda: $1" ;;
   esac
 done
 
-[[ "$USUARI" =~ ^[a-z][a-z0-9_-]{0,30}$ ]] || error "nom d'usuari no vàlid: $USUARI"
-case "$USUARI" in root|administrador) error "no es pot fer servir l'usuari $USUARI" ;; esac
+nom_valid() { [[ "$1" =~ ^[a-z][a-z0-9_-]{0,30}$ ]] || error "nom d'usuari no vàlid: $1"; case "$1" in root|administrador) error "no es pot fer servir l'usuari $1" ;; esac; }
+nom_valid "$USUARI"
+[ "$TOT" -eq 0 ] || { nom_valid "$USUARI_FITXERS"; [ "$USUARI" != "$USUARI_FITXERS" ] || error "els dos usuaris han de ser diferents"; }
 case "$PERFIL" in quiosc|escriptori) ;; *) error "perfil no vàlid: $PERFIL (quiosc o escriptori)" ;; esac
 case "$NAVEGADOR" in firefox|chrome|chromium) ;; *) error "navegador no vàlid: $NAVEGADOR" ;; esac
+if [ "$TOT" -eq 1 ]; then PERFIL=quiosc; MENU=1; fi
 if [ "$MENU" -eq 1 ] && [ "$PERFIL" != quiosc ]; then error "el menú només és per al perfil quiosc"; fi
 [ -n "$INFORME_URL" ] || INFORME_URL="$URL"
+URL_RE='^https://[^[:space:]"'"'"'\\$`]+$'
 if [ -n "$INFORME_TOKEN" ]; then
-  [[ "$INFORME_URL" =~ ^https://[^[:space:]\"\'\\\$\`]+$ ]] || error "l'informe necessita --informe-url (o --url) amb https://"
+  [[ "$INFORME_URL" =~ $URL_RE ]] || error "l'informe necessita --informe-url (o --url) amb https://"
   [[ "$INFORME_TOKEN" =~ ^[A-Za-z0-9._~+/=-]+$ ]] || error "el testimoni només pot portar lletres, xifres i . _ ~ + / = -"
 fi
 if [ -z "$P" ] && [ "$(id -u)" -ne 0 ]; then error "cal executar-lo com a root (sudo)"; fi
@@ -303,12 +334,33 @@ LIGHTDM_CONF="$P/etc/lightdm/lightdm.conf.d/90-examen.conf"
 POLKIT_REGLA="$P/etc/polkit-1/rules.d/49-examen.rules"
 MARCA="# examen-plataforma"
 
+# ── Seguiment del que es fa i del que ja hi era ───────────────────────────────
+FET=(); JA=(); CAL_REINICI=0; ULTIM_CANVI=0; UNITATS_CANVIADES=0
+fet() { FET+=("$1"); echo "  [fet] $1"; }
+ja()  { JA+=("$1");  echo "  [ja]  $1"; }
+
+# escriu_fitxer DESTÍ MODE [ETIQUETA]  (el contingut ve per l'entrada estàndard)
+# Només escriu si el fitxer no existeix o és diferent (contingut o permisos). ULTIM_CANVI = 1 si ha escrit.
+escriu_fitxer() {
+  local dest="$1" mode="$2" etiqueta="${3:-$1}" tmp existia=0
+  tmp=$(mktemp)
+  cat >"$tmp"
+  mkdir -p "$(dirname "$dest")"
+  if [ -f "$dest" ] && cmp -s "$tmp" "$dest" && [ "$(stat -c %a "$dest")" = "$mode" ]; then
+    rm -f "$tmp"; ULTIM_CANVI=0; ja "$etiqueta"; return 0
+  fi
+  [ -e "$dest" ] && existia=1
+  install -m "$mode" "$tmp" "$dest"
+  rm -f "$tmp"; ULTIM_CANVI=1
+  if [ "$existia" -eq 1 ]; then fet "$etiqueta (actualitzat)"; else fet "$etiqueta (creat)"; fi
+  return 0
+}
+
 usuaris_configurats() { ls "$USUARIS_DIR" 2>/dev/null || true; }
 
-# ── Regles que depenen de la llista d'usuaris (es regeneren a cada execució) ──
+# ── Regles que depenen de la llista d'usuaris ─────────────────────────────────
 escriu_llistes() {
-  mkdir -p "$(dirname "$POLKIT_REGLA")"
-  local llista aturar="" u
+  local llista aturar="" u f
   llista=$(usuaris_configurats | sed 's/.*/"&"/' | paste -sd, -)
   if [ -z "$llista" ]; then rm -f "$POLKIT_REGLA"; return; fi
   # Només els usuaris de quiosc amb menú poden apagar l'ordinador (és l'opció «Aturar l'ordinador»)
@@ -316,7 +368,7 @@ escriu_llistes() {
     if ( . "$USUARIS_DIR/$u"; [ "${MENU:-0}" = 1 ] ); then aturar="$aturar\"$u\","; fi
   done
   aturar="${aturar%,}"
-  cat >"$POLKIT_REGLA" <<EOF
+  escriu_fitxer "$POLKIT_REGLA" 644 "regla de polkit" <<EOF
 // Els usuaris d'examen no poden fer cap acció privilegiada (muntar discs, canviar xarxa…).
 // Excepció: els que tenen menú poden apagar l'ordinador (i només això).
 var usuarisExamen = [$llista];
@@ -331,17 +383,22 @@ polkit.addRule(function(action, subject) {
 EOF
   for f in "$P/etc/cron.deny" "$P/etc/at.deny"; do
     touch "$f"
-    for u in $(usuaris_configurats); do grep -qx "$u" "$f" || echo "$u" >>"$f"; done
+    for u in $(usuaris_configurats); do
+      if grep -qx "$u" "$f"; then ja "$u a $(basename "$f")"; else echo "$u" >>"$f"; fet "$u afegit a $(basename "$f")"; fi
+    done
   done
 }
 
 # ── Desfer ────────────────────────────────────────────────────────────────────
 if [ "$DESFES" -eq 1 ]; then
-  rm -f "$USUARIS_DIR/$USUARI"
-  if [ -z "$P" ] && mountpoint -q "/home/$USUARI" 2>/dev/null; then umount -l "/home/$USUARI" || true; fi
-  if [ "$ESBORRA_USUARI" -eq 1 ] && [ -z "$P" ] && id "$USUARI" >/dev/null 2>&1; then userdel -r "$USUARI" 2>/dev/null || userdel "$USUARI"; fi
-  for f in "$P/etc/cron.deny" "$P/etc/at.deny"; do [ -f "$f" ] && sed -i "/^$USUARI\$/d" "$f"; done
-  escriu_llistes
+  LLISTA_USUARIS="$USUARI"; [ "$TOT" -eq 0 ] || LLISTA_USUARIS="$USUARI $USUARI_FITXERS"
+  for u in $LLISTA_USUARIS; do
+    rm -f "$USUARIS_DIR/$u"
+    if [ -z "$P" ] && mountpoint -q "/home/$u" 2>/dev/null; then umount -l "/home/$u" || true; fi
+    if [ "$ESBORRA_USUARI" -eq 1 ] && [ -z "$P" ] && id "$u" >/dev/null 2>&1; then userdel -r "$u" 2>/dev/null || userdel "$u"; fi
+    for f in "$P/etc/cron.deny" "$P/etc/at.deny"; do [ -f "$f" ] && sed -i "/^$u\$/d" "$f"; done
+  done
+  escriu_llistes >/dev/null
   if [ -z "$(usuaris_configurats)" ]; then
     # Era l'últim: es treu tot el que és comú
     [ -f "$PAM_FITXER" ] && sed -i "\\|$MARCA|d" "$PAM_FITXER"
@@ -351,9 +408,9 @@ if [ "$DESFES" -eq 1 ]; then
           "$P/etc/systemd/system/examen-informa.service" "$P/etc/systemd/system/examen-informa.timer" \
           "$CONF_DIR/informe.conf" "$CONF_DIR/openbox-rc.xml" "$CONF_DIR/wrapper-original"
     if [ -z "$P" ]; then systemctl daemon-reload 2>/dev/null || true; fi
-    rmdir "$USUARIS_DIR" "$CONF_DIR" 2>/dev/null || true
   fi
-  echo "Fet: configuració de «$USUARI» treta."
+  echo "Fet: configuració treta ($LLISTA_USUARIS)."
+  echo "RESULTAT: desfet"
   exit 0
 fi
 
@@ -363,9 +420,9 @@ if [ -z "$P" ]; then
 fi
 if [ "$PERFIL" = quiosc ]; then
   [ -n "$URL" ] || error "el perfil quiosc necessita --url"
-  [[ "$URL" =~ ^https://[^[:space:]\"\'\\\$\`]+$ ]] || error "la URL ha de començar per https:// i no portar espais ni cometes: $URL"
+  [[ "$URL" =~ $URL_RE ]] || error "la URL ha de començar per https:// i no portar espais ni cometes: $URL"
   if [ -n "$ISARD_URL" ]; then
-    [[ "$ISARD_URL" =~ ^https://[^[:space:]\"\'\\\$\`]+$ ]] || error "la URL d'Isard ha de començar per https:// i no portar espais ni cometes: $ISARD_URL"
+    [[ "$ISARD_URL" =~ $URL_RE ]] || error "la URL d'Isard ha de començar per https:// i no portar espais ni cometes: $ISARD_URL"
   fi
   if [ -z "$P" ]; then
     case "$NAVEGADOR" in
@@ -380,46 +437,24 @@ if [ "$PERFIL" = quiosc ]; then
 fi
 [ -z "$CA" ] || [ -f "$CA" ] || error "no trobo el fitxer de la CA: $CA"
 
-if [ -z "$P" ] && [ "$PERFIL" = quiosc ]; then
-  echo "==> Instal·lant els paquets necessaris"
-  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    openbox x11-xkb-utils x11-xserver-utils libnss3-tools zenity
-fi
-
-# ── L'usuari ──────────────────────────────────────────────────────────────────
-if [ -z "$P" ]; then
-  echo "==> Usuari $USUARI"
-  if id "$USUARI" >/dev/null 2>&1; then
-    usermod -s /usr/sbin/nologin -G "" "$USUARI"
-  else
-    useradd --create-home --home-dir "/home/$USUARI" --shell /usr/sbin/nologin --user-group "$USUARI"
+# ── Passos comuns a tots els usuaris ──────────────────────────────────────────
+prepara_comuns() {
+  echo "==> Paquets i configuració comuna"
+  if [ -z "$P" ] && [ "$PERFIL" = quiosc ]; then
+    local falten p
+    falten=""; for p in openbox x11-xkb-utils x11-xserver-utils libnss3-tools zenity; do dpkg -s "$p" >/dev/null 2>&1 || falten="$falten $p"; done
+    if [ -z "$falten" ]; then ja "paquets (openbox, zenity…)"
+    else
+      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $falten
+      fet "paquets instal·lats:$falten"
+    fi
   fi
-  if [ -z "$CONTRASENYA" ]; then
-    read -r -s -p "Contrasenya de l'usuari $USUARI: " CONTRASENYA; echo
-    [ -n "$CONTRASENYA" ] || error "la contrasenya no pot ser buida"
-  fi
-  echo "$USUARI:$CONTRASENYA" | chpasswd
-  # Una casa buida i seva és el punt de muntatge de la memòria
-  find "/home/$USUARI" -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true
-  chown "$USUARI:$USUARI" "/home/$USUARI"; chmod 700 "/home/$USUARI"
-fi
+  mkdir -p "$USUARIS_DIR" "$P/usr/local/sbin" "$(dirname "$LIGHTDM_CONF")"
+  if [ -n "$CA" ]; then escriu_fitxer "$CONF_DIR/ca.crt" 644 "certificat del centre" <"$CA"; fi
 
-# ── Fitxers comuns ────────────────────────────────────────────────────────────
-echo "==> Configuració"
-mkdir -p "$USUARIS_DIR" "$P/usr/local/sbin" "$(dirname "$LIGHTDM_CONF")"
-{
-  echo "PERFIL=$PERFIL"
-  echo "NAVEGADOR=$NAVEGADOR"
-  echo "URL=\"$URL\""
-  echo "MENU=$MENU"
-  echo "ISARD_URL=\"$ISARD_URL\""
-} >"$USUARIS_DIR/$USUARI"
-chmod 644 "$USUARIS_DIR/$USUARI"
-if [ -n "$CA" ]; then install -m 644 "$CA" "$CONF_DIR/ca.crt"; fi
-
-# Muntatge de la casa en memòria a l'entrada i desmuntatge a la sortida. «required»: si no es pot muntar, no entra
-# (millor que deixar entrar amb una casa que conserva el que s'hi gravi).
-cat >"$P/usr/local/sbin/examen-pam" <<'EOF'
+  # Muntatge de la casa en memòria a l'entrada i desmuntatge a la sortida. «required»: si no es pot muntar, no entra
+  # (millor que deixar entrar amb una casa que conserva el que s'hi gravi).
+  escriu_fitxer "$P/usr/local/sbin/examen-pam" 755 "script de la casa en memòria" <<'EOF'
 #!/bin/sh
 FITXER="/etc/examen/usuaris.d/$PAM_USER"
 [ -f "$FITXER" ] || exit 0
@@ -440,29 +475,31 @@ case "$PAM_TYPE" in
 esac
 exit 0
 EOF
-chmod 755 "$P/usr/local/sbin/examen-pam"
 
-mkdir -p "$(dirname "$PAM_FITXER")"; touch "$PAM_FITXER"
-grep -qF "$MARCA" "$PAM_FITXER" || printf '%s %s\n' "$PAM_LINIA" "$MARCA" >>"$PAM_FITXER"
+  mkdir -p "$(dirname "$PAM_FITXER")"; touch "$PAM_FITXER"
+  if grep -qF "$MARCA" "$PAM_FITXER"; then ja "línia de PAM a /etc/pam.d/lightdm"
+  else printf '%s %s\n' "$PAM_LINIA" "$MARCA" >>"$PAM_FITXER"; fet "línia de PAM afegida a /etc/pam.d/lightdm"; fi
 
-# El «session-wrapper» original de LightDM es guarda un cop, per poder-lo restaurar i per als altres usuaris
-if [ ! -f "$CONF_DIR/wrapper-original" ]; then
-  # 1) el que tingui configurat LightDM; 2) si no n'hi ha cap, el que LightDM fa servir per defecte
-  #    (lightdm-session); 3) com a últim recurs, /etc/X11/Xsession. Així els altres usuaris continuen
-  #    iniciant la sessió exactament igual que abans.
-  ORIGINAL=$(lightdm --show-config 2>/dev/null | sed -n 's/.*session-wrapper=\(\/[^ ]*\).*/\1/p' | head -1 || true)
-  if [ -z "$ORIGINAL" ] || { [ ! -x "$ORIGINAL" ] && [ -z "$P" ]; }; then
-    ORIGINAL=""
-    for c in /usr/sbin/lightdm-session /usr/lib/lightdm/lightdm-session /etc/X11/Xsession; do
-      if [ -x "$c" ] || [ -n "$P" ]; then ORIGINAL="$c"; break; fi
-    done
+  # El «session-wrapper» original de LightDM es guarda un cop, per als altres usuaris
+  if [ -f "$CONF_DIR/wrapper-original" ]; then
+    ja "session-wrapper original de LightDM ($(cat "$CONF_DIR/wrapper-original"))"
+  else
+    # 1) el que tingui configurat LightDM; 2) si no n'hi ha cap, el que fa servir per defecte (lightdm-session);
+    # 3) com a últim recurs, /etc/X11/Xsession. Així els altres usuaris inicien la sessió exactament igual que abans.
+    local original c
+    original=$(lightdm --show-config 2>/dev/null | sed -n 's/.*session-wrapper=\(\/[^ ]*\).*/\1/p' | head -1 || true)
+    if [ -z "$original" ] || { [ ! -x "$original" ] && [ -z "$P" ]; }; then
+      original=""
+      for c in /usr/sbin/lightdm-session /usr/lib/lightdm/lightdm-session /etc/X11/Xsession; do
+        if [ -x "$c" ] || [ -n "$P" ]; then original="$c"; break; fi
+      done
+    fi
+    [ -n "$original" ] || error "no trobo el session-wrapper de LightDM"
+    echo "$original" >"$CONF_DIR/wrapper-original"
+    fet "session-wrapper original de LightDM desat ($original)"
   fi
-  [ -n "$ORIGINAL" ] || error "no trobo el session-wrapper de LightDM"
-  echo "Session-wrapper original de LightDM: $ORIGINAL"
-  echo "$ORIGINAL" >"$CONF_DIR/wrapper-original"
-fi
 
-cat >"$P/usr/local/sbin/examen-session-wrapper" <<'EOF'
+  escriu_fitxer "$P/usr/local/sbin/examen-session-wrapper" 755 "wrapper de sessió" <<'EOF'
 #!/bin/sh
 # Per als usuaris d'examen de perfil quiosc, la sessió és el navegador; per a tothom, la normal.
 U=$(id -un)
@@ -472,9 +509,8 @@ if [ -f "/etc/examen/usuaris.d/$U" ]; then
 fi
 exec "$(cat /etc/examen/wrapper-original)" "$@"
 EOF
-chmod 755 "$P/usr/local/sbin/examen-session-wrapper"
 
-cat >"$LIGHTDM_CONF" <<'EOF'
+  escriu_fitxer "$LIGHTDM_CONF" 644 "configuració de LightDM" <<'EOF'
 [Seat:*]
 session-wrapper=/usr/local/sbin/examen-session-wrapper
 # L'autorització de X no es desa a la casa (que és en memòria i es munta després)
@@ -482,9 +518,28 @@ user-authority-in-system-dir=true
 # Els usuaris sense shell (nologin) no surten a la llista de la pantalla d'entrada: s'hi entra escrivint-ne el nom
 greeter-show-manual-login=true
 EOF
+  if [ "$ULTIM_CANVI" -eq 1 ]; then CAL_REINICI=1; fi
 
-if [ "$PERFIL" = quiosc ]; then
-cat >"$CONF_DIR/openbox-rc.xml" <<'EOF'
+  # Llista de comprovació d'integritat: la fan servir l'informe (cada 15 min) i la comprovació manual de la guia (apartat 5b)
+  escriu_fitxer "$P/usr/local/sbin/examen-comprova" 755 "script de comprovació d'integritat" <<'EOF'
+#!/bin/sh
+# Llista de comprovació de la configuració d'examen: hash dels fitxers, usuaris, grups i cases. S'executa com a root.
+cd / || exit 1
+{
+  find etc/pam.d/lightdm etc/lightdm etc/polkit-1/rules.d/49-examen.rules etc/examen usr/local/sbin/examen-* \
+       etc/systemd/system/examen-informa.service etc/systemd/system/examen-informa.timer \
+       etc/cron.deny etc/at.deny etc/sudoers etc/sudoers.d -type f ! -name informe.conf 2>/dev/null | sort | xargs -r sha256sum
+  getent passwd examen examen-fitxers
+  id -nG examen
+  id -nG examen-fitxers
+  getent group sudo adm
+  # La casa d'un usuari d'examen ha d'estar buida quan ningú hi és (si hi ha una sessió, és en memòria i no es mira)
+  for u in examen examen-fitxers; do mountpoint -q "/home/$u" || ls -A "/home/$u"; done
+} 2>/dev/null
+EOF
+
+  if [ "$PERFIL" = quiosc ]; then
+    escriu_fitxer "$CONF_DIR/openbox-rc.xml" 644 "gestor de finestres del quiosc" <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Gestor de finestres mínim: cap tecla ni menú; tota finestra a pantalla completa i sense decoració. -->
 <openbox_config xmlns="http://openbox.org/3.4/rc">
@@ -504,8 +559,7 @@ cat >"$CONF_DIR/openbox-rc.xml" <<'EOF'
   </mouse>
 </openbox_config>
 EOF
-
-cat >"$P/usr/local/sbin/examen-kiosk" <<'EOF'
+    escriu_fitxer "$P/usr/local/sbin/examen-kiosk" 755 "sessió de quiosc" <<'EOF'
 #!/bin/sh
 # Sessió de quiosc: només el navegador. Si es tanca, la sessió s'acaba i torna la pantalla d'entrada.
 . "/etc/examen/usuaris.d/$(id -un)"
@@ -577,41 +631,59 @@ PREFS
     ;;
 esac
 EOF
-chmod 755 "$P/usr/local/sbin/examen-kiosk"
-fi
+  fi
+}
 
-# ── Llista de comprovació d'integritat i informe d'estat ──────────────────────
-# El mateix script el fan servir l'informe (cada 15 min) i la comprovació manual de la guia (apartat 5b), perquè donin el mateix resultat.
-cat >"$P/usr/local/sbin/examen-comprova" <<'EOF'
-#!/bin/sh
-# Llista de comprovació de la configuració d'examen: hash dels fitxers, usuaris, grups i cases. S'executa com a root.
-cd / || exit 1
-{
-  find etc/pam.d/lightdm etc/lightdm etc/polkit-1/rules.d/49-examen.rules etc/examen usr/local/sbin/examen-* \
-       etc/systemd/system/examen-informa.service etc/systemd/system/examen-informa.timer \
-       etc/cron.deny etc/at.deny etc/sudoers etc/sudoers.d -type f ! -name informe.conf 2>/dev/null | sort | xargs -r sha256sum
-  getent passwd examen examen-fitxers
-  id -nG examen
-  id -nG examen-fitxers
-  getent group sudo adm
-  # La casa d'un usuari d'examen ha d'estar buida quan ningú hi és (si hi ha una sessió, és en memòria i no es mira)
-  for u in examen examen-fitxers; do mountpoint -q "/home/$u" || ls -A "/home/$u"; done
-} 2>/dev/null
+# ── Un usuari d'examen ────────────────────────────────────────────────────────
+# Usa USUARI, PERFIL, MENU, NAVEGADOR, URL i ISARD_URL tal com estiguin en cridar-la.
+prepara_usuari() {
+  local nou=0 casa="/home/$USUARI" shell grups
+  echo "==> Usuari $USUARI (perfil $PERFIL)"
+  if [ -z "$P" ]; then
+    if id "$USUARI" >/dev/null 2>&1; then
+      shell=$(getent passwd "$USUARI" | cut -d: -f7); grups=$(id -nG "$USUARI")
+      if [ "$shell" = /usr/sbin/nologin ] && [ "$grups" = "$USUARI" ]; then ja "usuari $USUARI (sense shell ni grups)"
+      else usermod -s /usr/sbin/nologin -G "" "$USUARI"; fet "usuari $USUARI: shell i grups corregits"; fi
+    else
+      useradd --create-home --home-dir "$casa" --shell /usr/sbin/nologin --user-group "$USUARI"
+      nou=1; fet "usuari $USUARI creat"
+    fi
+    if [ -z "$CONTRASENYA" ] && [ "$nou" -eq 1 ]; then
+      [ -t 0 ] || error "l'usuari $USUARI és nou i no hi ha contrasenya: dona --contrasenya o EXAMEN_CONTRASENYA"
+      read -r -s -p "Contrasenya dels usuaris d'examen: " CONTRASENYA; echo
+      [ -n "$CONTRASENYA" ] || error "la contrasenya no pot ser buida"
+    fi
+    if [ -n "$CONTRASENYA" ]; then echo "$USUARI:$CONTRASENYA" | chpasswd; fet "contrasenya de $USUARI establerta"
+    else ja "contrasenya de $USUARI (no es canvia: no se n'ha donat cap)"; fi
+
+    # La casa és el punt de muntatge de la memòria. Si hi ha una sessió oberta (és muntada), NO s'hi toca res.
+    if mountpoint -q "$casa"; then ja "casa de $USUARI (hi ha una sessió oberta: no es toca)"
+    else
+      if [ -n "$(ls -A "$casa" 2>/dev/null)" ]; then
+        find "$casa" -mindepth 1 -maxdepth 1 -exec rm -rf {} +; fet "casa de $USUARI buidada"
+      fi
+      chown "$USUARI:$USUARI" "$casa"; chmod 700 "$casa"
+    fi
+  fi
+
+  escriu_fitxer "$USUARIS_DIR/$USUARI" 644 "configuració de $USUARI" <<EOF
+PERFIL=$PERFIL
+NAVEGADOR=$NAVEGADOR
+URL="$URL"
+MENU=$MENU
+ISARD_URL="$ISARD_URL"
 EOF
-chmod 755 "$P/usr/local/sbin/examen-comprova"
+}
 
-if [ -n "$INFORME_TOKEN" ]; then
+# ── Informe d'estat a la plataforma ───────────────────────────────────────────
+prepara_informe() {
   echo "==> Informe d'estat a $INFORME_URL"
-  ( umask 077
-    cat >"$CONF_DIR/informe.conf" <<EOF
+  escriu_fitxer "$CONF_DIR/informe.conf" 600 "configuració de l'informe" <<EOF
 BASE_URL="$INFORME_URL"
 ISARD_URL="$ISARD_URL"
 TOKEN="$INFORME_TOKEN"
 EOF
-  )
-  chmod 600 "$CONF_DIR/informe.conf"
-
-  cat >"$P/usr/local/sbin/examen-informa" <<'EOF'
+  escriu_fitxer "$P/usr/local/sbin/examen-informa" 755 "script de l'informe" <<'EOF'
 #!/bin/sh
 # Envia a la plataforma l'estat d'aquest ordinador. S'executa com a root (temporitzador de systemd).
 . /etc/examen/informe.conf
@@ -639,10 +711,7 @@ printf 'header = "X-Equip-Token: %s"\n' "$TOKEN" | curl -s -o /dev/null --max-ti
   --data-urlencode "uptimeSegons=$UPT" --data-urlencode "usuarisDins=$DINS" \
   "$BASE_URL/api/equips/informe"
 EOF
-  chmod 755 "$P/usr/local/sbin/examen-informa"
-
-  mkdir -p "$P/etc/systemd/system"
-  cat >"$P/etc/systemd/system/examen-informa.service" <<'EOF'
+  escriu_fitxer "$P/etc/systemd/system/examen-informa.service" 644 "servei de l'informe" <<'EOF'
 [Unit]
 Description=Informe d'estat d'aquest ordinador a la plataforma d'exàmens
 After=network-online.target
@@ -652,7 +721,8 @@ Wants=network-online.target
 Type=oneshot
 ExecStart=/usr/local/sbin/examen-informa
 EOF
-  cat >"$P/etc/systemd/system/examen-informa.timer" <<'EOF'
+  [ "$ULTIM_CANVI" -eq 0 ] || UNITATS_CANVIADES=1
+  escriu_fitxer "$P/etc/systemd/system/examen-informa.timer" 644 "temporitzador de l'informe" <<'EOF'
 [Unit]
 Description=Informe d'estat cada 15 minuts
 
@@ -664,24 +734,51 @@ RandomizedDelaySec=60
 [Install]
 WantedBy=timers.target
 EOF
+  [ "$ULTIM_CANVI" -eq 0 ] || UNITATS_CANVIADES=1
   if [ -z "$P" ]; then
-    systemctl daemon-reload
-    systemctl enable --now examen-informa.timer
+    if [ "$UNITATS_CANVIADES" -eq 1 ]; then systemctl daemon-reload; fi
+    if systemctl is-enabled --quiet examen-informa.timer 2>/dev/null && systemctl is-active --quiet examen-informa.timer 2>/dev/null; then
+      ja "temporitzador de l'informe activat"
+    else
+      systemctl enable --now examen-informa.timer; fet "temporitzador de l'informe activat"
+    fi
   fi
-fi
+}
 
+# ── Execució ──────────────────────────────────────────────────────────────────
+prepara_comuns
+if [ "$TOT" -eq 1 ]; then
+  prepara_usuari                                  # quiosc, amb menú
+  USUARI="$USUARI_FITXERS"; PERFIL=escriptori; MENU=0
+  prepara_usuari                                  # escriptori
+else
+  prepara_usuari
+fi
+if [ -n "$INFORME_TOKEN" ]; then prepara_informe
+else echo "==> Informe d'estat: no s'instal·la (no hi ha testimoni)"; fi
+echo "==> Regles d'accés"
 escriu_llistes
 
-echo
-echo "Fet. Usuari «$USUARI» (perfil $PERFIL) preparat."
-echo "IMPORTANT: LightDM només llegeix la configuració quan arrenca. REINICIA l'ordinador (sudo reboot)"
-echo "abans de provar-ho; sense reiniciar, l'usuari $USUARI no entraria en mode quiosc."
-echo "L'usuari $USUARI NO surt a la llista de la pantalla d'entrada: tria l'opció d'escriure l'usuari i posa-hi «$USUARI»."
-echo "Després prova-ho ABANS de repetir-ho a la resta d'ordinadors: entra com a $USUARI."
-if [ "$PERFIL" = quiosc ]; then
-  if [ "$MENU" -eq 1 ]; then echo "Ha de sortir un menú; en triar una opció, el navegador a pantalla completa."
-  else echo "Ha de sortir només el navegador a pantalla completa amb $URL."; fi
+# LightDM només llegeix la configuració en arrencar: si el fitxer és més nou que el procés, cal reiniciar
+if [ -z "$P" ]; then
+  pid=$(pgrep -xo lightdm || true)
+  if [ -n "$pid" ] && [ -f "$LIGHTDM_CONF" ] && [ "$(stat -c %Y "$LIGHTDM_CONF")" -gt "$(stat -c %Y "/proc/$pid")" ]; then CAL_REINICI=1; fi
 fi
+
+# Primer informe tot seguit (si s'ha tocat alguna cosa de l'informe)
+if [ -z "$P" ] && [ -n "$INFORME_TOKEN" ] && [ "${#FET[@]}" -gt 0 ]; then systemctl start --no-block examen-informa.service 2>/dev/null || true; fi
+
+echo
+echo "Resum: ${#FET[@]} coses fetes, ${#JA[@]} que ja hi eren."
+if [ "$CAL_REINICI" -eq 1 ]; then
+  echo "IMPORTANT: LightDM només llegeix la configuració quan arrenca. REINICIA l'ordinador (sudo reboot)"
+  echo "abans de provar-ho; sense reiniciar, els usuaris d'examen no entrarien en mode quiosc."
+  echo "REINICI: cal"
+else
+  echo "REINICI: no cal"
+fi
+echo "Els usuaris d'examen NO surten a la llista de la pantalla d'entrada: tria l'opció d'escriure l'usuari."
+if [ "${#FET[@]}" -eq 0 ]; then echo "RESULTAT: al-dia"; else echo "RESULTAT: canvis=${#FET[@]}"; fi
 ```
 
 ## 7. Notes tècniques i limitacions conegudes
