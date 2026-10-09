@@ -27,7 +27,7 @@ desat: quan torni la connexió, **toca-la de nou** i espera el «desat». Si et 
 **Recorda**
 
 - Només pots fer servir **apunts** en les preguntes que ho diuen.
-- Cada **canvi de pestanya o de finestra** queda registrat i el professor ho veu. No tanquis la pestanya de l'examen fins que hagis entregat.
+- Cada **canvi de pestanya o de finestra** queda registrat i el professor ho veu. Tingues **només una pestanya** oberta (una segona es bloqueja i queda registrada). No tanquis la pestanya de l'examen fins que hagis entregat.
 - Si entregues per error, demana al professor que et **reiniciï la sessió**; les respostes es conserven.
 - Si alguna cosa falla, **avisa el professor al moment**, sense sortir de l'examen.
 

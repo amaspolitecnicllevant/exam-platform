@@ -115,6 +115,10 @@ l'obre) o treure els que encara no l'han obert.
 **Activar** fa que l'examen sigui visible i es pugui fer. **Desactivar** el torna a esborrany. **Tancar** l'acaba: els que el feien
 l'entreguen tal com el tenen, i ja no es pot desar res més.
 
+**Desactivar o tancar no amaga les dades.** Un examen desactivat o tancat que ja té alumnes continua mostrant **Correccions**,
+**Estadístiques**, **Exportar** i els botons de publicar o ocultar notes: pots seguir mirant les respostes i exportar-les igualment.
+(Un esborrany nou, sense cap alumne, no mostra aquests botons perquè no hi ha res a veure.)
+
 ### 4.3 Programar
 
 **Programar** (grup, data i hora) activa l'examen sol a l'hora indicada. Els alumnes poden començar-lo durant uns minuts des de l'hora
@@ -133,10 +137,17 @@ El **Monitor** s'actualitza cada 15 segons i mostra, per a cada alumne:
 
 - el nom, el correu i l'**adreça IP** des d'on fa l'examen;
 - quantes respostes ha desat de les totals;
-- les **pèrdues de focus** (canvis de pestanya o de finestra) i un avís si arriben al llindar que ha fixat l'administrador;
+- les **pèrdues de focus** (canvis de pestanya o de finestra, i intents d'obrir una segona pestanya) i un avís si arriben al llindar que ha fixat l'administrador;
 - el temps que porta, i els que ja han entregat.
 
 Si algú entrega per error, **Reiniciar sessió** el deixa tornar a continuar (conserva les respostes).
+
+**Una sola pestanya.** Durant l'examen, l'alumne només pot tenir oberta **una** pestanya de la plataforma. Si n'obre una segona (una altra
+còpia de l'examen o qualsevol altra pàgina de la plataforma), aquesta es **bloqueja** i a l'examen se li suma una pèrdua de focus, que
+tu veus al Monitor. Limitacions: la plataforma no pot veure ni impedir què hi ha obert fora d'ella (una altra aplicació, o una altra web
+en una altra pestanya). Només queda registrat quan l'alumne canvia d'una a l'altra. Per garantir «només el navegador de l'examen» cal
+un navegador d'examen tancat (com Safe Exam Browser) o un mode quiosc als ordinadors. El control requereix HTTPS (o `localhost`); sense
+HTTPS només hi ha el registre de pèrdues de focus.
 
 ---
 
@@ -169,6 +180,7 @@ S'accepta la coma decimal.
 - **Canviar la resposta correcta** d'una pregunta de test (si t'has equivocat): es recorregeix tot sol.
 - **Executar** una resposta de codi a mà, per veure què fa.
 - **Lliuraments de fitxer:** botó *Descarregar* a la resposta.
+- **Revisada amb IA:** les respostes a les quals has aplicat una revisió amb IA (vegeu §7.3) ho indiquen: la nota d'abans, la nova i la justificació de la IA. Només ho veus tu; l'alumne no.
 
 ### 6.4 Publicar les notes
 
@@ -203,9 +215,27 @@ El menú **Exportar** de cada examen ofereix:
 | **Respostes per a una IA (.md)** | Vegeu més avall |
 
 **Revisar amb una IA sense donar dades personals.** *Respostes anònimes* genera un `.md` on els alumnes surten com «Alumne 7F3A2C» (un codi
-estable) i hi afegeix unes instruccions per a qui revisa i la resposta model. A part, **Clau d'alumnes** (CSV) lliga cada codi amb l'alumne real:
-**no enviïs aquest fitxer a la IA**; és el que et serveix per tornar a posar les notes que proposi. Si un alumne escriu el seu nom dins d'una
-resposta, apareixerà al fitxer. Només s'inclouen noms i correus si ho demanes explícitament. Cada exportació queda al registre d'activitat.
+estable) i hi afegeix les instruccions per a qui revisa, la resposta model i el **format exacte** en què ha de respondre. **Clau d'alumnes**
+(CSV) lliga cada codi amb l'alumne real: **no enviïs aquest fitxer a la IA**. Si un alumne escriu el seu nom dins d'una resposta, apareixerà
+al fitxer. Només s'inclouen noms i correus si ho demanes explícitament. Cada exportació queda al registre d'activitat.
+
+**Importar la revisió de la IA.** El flux sencer:
+
+1. A **Exportar**, descarrega *Respostes anònimes (.md)* i passa'l a la IA amb un missatge curt, per exemple: *«Fes la revisió que descriu el
+   document adjunt. Respon només amb el bloc CSV demanat a les instruccions, sense text addicional.»* Si vols criteris propis (més estricte,
+   no penalitzar l'ortografia…), afegeix-los en aquest missatge.
+2. La IA respon amb un bloc CSV: `alumne;pregunta;nota;justificacio`, una fila per alumne i pregunta.
+3. A **Correccions**, prem **Importar revisió IA** i enganxa la resposta (o puja el fitxer). L'aplicació torna a lligar cada codi amb
+   l'alumne real **sola**, sense necessitat de la clau d'alumnes, i et mostra el nom real al costat de cada nota perquè ho comprovis.
+4. **Previsualització: no es desa res.** Veus, per a cada resposta, la nota actual, la nova, la diferència i la justificació, i l'efecte a
+   la nota final de cada alumne. Marques què vols aplicar; les files que **substituirien una nota que ja havies revisat** surten en groc i
+   **desmarcades**. Les files que no es poden aplicar (alumne o pregunta desconeguts, nota fora de rang, files repetides) es llisten amb el motiu.
+5. **Aplicar** desa les files marcades com a **nota revisada**, i guarda la nota anterior i la justificació de la IA (només per a tu: la
+   justificació **no** va al comentari de l'alumne). Si entre la previsualització i l'aplicació has canviat una nota, aquella fila se salta.
+
+Només es poden canviar les respostes que corregeixes tu: **no** les de test (les corregeix el sistema), ni els lliuraments de fitxer
+(no s'envien a la IA), ni les preguntes anul·lades, ni les d'alumnes que no han entregat o no han respost. Si les notes ja són visibles per
+als alumnes, la previsualització t'ho avisa, perquè els canvis els afectarien. Cada aplicació queda al registre d'activitat (`EXAM_REVISIO_IA`).
 
 ### 7.4 Recuperacions
 
@@ -237,3 +267,7 @@ l'examen (convalidació, baixa justificada), afegeix-lo al grup a mà.
 | Un alumne el fa un altre dia | Afegeix-lo a **Alumnes** de l'examen actiu: el seu temps comença quan l'obre |
 | Un alumne diu que no li deixa pujar un fitxer | Format no admès a la pregunta, fitxer de més de 10 MB, o l'administrador ha desactivat la pujada |
 | La nota d'un alumne és «provisional» | Té respostes pendents; compten 0 fins que les revisis |
+| Veig un examen que no he creat | Els exàmens dels mòduls que imparteixes surten al llistat. El poden gestionar i veure'n els resultats: qui l'ha creat, els professors del mòdul i els administradors. Cap altre professor |
+| Un examen desactivat no té els botons de Correccions i Exportar | Només es mostren si l'examen ja té alumnes. Si en té i no surten, recarrega la pàgina (Ctrl+F5) |
+| En importar la revisió diu «No s'ha trobat cap fila» | La IA no ha respost amb el format demanat. Torna-li a dir: *«Respon només amb el bloc CSV, amb la capçalera alumne;pregunta;nota;justificacio»* |
+| Una fila de la importació diu «Alumne no reconegut» | La IA ha canviat o inventat el codi. Si només n'ha canviat algun, corregeix-lo al text abans de tornar a previsualitzar |

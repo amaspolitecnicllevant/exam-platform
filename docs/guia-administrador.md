@@ -288,7 +288,7 @@ BACKUP_GID=1000
 
 - Només es pot entrar des de la xarxa del centre si el servidor té una IP privada i el router no reenvia ports cap a ell. Comprova-ho amb qui administra la xarxa.
 - Guarda `infra/tls/certs/ca.key` **fora del servidor** i no la copiïs enlloc més; qui la tingui pot fer certificats en què confiarien tots els ordinadors.
-- Un professor només pot modificar els seus exàmens i veu les matrícules dels mòduls que imparteix; **la llista d'usuaris, en canvi, la veuen tots els professors**. L'autorització es comprova sempre al servidor, mai al navegador.
+- Un professor només pot gestionar (i veure'n els resultats) els exàmens que ha creat o que són d'un mòdul que imparteix (i els administradors, tots), i veu les matrícules dels mòduls que imparteix; **la llista d'usuaris, en canvi, la veuen tots els professors**. L'autorització es comprova sempre al servidor, mai al navegador.
 
 ---
 
@@ -304,6 +304,7 @@ BACKUP_GID=1000
 | El navegador avisa del certificat | Falta instal·lar `ca.crt` a l'ordinador ([https.md](https.md)) |
 | `Permission denied` al servei de còpies | `BACKUP_DIR` creat per Docker (és de *root*); canvia'n el propietari a `BACKUP_UID` i recrea el servei |
 | Un alumne rep un error de «aula» | La seva IP no és al rang de l'aula de l'examen |
+| El bloqueig de la segona pestanya no funciona | Només funciona amb HTTPS o `localhost` (necessita un context segur del navegador). Accedint per `http://IP` el navegador no ho permet i només queda el registre de pèrdues de focus. Activa l'[HTTPS](https.md) |
 | Un canvi al `.env` no té efecte | Has fet `restart` en lloc de `up -d`, o la variable és de la §4.8 |
 | Pujar un fitxer dona un error 500 | Les carpetes `/opt/exam-*` no són escrivibles pel backend: vegeu §2 |
 | Un lliurament «ja no està disponible» | El fitxer ha desaparegut del disc; restaura `/opt/exam-files` d'una còpia (mira *Espai ocupat*) |

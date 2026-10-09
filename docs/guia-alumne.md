@@ -76,6 +76,7 @@ Quan queden **10 minuts** i **1 minut** surt un avís. En arribar a zero, **l'ex
 Per garantir que l'examen és just, el sistema guarda:
 
 - cada vegada que **canvies de pestanya o de finestra** (el professor ho veu, i si passa massa vegades s'avisa);
+- si **obres una segona pestanya** de la plataforma durant l'examen: només en pots tenir **una** d'oberta. L'altra es bloqueja i queda registrat;
 - l'**adreça** des d'on el fas;
 - després de l'examen, es poden **comparar les respostes** entre alumnes per detectar còpies. Si dues respostes són molt semblants, el professor ho revisa.
 
@@ -128,7 +129,7 @@ queda temps. Si ho confirmes, **s'esborren les respostes anteriors** i en comenc
 ## 6. Consells
 
 - **Arriba amb temps** i comprova que veus l'examen abans que comenci.
-- **No tanquis la pestanya de l'examen** fins que hagis entregat. I no facis altres coses al mateix navegador: els canvis de pestanya queden registrats.
+- **No tanquis la pestanya de l'examen** fins que hagis entregat. Tingues **només una pestanya** oberta i no facis altres coses al mateix navegador: els canvis de pestanya queden registrats.
 - **Llegeix bé la pregunta**: en una de codi, el resultat ha de ser exactament el que demana.
 - **Desa el fitxer abans de pujar-lo** i no el tinguis obert si el programa el bloqueja.
 - **Si alguna cosa va malament, avisa el professor al moment**, sense sortir de l'examen.
@@ -141,6 +142,7 @@ queda temps. Si ho confirmes, **s'esborren les respostes anteriors** i en comenc
 |:--|:--|
 | No veig l'examen | Comprova que estàs matriculat al mòdul i que el professor l'ha activat. Si és una recuperació, ha d'haver-te afegit com a destinatari |
 | «Aquest examen només es pot fer des de l'aula…» | No ets a l'aula de l'examen. Canvia d'ordinador o de lloc |
+| «Aquest examen ja és obert en una altra pestanya» (o una pantalla negra que diu que hi ha un examen en curs) | Tens una altra pestanya de la plataforma oberta. **Tanca-la** i continua a la de l'examen. Aquest intent queda registrat |
 | «L'examen no està actiu» o «s'ha tancat» | El professor l'ha desactivat o tancat. Avisa'l |
 | «S'ha acabat el temps de l'examen» | El temps ha acabat; no es poden desar més respostes |
 | La web no carrega o no puc entrar | Mira que escrius l'adreça exacta (amb el port). Si segueix així, avisa el professor |

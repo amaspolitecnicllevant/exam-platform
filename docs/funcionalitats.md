@@ -84,7 +84,8 @@ Guies d'ús per rol: [administrador](guia-administrador.md) · [professor](guia-
 - **Duplicar** un examen: crea un esborrany "Còpia de …" amb les mateixes preguntes, configuració i fitxers de dades (sense la programació, les notes visibles ni els bonus).
 - Previsualitzar un examen.
 - **Publicar** un examen (DRAFT → PUBLISHED): l'examen es fa visible als alumnes.
-- **Desactivar** un examen (PUBLISHED → DRAFT).
+- **Desactivar** un examen (PUBLISHED → DRAFT). Un examen desactivat o tancat que ja té sessions d'alumne **conserva** els accessos a Correccions, Estadístiques, Exportar i publicar/ocultar notes (el llistat informa si té sessions amb `teSessions`).
+- El llistat «els meus exàmens» inclou els que ha creat el professor **i els dels mòduls que imparteix**; els resultats només els veuen el creador, els professors del mòdul i els administradors.
 - **Tancar** un examen (→ CLOSED): es poden exportar resultats. Els alumnes que l'estaven fent l'entreguen tal com el tenien; a partir d'aquí (i també si es desactiva) ja no es pot desar ni executar codi.
 - Eliminar un examen.
 
@@ -107,6 +108,7 @@ Guies d'ús per rol: [administrador](guia-administrador.md) · [professor](guia-
 #### Exportacions
 - El menú **Exportar** de cada examen ofereix: notes per alumne (CSV), notes per resultat d'aprenentatge (CSV), Excel amb notes, RA i respostes, informe de l'examen (`.md`) amb estadístiques per pregunta, **ZIP amb els fitxers lliurats** (un directori per alumne) i el CSV detallat d'una fila per resposta.
 - **Respostes per a una IA** (`.md`): anònimes per defecte (els alumnes surten com «Alumne 7F3A2C», un codi estable derivat de la sessió), amb les instruccions per a qui revisa i la resposta model. El fitxer de **claus** (CSV) a part lliga cada codi amb l'alumne real, per tornar a posar les notes. Només es pot incloure el nom i el correu si es demana explícitament.
+- **Importar la revisió d'una IA** (a Correccions, «Importar revisió IA»): el professor passa l'exportació anònima a una IA, que respon amb un CSV `alumne;pregunta;nota;justificacio` (o una taula Markdown; s'ignora el text al voltant). L'aplicació relliga els codis anònims amb els alumnes reals pel seu compte i fa una **previsualització sense desar res**: nota actual, nova, diferència, justificació i efecte a la nota final de cada alumne. El professor tria què aplica; el que substituiria una nota ja revisada ve desmarcat. En aplicar, es desa com a nota revisada amb la nota anterior i la justificació de la IA (**només visibles per al professor**, mai per a l'alumne). Només afecta respostes que corregeix el professor (no test, ni fitxers, ni anul·lades, ni sense entregar o sense resposta); una nota fora de rang és un error, mai es retalla; si la nota ha canviat entre la previsualització i l'aplicació, la fila se salta. Migració V36 (`answers.revisio_ia_*`); API `POST /api/exams/{id}/revisio-ia/previsualitza` i `/aplica`.
 - Els CSV s'obren a Excel en català (`;`, coma decimal, UTF-8). Cap text d'alumne s'interpreta com a fórmula.
 - Cada exportació queda a l'auditoria (`EXAM_EXPORTED`), i les que porten noms hi consten com a tals.
 
@@ -206,6 +208,7 @@ Guies d'ús per rol: [administrador](guia-administrador.md) · [professor](guia-
 - Compte enrere visible en una barra fixa a dalt, amb l'estat del desament (pendent, desant, desat, error). Avisos quan queden 10 minuts i 1 minut. En arribar a 0, l'examen s'entrega automàticament.
 - Les preguntes es barregen de forma determinista per sessió (diferent ordre per a cada alumne, però consistent si es reprèn).
 - Cada canvi de pestanya/finestra queda registrat com a pèrdua de focus.
+- **Una sola pestanya**: durant l'examen, una segona pestanya de la plataforma (una altra còpia de l'examen o qualsevol altra pàgina) es bloqueja i suma una pèrdua de focus a la pestanya de l'examen. Utilitza Web Locks i `BroadcastChannel`, per tant només funciona en context segur (HTTPS o `localhost`); sense ells no hi ha bloqueig. No pot impedir ni veure què hi ha obert fora de la plataforma.
 - Entregar l'examen manualment (confirmació requerida).
 
 ### Resultats
@@ -228,6 +231,7 @@ Els següents esdeveniments queden registrats a la base de dades:
 - `EXAM_CREATED`, `EXAM_PUBLISHED`, `EXAM_CLOSED`, `EXAM_DELETED`
 - `EXAM_SUBMITTED` (per sessió d'alumne)
 - `EXAM_EXPORTED` (qualsevol exportació d'un examen)
+- `EXAM_REVISIO_IA` (aplicació d'una revisió amb IA: quantes notes s'han aplicat i quantes saltat)
 
 ---
 
