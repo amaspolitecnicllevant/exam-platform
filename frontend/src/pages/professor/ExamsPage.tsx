@@ -11,6 +11,7 @@ import {
   FILTRE_GRUPS_BUIT, filtraGrupsAssignacio, filtreGrupsInicial, type FiltreGrupsAssig,
 } from '../../utils/filtreGrupsAssignacio'
 import ExportarExamen from '../../components/ExportarExamen'
+import EstatAula from '../../components/EstatAula'
 import type { Exam, Grup, Modul, Aula } from '../../types'
 import { aInstantUtc, dataLocal, horaLocal } from '../../dates'
 import {
@@ -407,6 +408,14 @@ export default function ExamsPage() {
                     </button>
                   </div>
                 </div>
+
+                {/* Estat dels ordinadors de l'aula (només si l'examen en té i encara es pot fer) */}
+                {exam.aulaId && exam.status !== 'CLOSED' && (
+                  <div className="px-5 pb-4">
+                    <p className="text-xs text-gray-500 mb-1">Ordinadors de l'aula {exam.aulaNom}</p>
+                    <EstatAula aulaId={exam.aulaId} resum />
+                  </div>
+                )}
 
                 {/* Panell de configuració (col·lapsable) */}
                 {isConfigOpen && (

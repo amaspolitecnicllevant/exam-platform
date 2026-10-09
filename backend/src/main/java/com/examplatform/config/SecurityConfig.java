@@ -65,6 +65,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                         .requestMatchers("/api/invitacions/publica/**").permitAll()
+                        // Informe periòdic d'un ordinador d'aula: sense sessió, protegit pel testimoni i la xarxa d'origen
+                        .requestMatchers(HttpMethod.POST, "/api/equips/informe").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/configuracio", "/api/configuracio/logo").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()

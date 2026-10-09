@@ -34,6 +34,15 @@ jwt:
   secret: ${JWT_SECRET:}
   expiration-ms: ${JWT_EXPIRATION_MS:14400000}  # 4h per defecte
 
+equips:
+  # Testimoni compartit amb els ordinadors de les aules perquè puguin enviar-hi l'informe d'estat.
+  # Buit = la recepció d'informes està desactivada.
+  token: ${EQUIPS_TOKEN:}
+  # Minuts sense cap informe a partir dels quals un ordinador es considera «sense notícies»
+  sense-noticies-minuts: ${EQUIPS_SENSE_NOTICIES_MIN:45}
+  # Dies sense cap informe a partir dels quals es considera que fa temps que l'ordinador no s'encén
+  avis-dies: ${EQUIPS_AVIS_DIES:7}
+
 frontend:
   url: ${FRONTEND_URL:http://localhost:5173}
 

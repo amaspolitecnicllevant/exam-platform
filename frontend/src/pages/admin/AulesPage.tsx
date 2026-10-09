@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import Layout from '../../components/Layout'
 import { getAules, createAula, updateAula, deleteAula } from '../../api/aules'
 import type { Aula } from '../../types'
+import EstatAula from '../../components/EstatAula'
 
 const CIDR_RE = /^(\d{1,3}\.){3}\d{1,3}\/(\d|[1-2]\d|3[0-2])$/
 
@@ -18,6 +19,7 @@ export default function AulesPage() {
   const [nom, setNom]           = useState('')
   const [cidr, setCidr]         = useState('')
   const [error, setError]       = useState<string | null>(null)
+  const [equipsOberts, setEquipsOberts] = useState<Set<string>>(new Set())
 
   const refresh = () => getAules().then(setAules)
 
@@ -63,7 +65,7 @@ export default function AulesPage() {
 
   return (
     <Layout>
-      <div className="p-6 max-w-3xl mx-auto">
+      <div className="p-6 max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Aules</h1>
           <button onClick={openCreate}
@@ -123,7 +125,8 @@ export default function AulesPage() {
             </thead>
             <tbody>
               {aules.map(a => (
-                <tr key={a.id} className="border-b hover:bg-gray-50">
+                <Fragment key={a.id}>
+                <tr className="border-b hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium">{a.nom}</td>
                   <td className="px-4 py-3 font-mono text-sm text-gray-700">{a.xarxaCidr}</td>
                   <td className="px-4 py-3">
@@ -136,9 +139,24 @@ export default function AulesPage() {
                         className="text-red-600 hover:underline text-sm">
                         Esborrar
                       </button>
+                      <button onClick={() => setEquipsOberts(prev => {
+                          const n = new Set(prev)
+                          if (n.has(a.id)) n.delete(a.id); else n.add(a.id)
+                          return n
+                        })}
+                        aria-expanded={equipsOberts.has(a.id)}
+                        className="text-brand-600 hover:underline text-sm whitespace-nowrap">
+                        {equipsOberts.has(a.id) ? 'Amagar ordinadors' : 'Ordinadors'}
+                      </button>
                     </div>
                   </td>
                 </tr>
+                {equipsOberts.has(a.id) && (
+                  <tr className="border-b bg-gray-50/60">
+                    <td colSpan={3} className="px-4 py-3"><EstatAula aulaId={a.id} /></td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>

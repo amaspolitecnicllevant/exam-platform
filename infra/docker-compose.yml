@@ -42,6 +42,10 @@ services:
       EXEC_MAX_CONCURRENT: ${EXEC_MAX_CONCURRENT:-4}
       EXEC_QUEUE_WAIT: ${EXEC_QUEUE_WAIT:-30}
       EXEC_MEMORY: ${EXEC_MEMORY:-128m}
+      # Informes d'estat dels ordinadors de les aules (vegeu docs/usuari-examen-linux.md). Sense testimoni, desactivat.
+      EQUIPS_TOKEN: ${EQUIPS_TOKEN:-}
+      EQUIPS_SENSE_NOTICIES_MIN: ${EQUIPS_SENSE_NOTICIES_MIN:-45}
+      EQUIPS_AVIS_DIES: ${EQUIPS_AVIS_DIES:-7}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       # Heap de la JVM proporcional al límit de memòria del contenidor
