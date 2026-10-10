@@ -254,6 +254,16 @@ public class EquipsService {
         auditLog.log(admin.getId(), "EQUIPS_REFERENCIA_FIXADA", "ordinador " + e.getNom() + " (" + e.getAula().getNom() + ")");
     }
 
+    /** Noms («aula/ordinador») dels ordinadors que informen i tenen la configuració diferent de la referència. */
+    @Transactional(readOnly = true)
+    public List<String> ordinadorsAlterats(LocalDateTime ara) {
+        EquipsReferencia ref = referenciaRepository.findById(EquipsReferencia.ID).orElse(null);
+        if (ref == null) return List.of();
+        return equipRepository.findAll().stream()
+                .filter(e -> estat(e, ref, ara) == Estat.ALTERAT)
+                .map(e -> e.getAula().getNom() + "/" + e.getNom()).sorted().toList();
+    }
+
     /** Demana restaurar un ordinador: només es marca. L'ordinador ho farà en el seu proper informe (≤ 15 min). */
     @Transactional
     public void demanaRestauracio(UUID equipId, User admin, LocalDateTime ara) {

@@ -1,6 +1,6 @@
 # Prova de seguretat (contra una instància LOCAL temporal)
 
-Exercita per HTTP les mesures de seguretat de l'aplicació: configuració pública sense llindars, autorització bàsica, renovació i revocació de
+Exercita per HTTP les mesures de seguretat de l'aplicació: configuració pública sense llindars, autorització bàsica, alertes de seguretat, renovació i revocació de
 sessions, canvi de contrasenya, límit d'intents per compte i adreça, usuari inhabilitat, i els informes d'ordinadors (testimoni, IP d'aula,
 estat, restauració) amb entrades dolentes. **No s'ha d'apuntar mai a producció**: crea i esborra usuaris i aules de prova.
 
@@ -24,7 +24,7 @@ pkill -f "[e]xam-platform-backend"; docker rm -f pg-prova
 ```
 
 El backend només es refia de `X-Real-IP` si ve d'un proxy intern (`127.x.x.x` ho és): la prova l'usa per simular adreces diferents.
-Última execució completa: 56 comprovacions, totes correctes (2026-10-10).
+Última execució completa: 70 comprovacions, totes correctes (2026-10-10).
 
 ## Límits de peticions d'nginx (`prova_nginx.py`)
 

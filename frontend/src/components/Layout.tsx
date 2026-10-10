@@ -5,6 +5,7 @@ import { useConfiguracio } from '../context/ConfiguracioContext'
 import { getCopiesSeguretat } from '../api/configuracio'
 import { getLogoUrl } from '../api/configuracio'
 import CanviarContrasenya from './CanviarContrasenya'
+import AlertesSeguretat from './AlertesSeguretat'
 
 const NAV: { to: string; label: string; roles: string[] }[] = [
   { to: '/professor/exams',    label: 'Examens',              roles: ['PROFESSOR', 'ADMIN'] },
@@ -112,6 +113,7 @@ export default function Layout({ children, examMode = false }: LayoutProps) {
 
       {/* Contingut principal */}
       <div className="flex-1 ml-56 print:ml-0">
+        {user?.role === 'ADMIN' && <AlertesSeguretat />}
         {avisCopies && (
           <div role="alert" className="bg-red-600 text-white text-sm px-6 py-2 flex flex-wrap items-center justify-between gap-2 print:hidden">
             <span>⚠ <strong>Còpies de seguretat:</strong> {avisCopies}</span>

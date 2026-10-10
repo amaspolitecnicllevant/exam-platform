@@ -19,25 +19,52 @@ public class AuthController {
     private final AuthenticationManager authManager;
     private final JwtUtil jwtUtil;
     private final com.examplatform.config.LoginRateLimiter rateLimiter;
+    private final com.examplatform.domain.service.AuditLogService auditLog;
+
+    /** Un bloqueig es registra un cop per compte i adreça (si no, un atac ompliria l'auditoria). */
+    private final com.examplatform.util.LimitadorDAvisos bloquejosAvisats =
+            new com.examplatform.util.LimitadorDAvisos(java.time.Duration.ofMinutes(15));
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest req,
                                                jakarta.servlet.http.HttpServletRequest request) {
         String ip = com.examplatform.util.IpUtil.clientIp(request);
-        rateLimiter.assertPermes(ip, req.email());
+        String compte = com.examplatform.util.LimitadorDAvisos.net(req.email(), 100).toLowerCase(java.util.Locale.ROOT);
+        try {
+            rateLimiter.assertPermes(ip, req.email());
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            if (bloquejosAvisats.permet(compte + "|" + ip)) auditLog.log(null, "LOGIN_BLOQUEJAT", compte);
+            throw e;
+        }
         Authentication auth;
         try {
             auth = authManager.authenticate(
                     new UsernamePasswordAuthenticationToken(req.email(), req.password()));
         } catch (org.springframework.security.core.AuthenticationException e) {
             rateLimiter.registraFallada(ip, req.email());
+            auditLog.log(null, "LOGIN_FALLIT", compte);
             throw e;
         }
 
         User user = (User) auth.getPrincipal();
+        registraEntradaDelPersonal(user, ip);
         String token = jwtUtil.generateToken(user);
         return ResponseEntity.ok(
                 new LoginResponse(token, user.getId(), user.getName(), user.getEmail(), user.getRole()));
+    }
+
+    /**
+     * Les entrades del professorat i l'administració es registren (les dels alumnes no: serien milers). Si un administrador entra
+     * des d'una adreça des de la qual mai no havia entrat, es deixa constància perquè es pugui avisar.
+     */
+    private void registraEntradaDelPersonal(User user, String ip) {
+        if (user.getRole() == com.examplatform.domain.model.Role.STUDENT) return;
+        boolean haEntratAbans = auditLog.jaHaFet(user.getId(), "LOGIN_OK");
+        boolean adrecaConeguda = auditLog.jaHaFetDes(user.getId(), "LOGIN_OK", ip);
+        auditLog.log(user.getId(), "LOGIN_OK", user.getRole().name());
+        if (user.getRole() == com.examplatform.domain.model.Role.ADMIN && haEntratAbans && !adrecaConeguda) {
+            auditLog.log(user.getId(), "LOGIN_NOVA_IP", ip);
+        }
     }
 
     /**

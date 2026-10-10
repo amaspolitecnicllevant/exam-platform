@@ -26,6 +26,11 @@ public class EquipsController {
 
     private final EquipsService servei;
     private final InformeEquipsRateLimiter limitador;
+    private final com.examplatform.domain.service.AuditLogService auditLog;
+
+    /** Els informes rebutjats es registren un cop per adreça i 10 minuts (un atac no ha d'omplir l'auditoria). */
+    private final com.examplatform.util.LimitadorDAvisos rebutjatsAvisats =
+            new com.examplatform.util.LimitadorDAvisos(java.time.Duration.ofMinutes(10));
 
     /** Informe d'un ordinador (formulari, perquè el script de l'ordinador no hagi d'escapar JSON). */
     @PostMapping(path = "/api/equips/informe", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
@@ -43,9 +48,15 @@ public class EquipsController {
                                         HttpServletRequest request) {
         String ip = IpUtil.clientIp(request);
         limitador.consumeix(ip);
-        EquipsService.Resposta r = servei.registraInforme(token, ip, new EquipsService.Informe(nom, integritat,
-                arribaPlataforma, arribaIsard, navegador, discLliureMb, uptimeSegons, usuarisDins, restauracio),
-                LocalDateTime.now());
+        EquipsService.Resposta r;
+        try {
+            r = servei.registraInforme(token, ip, new EquipsService.Informe(nom, integritat,
+                    arribaPlataforma, arribaIsard, navegador, discLliureMb, uptimeSegons, usuarisDins, restauracio),
+                    LocalDateTime.now());
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            registraRebuig(e, ip, nom);
+            throw e;
+        }
         // Text pla i curt perquè el script de l'ordinador el pugui llegir: RESTAURA o OK. Mai codi.
         return ResponseEntity.ok(r.restaura() ? "RESTAURA" : "OK");
     }
@@ -54,6 +65,17 @@ public class EquipsController {
      * Els professors també la veuen, però només l'aula on tenen algun examen i sense detalls tècnics: abans d'un examen
      * han de saber quins ordinadors fa temps que no s'encenen.
      */
+    private void registraRebuig(org.springframework.web.server.ResponseStatusException e, String ip, String nom) {
+        int codi = e.getStatusCode().value();
+        String motiu = String.valueOf(e.getReason());
+        String detall = "nom=" + com.examplatform.util.LimitadorDAvisos.net(nom, 60);
+        if (codi == 401 && rebutjatsAvisats.permet("testimoni|" + ip)) {
+            auditLog.log(null, "EQUIP_TESTIMONI_INVALID", detall);
+        } else if (codi == 403 && motiu.contains("no pertany a cap aula") && rebutjatsAvisats.permet("aula|" + ip)) {
+            auditLog.log(null, "EQUIP_IP_FORA_D_AULA", detall);
+        }
+    }
+
     @GetMapping("/api/aules/{aulaId}/equips")
     @PreAuthorize("hasAnyRole('PROFESSOR','ADMIN')")
     public EquipsDto equips(@PathVariable UUID aulaId, @AuthenticationPrincipal User usuari) {

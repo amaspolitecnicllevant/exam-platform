@@ -26,6 +26,16 @@ public class AuditLogService {
                 .build());
     }
 
+    /** L'usuari ja havia fet aquesta acció abans (des de qualsevol adreça)? */
+    public boolean jaHaFet(UUID userId, String action) {
+        return repository.existsByUserIdAndAction(userId, action);
+    }
+
+    /** L'usuari ja havia fet aquesta acció des d'aquesta adreça? */
+    public boolean jaHaFetDes(UUID userId, String action, String ip) {
+        return ip != null && repository.existsByUserIdAndActionAndIpAddress(userId, action, ip);
+    }
+
     private String extractIp() {
         try {
             var attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();

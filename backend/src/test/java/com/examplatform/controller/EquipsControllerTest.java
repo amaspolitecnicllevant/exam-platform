@@ -29,14 +29,16 @@ class EquipsControllerTest {
 
     EquipsService servei;
     InformeEquipsRateLimiter limitador;
+    com.examplatform.domain.service.AuditLogService auditoria;
     MockMvc mvc;
 
     @BeforeEach
     void setUp() {
         servei = mock(EquipsService.class);
         limitador = mock(InformeEquipsRateLimiter.class);
+        auditoria = mock(com.examplatform.domain.service.AuditLogService.class);
         when(servei.registraInforme(any(), any(), any(), any())).thenReturn(new EquipsService.Resposta(false));
-        mvc = MockMvcBuilders.standaloneSetup(new EquipsController(servei, limitador))
+        mvc = MockMvcBuilders.standaloneSetup(new EquipsController(servei, limitador, auditoria))
                 .setControllerAdvice(new GlobalExceptionHandler()).build();
     }
 
@@ -150,5 +152,49 @@ class EquipsControllerTest {
     void demanar_i_cancel_lar_la_restauracio_nomes_ho_fa_l_administrador() {
         assertThat(preAuthorize("demanaRestauracio")).isEqualTo("hasRole('ADMIN')");
         assertThat(preAuthorize("cancelaRestauracio")).isEqualTo("hasRole('ADMIN')");
+    }
+
+    // ── Informes rebutjats: queden registrats, un cop per adreça ──────────────
+
+    @Test
+    void un_informe_amb_testimoni_incorrecte_es_registra_un_sol_cop_per_adreca() throws Exception {
+        doThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Testimoni no vàlid"))
+                .when(servei).registraInforme(any(), any(), any(), any());
+
+        for (int i = 0; i < 4; i++) mvc.perform(informe().param("nom", "pc19")).andExpect(status().isUnauthorized());
+
+        verify(auditoria, times(1)).log(null, "EQUIP_TESTIMONI_INVALID", "nom=pc19");
+    }
+
+    @Test
+    void un_informe_des_d_una_adreca_fora_de_tota_aula_es_registra() throws Exception {
+        doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "L'adreça 10.100.94.19 no pertany a cap aula"))
+                .when(servei).registraInforme(any(), any(), any(), any());
+
+        mvc.perform(informe().param("nom", "pc19")).andExpect(status().isForbidden());
+        mvc.perform(informe().param("nom", "pc19")).andExpect(status().isForbidden());
+
+        verify(auditoria, times(1)).log(null, "EQUIP_IP_FORA_D_AULA", "nom=pc19");
+    }
+
+    @Test
+    void la_recepcio_desactivada_o_els_errors_de_format_no_es_registren_com_a_atac() throws Exception {
+        doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "La recepció d'informes d'ordinadors no està activada"))
+                .when(servei).registraInforme(any(), any(), any(), any());
+
+        mvc.perform(informe().param("nom", "pc19")).andExpect(status().isForbidden());
+
+        verifyNoInteractions(auditoria);
+    }
+
+    @Test
+    void el_nom_estrany_d_un_informe_rebutjat_es_neteja_abans_de_desar_lo() throws Exception {
+        doThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Testimoni no vàlid"))
+                .when(servei).registraInforme(any(), any(), any(), any());
+
+        mvc.perform(informe().param("nom", "pc\nFAL" + "S".repeat(200))).andExpect(status().isUnauthorized());
+
+        verify(auditoria).log(eq(null), eq("EQUIP_TESTIMONI_INVALID"), org.mockito.ArgumentMatchers.argThat(
+                (String d) -> d.length() <= 64 && !d.contains("\n")));
     }
 }

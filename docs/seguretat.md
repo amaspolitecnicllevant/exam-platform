@@ -27,6 +27,7 @@ imatges Docker. Les dependències de Maven i de npm s'han escanejat el 10 d'octu
 | 18 | Mitjana | Imatges de Docker amb vulnerabilitats (escaneig amb Trivy): `docker-cli` del backend (2 altes) i `libexpat`, `pcre2` i `tiff` de nginx (3 altes) | ✅ Els `Dockerfile` fan `apk upgrade`. Verificat: el frontend queda sense cap crítica ni alta, i el backend només conserva `spring-webmvc` (vegeu «Dependències») |
 | 19 | Baixa | `postgres:16-alpine` conté 25 vulnerabilitats altes/crítiques, totes al binari `gosu` (compilat amb una versió antiga de Go) | 📝 Risc acceptat: `gosu` només s'executa en arrencar el contenidor per deixar de ser `root` i no rep dades de ningú. S'arreglarà quan l'imatge oficial es reconstrueixi (`docker compose pull db backup`) |
 | 20 | Mitjana | Cap límit general de peticions: una sola adreça podia saturar el servidor | ✅ nginx limita per adreça (429): tota l'API a 60 peticions/s (ràfega de 200), el login a 5/s (ràfega de 50) i els informes d'ordinadors a 2/s; màxim 100 peticions simultànies. Provat amb Docker |
+| 21 | Mitjana | Ningú s'assabentava d'un atac a un compte, d'un administrador entrant des d'una adreça nova o d'informes d'ordinadors rebutjats: no es registraven els inicis de sessió fallits ni hi havia avisos | ✅ S'afegeixen esdeveniments a l'auditoria i alertes calculades per als administradors, visibles a totes les pàgines |
 | 15 | Mitjana | Dependències amb vulnerabilitats conegudes (Tomcat 10.1.55, Jackson 2.21.4, driver de PostgreSQL 42.7.11, log4j-api 2.24.3) | ✅ Actualitzades a Tomcat 10.1.60, Jackson 2.21.7, PostgreSQL 42.7.14 i log4j-api 2.25.5 (`backend/pom.xml`). Queden 2 de `spring-webmvc` (SSE i XSLT, que no fem servir) |
 
 ## Revisió de l'autorització (10 d'octubre)
@@ -52,6 +53,29 @@ Les versions corregides es fixen a `backend/pom.xml` perquè Spring Boot 3.5.16 
 les inclogui o en tingui de més noves. Per tornar a escanejar: `mvn dependency:list -DincludeScope=runtime` i consultar l'API d'OSV (`https://api.osv.dev/v1/querybatch`), i
 `npm audit --omit=dev` al frontend. Només queden dues vulnerabilitats de `spring-webmvc` 6.2.19 (corregides a Spring 7): afecten el flux d'esdeveniments (SSE) i `XsltView`,
 que l'aplicació no fa servir, i dues de `react-router` (redirecció oberta amb una URL de l'usuari i la hidratació de SSR), que no són explotables aquí.
+
+## Alertes de seguretat
+
+Els administradors veuen una barra a la part de dalt de totes les pàgines (se n'actualitzen cada 5 minuts) amb les alertes actives, i el detall en prémer *Veure-les*. Es calculen a partir de l'auditoria
+(`GET /api/admin/alertes`, només administradors) i **no envien res per correu** (no n'hi ha); desapareixen soles quan els esdeveniments surten de la finestra de cada regla.
+
+| Alerta | Quan salta | Gravetat |
+|:--|:--|:--|
+| Atac a un compte | 5 inicis de sessió fallits al mateix compte en 1 h | Alta si és del personal, mitjana si és d'un alumne |
+| Atac des d'una adreça | 10 fallits des d'una mateixa adreça en 1 h | Alta si prova 5 comptes o més; mitjana si no |
+| Comptes bloquejats | el límit d'intents ha bloquejat algú (24 h) | Mitjana |
+| Administrador des d'una adreça nova | un administrador entra des d'una adreça des de la qual no havia entrat mai (7 dies; el seu primer inici de sessió no compta) | Mitjana |
+| Informes d'ordinadors amb testimoni incorrecte | algú envia informes sense el testimoni correcte (24 h) | Mitjana |
+| Informes des d'una adreça fora d'aula | l'adreça no és el CIDR de cap aula (24 h) | Informació |
+| Restauracions d'ordinadors fallides | una restauració demanada des de l'aplicació ha fallat a l'ordinador (24 h) | Mitjana |
+| Moltes contrasenyes reinicialitzades | 3 o més reinicialitzacions de contrasenya o sessions tancades en 1 h | Mitjana |
+| Ordinadors alterats | algun ordinador no coincideix amb la referència | Alta |
+
+**Què es registra a l'auditoria** (i es pot filtrar a *Auditoria*): `LOGIN_FALLIT` (el compte escrit, mai la contrasenya), `LOGIN_BLOQUEJAT` (un cop per compte i adreça cada 15 minuts), `LOGIN_OK` (només professorat i administració),
+`LOGIN_NOVA_IP`, `EQUIP_TESTIMONI_INVALID` i `EQUIP_IP_FORA_D_AULA` (un cop per adreça cada 10 minuts). Els límits eviten que un atac ompli la taula d'auditoria.
+
+**Què fer quan salta una alerta alta:** si és un atac a un compte del personal, mira l'auditoria per veure des de quines adreces; el compte ja queda bloquejat per al que ataca, i si hi ha dubtes, reinicialitza-li la contrasenya (això tanca totes les sessions
+que tingués). Si un administrador ha entrat des d'una adreça nova i no era ell, tanca-li les sessions (*Usuaris → Tancar sessions*) i canvia-li la contrasenya.
 
 ## Límits de peticions (nginx)
 

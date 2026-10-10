@@ -213,6 +213,31 @@ comprova("matrícules d'un mòdul que no imparteix: cap", mat_b == [])
 comprova("matrícules del seu mòdul: l'Ana", [m["alumneNom"] for m in mat_a] == ["Ana"])
 comprova("matrícules d'un alumne d'un altre mòdul: cap", json.loads(crida("GET", f"/api/matricules?alumneId={id_bernat}", token=tok_prof)[1]) == [])
 
+print("10. Alertes de seguretat")
+c, _ = crida("GET", "/api/admin/alertes")
+comprova("sense sessió: 403", c == 403)
+comprova("el professor no veu les alertes (403)", crida("GET", "/api/admin/alertes", token=tok_prof)[0] == 403)
+# Una adreça que prova molts comptes diferents
+for i in range(12):
+    crida("POST", "/api/auth/login", {"email": f"inventat{i % 6}@prova.cat", "password": "mala"}, ip="10.8.8.8")
+# Un administrador que entra des d'una adreça on no havia entrat mai
+c, _ = entra("admin@prova.cat", "Contrasenya-admin-1", ip="10.7.7.7")
+comprova("l'administrador entra des d'una adreça nova", c == 200)
+c, text = crida("GET", "/api/admin/alertes", token=tok_admin)
+alertes = json.loads(text)
+per_codi = {a["codi"]: a for a in alertes}
+comprova("l'administrador veu les alertes (200)", c == 200 and len(alertes) > 0, text[:200])
+comprova("atac a un compte del personal: ALTA", per_codi.get("ATAC_COMPTE", {}).get("gravetat") == "ALTA", str(per_codi.get("ATAC_COMPTE")))
+comprova("una adreça que prova molts comptes: ALTA", per_codi.get("ATAC_ADRECA", {}).get("gravetat") == "ALTA", str(per_codi.get("ATAC_ADRECA")))
+comprova("comptes bloquejats", "COMPTES_BLOQUEJATS" in per_codi)
+comprova("administrador des d'una adreça nova", "ADMIN_NOVA_ADRECA" in per_codi and "10.7.7.7" in per_codi["ADMIN_NOVA_ADRECA"]["detall"], str(per_codi.get("ADMIN_NOVA_ADRECA")))
+comprova("informes amb testimoni incorrecte", "INFORMES_TESTIMONI" in per_codi)
+comprova("informes des d'una adreça fora d'aula (informació)", per_codi.get("INFORMES_FORA_AULA", {}).get("gravetat") == "INFO")
+comprova("ordenades: les altes primer", [a["gravetat"] for a in alertes] == sorted((a["gravetat"] for a in alertes), key=lambda g: {"ALTA": 0, "MITJANA": 1, "INFO": 2}[g]))
+comprova("l'entrada d'un alumne no es registra", sql_valor("SELECT count(*) FROM audit_log WHERE action='LOGIN_OK' AND user_id=(SELECT id FROM users WHERE email='alumne@prova.cat')") == "0")
+comprova("els fallits no desen cap contrasenya", sql_valor("SELECT count(*) FROM audit_log WHERE action='LOGIN_FALLIT' AND resource ILIKE '%mala%'") == "0")
+comprova("els fallits desen només el compte i l'adreça", sql_valor("SELECT count(*) FROM audit_log WHERE action='LOGIN_FALLIT' AND ip_address='10.8.8.8'") == "12")
+
 print()
 if fallades:
     print(f"RESULTAT: {len(fallades)} FALLADES"); [print("  -", f) for f in fallades]; sys.exit(1)

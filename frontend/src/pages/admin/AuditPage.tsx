@@ -2,7 +2,13 @@ import { useEffect, useState } from 'react'
 import Layout from '../../components/Layout'
 import { getAuditLogs, type AuditLogDto } from '../../api/audit'
 
-const ACTIONS = ['LOGIN', 'LOGOUT', 'EXAM_CREATE', 'EXAM_PUBLISH', 'SESSION_START', 'SESSION_SUBMIT', 'USER_CREATE', 'USER_DISABLE', 'EXAM_EXPORTED', 'FILE_UPLOADED']
+const ACTIONS = [
+  // Seguretat
+  'LOGIN_FALLIT', 'LOGIN_BLOQUEJAT', 'LOGIN_OK', 'LOGIN_NOVA_IP', 'SESSIONS_REVOCADES', 'PASSWORD_RESET', 'PASSWORD_CHANGED',
+  'EQUIP_TESTIMONI_INVALID', 'EQUIP_IP_FORA_D_AULA', 'EQUIP_RESTAURACIO_DEMANADA', 'EQUIP_RESTAURACIO_FALLIDA', 'EQUIP_RESTAURAT', 'EQUIPS_REFERENCIA_FIXADA',
+  // Activitat
+  'USER_CREATED', 'USER_DELETED', 'USERS_IMPORTED', 'EXAM_CREATED', 'EXAM_PUBLISHED', 'EXAM_CLOSED', 'EXAM_SUBMITTED', 'EXAM_EXPORTED', 'EXAM_REVISIO_IA', 'FILE_UPLOADED',
+]
 
 export default function AuditPage() {
   const [logs, setLogs]         = useState<AuditLogDto[]>([])
