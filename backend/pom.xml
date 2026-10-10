@@ -21,6 +21,12 @@
     <jjwt.version>0.12.3</jjwt.version>
     <tests.excludedGroups>integration</tests.excludedGroups>
     <docker.api.version>1.44</docker.api.version>
+    <!-- Versions corregides de dependències amb vulnerabilitats conegudes (Spring Boot 3.5.16 porta les antigues).
+         Es poden treure quan una versió de Spring Boot ja inclogui aquestes o més noves. Revisat amb OSV el 2026-10-10. -->
+    <tomcat.version>10.1.60</tomcat.version>
+    <jackson-bom.version>2.21.7</jackson-bom.version>
+    <postgresql.version>42.7.14</postgresql.version>
+    <log4j2.version>2.25.5</log4j2.version>
   </properties>
 
   <dependencies>
