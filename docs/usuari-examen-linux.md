@@ -86,11 +86,15 @@ Com que l'script només fa el que falta, es pot passar tal qual a **tots** els o
 read -r -s -p "Contrasenya de sudo d'lmadmin: " SPW; echo
 read -r -s -p "Contrasenya dels usuaris d'examen (sense cometes simples): " PW; echo
 read -r -s -p "Testimoni de l'informe (EQUIPS_TOKEN): " TOKEN; echo
-ORDRES="cd /home/lmadmin && chmod +x prepara-usuari-examen.sh && EXAMEN_CONTRASENYA='$PW' EXAMEN_INFORME_TOKEN='$TOKEN' ./prepara-usuari-examen.sh --tot --url https://examens.politecnicllevant.cat:3443 --ca /home/lmadmin/ca.crt --isard-url https://isard.politecnicllevant.cat"
+# Les contrasenyes i el testimoni viatgen per l'entrada estàndard de SSH, mai per la línia d'ordres (que qualsevol usuari de l'ordinador veu amb «ps»)
 : > resultat-aula.txt
 for ip in $(cat ordinadors.txt); do
   if ! scp -q -o ConnectTimeout=5 ca.crt prepara-usuari-examen.sh lmadmin@$ip:; then echo "$ip: NO RESPON" | tee -a resultat-aula.txt; continue; fi
-  SORTIDA=$(printf '%s\n' "$SPW" | ssh lmadmin@$ip "sudo -S -p '' bash -c \"$ORDRES\"" 2>&1)
+  SORTIDA=$( {
+      printf '%s\n' "$SPW"
+      printf "export EXAMEN_CONTRASENYA='%s' EXAMEN_INFORME_TOKEN='%s'\n" "$PW" "$TOKEN"
+      printf '%s\n' "cd /home/lmadmin && chmod +x prepara-usuari-examen.sh && ./prepara-usuari-examen.sh --tot --url https://examens.politecnicllevant.cat:3443 --ca /home/lmadmin/ca.crt --isard-url https://isard.politecnicllevant.cat < /dev/null"
+    } | ssh lmadmin@$ip "sudo -S -p '' bash -s" 2>&1 )
   RES=$(printf '%s\n' "$SORTIDA" | sed -n 's/^RESULTAT: //p' | tail -1)
   REINICI=$(printf '%s\n' "$SORTIDA" | sed -n 's/^REINICI: //p' | tail -1)
   if [ -z "$RES" ]; then echo "$ip: ERROR"; printf '%s\n' "$SORTIDA" | tail -5; echo "$ip: ERROR" >> resultat-aula.txt
@@ -102,8 +106,8 @@ Cada línia final diu, per ordinador: `al-dia` (no ha calgut fer res), `canvis=N
 `reinici: cal` s'han de reiniciar (`ssh lmadmin@IP 'sudo reboot'`, millor quan no hi hagi ningú). Per saber **quins ordinadors estan al dia sense tocar res**, no cal fer res
 de diferent: n'hi ha prou amb mirar quins surten `al-dia`.
 
-Les contrasenyes viatgen per l'entrada estàndard (la de `sudo`) i per la línia d'ordres (la dels alumnes i el testimoni, que no són secrets de l'administrador però
-sí del testimoni compartit: vegeu «Seguretat i límits» de l'apartat 5c). L'ordre es pot repetir sempre que vulguis posar-los tots al dia.
+Tot el que és secret (la contrasenya de `sudo`, la dels alumnes i el testimoni) viatja per l'entrada estàndard de SSH i **no queda a la línia d'ordres** de cap ordinador. L'ordre es pot
+repetir sempre que vulguis posar-los tots al dia.
 
 ## 4. Prova-ho en UN ordinador abans de continuar
 
@@ -289,6 +293,7 @@ TOT=0
 DESFES=0
 ESBORRA_USUARI=0
 CONFIG=""
+TANCA_CASES=""                # 1/0; per defecte, 1 amb --tot
 P="${PREFIX:-}"               # només per a proves: arrel falsa on escriure (no crea usuaris ni munta res)
 
 ús() {
@@ -308,6 +313,8 @@ P="${PREFIX:-}"               # només per a proves: arrel falsa on escriure (no
   --contrasenya PWD   Contrasenya dels usuaris (o variable EXAMEN_CONTRASENYA). Només s'estableix si es dona o l'usuari és nou
   --config FITXER     Llegeix les opcions d'un fitxer de configuració (el que desa --tot a /etc/examen/instalacio.conf).
                       És el que fa servir la restauració demanada des de l'aplicació. Les opcions de la línia d'ordres el sobreescriuen
+  --tanca-cases / --no-tanca-cases   Treu (o no) el permís de lectura als altres usuaris de les cases de /home. Per defecte, sí amb --tot:
+                      així l'usuari d'escriptori no pot llegir els fitxers dels altres alumnes de l'ordinador
   --desfes            Treu la configuració (amb --esborra-usuari també els usuaris)
 EOF
 }
@@ -338,6 +345,8 @@ while [ $# -gt 0 ]; do
     --informe-token)  INFORME_TOKEN="${2:?}"; shift 2 ;;
     --contrasenya)    CONTRASENYA="${2:?}"; shift 2 ;;
     --config)         shift 2 ;;
+    --tanca-cases)    TANCA_CASES=1; shift ;;
+    --no-tanca-cases) TANCA_CASES=0; shift ;;
     --desfes)         DESFES=1; shift ;;
     --esborra-usuari) ESBORRA_USUARI=1; shift ;;
     -h|--help)        ús; exit 0 ;;
@@ -351,6 +360,7 @@ nom_valid "$USUARI"
 case "$PERFIL" in quiosc|escriptori) ;; *) error "perfil no vàlid: $PERFIL (quiosc o escriptori)" ;; esac
 case "$NAVEGADOR" in firefox|chrome|chromium) ;; *) error "navegador no vàlid: $NAVEGADOR" ;; esac
 if [ "$TOT" -eq 1 ]; then PERFIL=quiosc; MENU=1; fi
+if [ -z "$TANCA_CASES" ]; then if [ "$TOT" -eq 1 ]; then TANCA_CASES=1; else TANCA_CASES=0; fi; fi
 if [ "$MENU" -eq 1 ] && [ "$PERFIL" != quiosc ]; then error "el menú només és per al perfil quiosc"; fi
 [ -n "$INFORME_URL" ] || INFORME_URL="$URL"
 URL_RE='^https://[^[:space:]"'"'"'\\$`]+$'
@@ -409,7 +419,9 @@ var usuarisExamen = [$llista];
 var usuarisAturar = [$aturar];
 polkit.addRule(function(action, subject) {
   if (usuarisExamen.indexOf(subject.user) < 0) { return; }
-  if (usuarisAturar.indexOf(subject.user) >= 0 && action.id.indexOf("org.freedesktop.login1.power-off") === 0) {
+  // Només apagar (amb o sense altres sessions obertes): no es pot ignorar un bloqueig d'apagada ni fer res més
+  if (usuarisAturar.indexOf(subject.user) >= 0 &&
+      (action.id === "org.freedesktop.login1.power-off" || action.id === "org.freedesktop.login1.power-off-multiple-sessions")) {
     return polkit.Result.YES;
   }
   return polkit.Result.NO;
@@ -670,6 +682,24 @@ EOF
   fi
 }
 
+# Les cases de Linux Mint són llegibles per tothom (755): l'usuari d'escriptori podria llegir els fitxers dels altres alumnes de
+# l'ordinador. Es treu el permís als altres (o-rwx). Les cases dels usuaris d'examen són en memòria i no es toquen.
+tanca_cases() {
+  [ -z "$P" ] || return 0
+  echo "==> Cases dels usuaris"
+  local d u canvis=0
+  for d in /home/*/; do
+    d=${d%/}; u=$(basename "$d")
+    [ -d "$d" ] || continue
+    [ -f "$USUARIS_DIR/$u" ] && continue
+    mountpoint -q "$d" && continue
+    if [ $(( $(stat -c %a "$d") % 10 )) -ne 0 ]; then
+      chmod o-rwx "$d"; fet "casa de $u: els altres usuaris ja no la poden llegir"; canvis=1
+    fi
+  done
+  if [ "$canvis" -eq 0 ]; then ja "cases dels usuaris (cap és llegible pels altres)"; fi
+}
+
 # Comprova si la contrasenya donada ja és la de l'usuari (compara amb el hash de /etc/shadow). Si no es pot saber
 # (sense python3 o sense el mòdul crypt), diu que no, i la contrasenya s'estableix igualment. Res no va per la línia d'ordres.
 contrasenya_correcta() {
@@ -865,6 +895,7 @@ else echo "==> Informe d'estat: no s'instal·la (no hi ha testimoni)"; fi
 echo "==> Regles d'accés"
 escriu_llistes
 desa_instalacio
+if [ "$TANCA_CASES" -eq 1 ]; then tanca_cases; fi
 
 # LightDM només llegeix la configuració en arrencar: si el fitxer és més nou que el procés, cal reiniciar
 if [ -z "$P" ]; then
@@ -902,6 +933,9 @@ if [ "${#FET[@]}" -eq 0 ]; then echo "RESULTAT: al-dia"; else echo "RESULTAT: ca
   d'entrar per consola i d'actuar amb privilegis. Si un exàmen necessita desar fitxers entre dues sessions, no és aquest perfil.
 - **Pendrive:** s'impedeix amb la regla de polkit; si hi ha un altre mecanisme de muntatge automàtic a l'ordinador, cal comprovar-ho a la prova.
 - **Tecles del servidor X:** `setxkbmap -option srvrkeys:none` només afecta la sessió de quiosc. Les consoles continuen accessibles per als altres usuaris.
+- **Cases dels altres usuaris:** per defecte (`--tot`), l'script treu el permís de lectura als altres a les cases de `/home` (`chmod o-rwx`), perquè l'usuari d'escriptori, que té un terminal,
+  no pugui llegir els fitxers dels altres alumnes. Es pot evitar amb `--no-tanca-cases`.
+- **Apagar:** els usuaris amb menú només poden apagar l'ordinador (les accions exactes `power-off` i `power-off-multiple-sessions` de polkit); no poden ignorar un bloqueig d'apagada.
 - **Contrasenya compartida:** és coneguda per tots els alumnes. Canvia-la quan vulguis tornant a executar l'script. Cap alumne l'ha de poder fer servir per
   res més que per fer l'examen: l'usuari no té permisos, i la seva casa es buida a cada sessió.
 - **Dues sessions alhora** amb el mateix usuari d'examen a un mateix ordinador no estan suportades (la casa en memòria és una).

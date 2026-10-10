@@ -5,7 +5,7 @@ l'aplicació, com està muntada i, sobretot, **què es pot configurar** i on: al
 *Configuració* de l'aplicació o, per a uns pocs valors, al `docker-compose.yml`.
 
 Altres guies: [professor](guia-professor.md) · [alumne](guia-alumne.md) · [desplegament en una VM](desplegament-vm.md) ·
-[HTTPS](https.md) · [còpies de seguretat](copies-seguretat.md) · [usuaris d'examen als ordinadors](usuari-examen-linux.md) · [funcionalitats per rol](funcionalitats.md).
+[HTTPS](https.md) · [còpies de seguretat](copies-seguretat.md) · [usuaris d'examen als ordinadors](usuari-examen-linux.md) · [seguretat: auditoria i estat](seguretat.md) · [funcionalitats per rol](funcionalitats.md).
 
 ---
 
@@ -98,7 +98,7 @@ Els altres usuaris els crees des de *Gestió d'usuaris* (un a un o important un 
 ### 4.1 On és i com s'aplica
 
 - El fitxer és **`infra/.env`** (al costat del `docker-compose.yml`). La plantilla és `.env.example` a l'arrel del repositori:
-  `cd infra && cp ../.env.example .env`.
+  `cd infra && cp ../.env.example .env && chmod 600 .env` (conté secrets: ha de ser llegible només pel propietari).
 - No és al repositori (conté secrets). Guarda'n una còpia en un lloc segur.
 - Després de canviar-lo: **`docker compose up -d`**. Un `docker compose restart` **no** rellegeix el fitxer.
 - Per comprovar què rep el backend: `docker compose exec backend env | grep -E "EXEC_|JWT|FRONTEND"`.
@@ -121,6 +121,7 @@ Els altres usuaris els crees des de *Gestió d'usuaris* (un a un o important un 
 | `APP_ALLOWED_ORIGINS` | `http://localhost:3000` | Orígens des d'on es pot fer servir l'aplicació (CORS), separats per comes. Han de ser **exactament** el que escriuen els usuaris al navegador: esquema, nom o IP i port (`https://10.0.0.5:3443`). Si falta l'adreça que es fa servir, el navegador bloqueja les peticions i **el login falla**. Si s'hi entra per IP i per nom, posa-les totes dues. |
 | `FRONTEND_URL` | `http://localhost:3000` | URL pública, sense barra final. **Només la fa servir el login amb Google** (a on redirigeix en acabar). Amb usuari i contrasenya no té efecte. |
 | `COMPOSE_FILE` | *(només `docker-compose.yml`)* | Quins fitxers de compose s'apliquen, separats per «:». Serveix per activar l'HTTPS (`docker-compose.https.yml`) i la còpia remota (`docker-compose.copies-remotes.yml`). |
+| `JWT_MAX_SESSION_MS` | `43200000` | Vida màxima d'una sessió (12 h). El token es renova mentre s'usa, però **no més enllà d'aquest temps des del login**: passat aquest temps cal tornar a entrar. |
 | `EQUIPS_TOKEN` | *(buit: desactivat)* | Testimoni compartit amb els ordinadors de les aules perquè enviïn l'informe del seu estat (pantalla *Aules*). Genera'l amb `openssl rand -hex 24`. Sense valor, la recepció d'informes no funciona. |
 | `EQUIPS_SENSE_NOTICIES_MIN` | `45` | Minuts sense cap informe a partir dels quals un ordinador surt com a «sense notícies». Els ordinadors n'envien un cada 15. |
 | `EQUIPS_AVIS_DIES` | `7` | Dies sense cap informe a partir dels quals es diu que un ordinador **fa temps que no s'encén**. Els professors ho veuen en preparar un examen amb aula i han de demanar que s'encenguin. |

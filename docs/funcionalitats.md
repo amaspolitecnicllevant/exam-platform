@@ -233,6 +233,7 @@ Els següents esdeveniments queden registrats a la base de dades:
 - `EXAM_CREATED`, `EXAM_PUBLISHED`, `EXAM_CLOSED`, `EXAM_DELETED`
 - `EXAM_SUBMITTED` (per sessió d'alumne)
 - `EXAM_EXPORTED` (qualsevol exportació d'un examen)
+- `SESSIONS_REVOCADES` (un administrador tanca les sessions obertes d'un usuari), `PASSWORD_CHANGED`, `PASSWORD_RESET`
 - `EQUIPS_REFERENCIA_FIXADA`, `EQUIP_ESBORRAT` (referència d'ordinadors d'aula i neteja de la llista)
 - `EXAM_REVISIO_IA` (aplicació d'una revisió amb IA: quantes notes s'han aplicat i quantes saltat)
 

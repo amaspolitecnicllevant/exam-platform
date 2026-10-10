@@ -96,6 +96,7 @@ cd exam-platform/infra
 
 ```bash
 cp ../.env.example .env
+chmod 600 .env   # conté secrets: només pel propietari
 nano .env
 ```
 
