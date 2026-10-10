@@ -32,6 +32,7 @@ services:
       DB_USER: ${DB_USER:-examuser}
       DB_PASS: ${DB_PASS:?Cal definir DB_PASS a infra/.env}
       JWT_SECRET: ${JWT_SECRET:?Cal definir JWT_SECRET a infra/.env (openssl rand -base64 48)}
+      JWT_MAX_SESSION_MS: ${JWT_MAX_SESSION_MS:-43200000}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       APP_ALLOWED_ORIGINS: ${APP_ALLOWED_ORIGINS:-http://localhost:3000}
       SCRIPTS_HOST_PATH: /opt/exam-scripts
@@ -72,6 +73,9 @@ services:
       db:
         condition: service_healthy
     user: "${BACKUP_UID:-1000}:${BACKUP_GID:-1000}"
+    # gid del backend (appgroup): llegeix /opt/exam-files encara que estigui a 750 (només propietari i grup)
+    group_add:
+      - "101"
     environment:
       DB_HOST: db
       DB_NAME: ${DB_NAME:-examplatform}

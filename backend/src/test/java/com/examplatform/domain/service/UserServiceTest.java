@@ -108,7 +108,7 @@ class UserServiceTest {
         when(userRepository.existsByEmail("existent@test.cat")).thenReturn(true);
 
         assertThatThrownBy(() -> service.create(
-                new UserDto.CreateRequest("Test", "existent@test.cat", "pass", Role.STUDENT), ADMIN))
+                new UserDto.CreateRequest("Test", "existent@test.cat", "password1", Role.STUDENT), ADMIN))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("existent@test.cat");
         verify(userRepository, never()).save(any());
@@ -224,5 +224,84 @@ class UserServiceTest {
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.canviaContrasenya(u.getId(), "x", "nova-12345"))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Google");
+    }
+
+    // ── Sessions i contrasenyes del professorat ───────────────────────────────
+
+    private User ambContrasenyaDeRol(Role rol) {
+        User u = User.builder().id(UUID.randomUUID()).name("X").role(rol).passwordHash("hash-vell").build();
+        org.mockito.Mockito.lenient().when(userRepository.findById(u.getId())).thenReturn(java.util.Optional.of(u));
+        org.mockito.Mockito.lenient().when(userRepository.save(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(inv -> inv.getArgument(0));
+        return u;
+    }
+
+    @Test
+    void canviar_la_contrasenya_tanca_les_altres_sessions_i_retorna_l_usuari_actualitzat() {
+        User u = ambContrasenyaDeRol(Role.STUDENT);
+        org.mockito.Mockito.when(passwordEncoder.matches("vella-1234", "hash-vell")).thenReturn(true);
+        org.mockito.Mockito.when(passwordEncoder.encode("nova-12345")).thenReturn("hash-nou");
+
+        User r = service.canviaContrasenya(u.getId(), "vella-1234", "nova-12345");
+
+        org.assertj.core.api.Assertions.assertThat(r.getTokenVersion()).isEqualTo(1);
+        org.assertj.core.api.Assertions.assertThat(r.getPasswordHash()).isEqualTo("hash-nou");
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(value = Role.class, names = {"PROFESSOR", "ADMIN"})
+    void el_professorat_i_l_administracio_necessiten_una_contrasenya_de_12_caracters(Role rol) {
+        User u = ambContrasenyaDeRol(rol);
+        org.mockito.Mockito.when(passwordEncoder.matches("vella-12345678", "hash-vell")).thenReturn(true);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.canviaContrasenya(u.getId(), "vella-12345678", "onze-chars1"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("12 i 72");
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.resetPassword(u.getId(), "onze-chars1"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("12 i 72");
+        org.mockito.Mockito.when(passwordEncoder.encode("dotze-chars12")).thenReturn("hash-nou");
+        service.resetPassword(u.getId(), "dotze-chars12");
+        org.assertj.core.api.Assertions.assertThat(u.getPasswordHash()).isEqualTo("hash-nou");
+    }
+
+    @Test
+    void un_alumne_pot_tenir_una_contrasenya_de_8_caracters() {
+        User u = ambContrasenyaDeRol(Role.STUDENT);
+        org.mockito.Mockito.when(passwordEncoder.encode("vuit-car")).thenReturn("hash-nou");
+
+        service.resetPassword(u.getId(), "vuit-car");
+
+        org.assertj.core.api.Assertions.assertThat(u.getPasswordHash()).isEqualTo("hash-nou");
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.resetPassword(u.getId(), "set-car"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("8 i 72");
+    }
+
+    @Test
+    void reinicialitzar_la_contrasenya_tanca_totes_les_sessions_de_l_usuari() {
+        User u = ambContrasenyaDeRol(Role.STUDENT);
+        org.mockito.Mockito.when(passwordEncoder.encode("nova-12345")).thenReturn("hash-nou");
+
+        service.resetPassword(u.getId(), "nova-12345");
+
+        org.assertj.core.api.Assertions.assertThat(u.getTokenVersion()).isEqualTo(1);
+    }
+
+    @Test
+    void revocar_les_sessions_puja_la_versio_de_token_sense_canviar_la_contrasenya() {
+        User u = ambContrasenyaDeRol(Role.PROFESSOR);
+
+        service.revocaSessions(u.getId());
+        service.revocaSessions(u.getId());
+
+        org.assertj.core.api.Assertions.assertThat(u.getTokenVersion()).isEqualTo(2);
+        org.assertj.core.api.Assertions.assertThat(u.getPasswordHash()).isEqualTo("hash-vell");
+    }
+
+    @Test
+    void crear_un_professor_amb_una_contrasenya_curta_es_rebutja() {
+        var req = new com.examplatform.dto.UserDto.CreateRequest("Prof", "prof@test.cat", "onze-chars1", Role.PROFESSOR);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.create(req, ADMIN))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("12 i 72");
+        org.mockito.Mockito.verify(userRepository, org.mockito.Mockito.never()).save(org.mockito.ArgumentMatchers.any());
     }
 }

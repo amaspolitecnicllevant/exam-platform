@@ -24,6 +24,7 @@ public class UserController {
     private final com.examplatform.domain.service.ImportacioUsuarisService importacioService;
     private final AuditLogService auditLog;
     private final com.examplatform.config.LoginRateLimiter rateLimiter;
+    private final com.examplatform.config.JwtUtil jwtUtil;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','PROFESSOR')")
@@ -58,21 +59,24 @@ public class UserController {
     /** Qualsevol usuari autenticat canvia la seva pròpia contrasenya (cal l'actual). */
     @PostMapping("/me/password")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> canviaLaMevaContrasenya(
+    public ResponseEntity<com.examplatform.dto.LoginResponse> canviaLaMevaContrasenya(
             @RequestBody Map<String, String> body,
             @AuthenticationPrincipal com.examplatform.domain.model.User caller,
             jakarta.servlet.http.HttpServletRequest request) {
         String ip = com.examplatform.util.IpUtil.clientIp(request);
         rateLimiter.assertPermes(ip, caller.getEmail());
+        com.examplatform.domain.model.User actualitzat;
         try {
-            userService.canviaContrasenya(caller.getId(), body.get("actual"), body.get("nova"));
+            actualitzat = userService.canviaContrasenya(caller.getId(), body.get("actual"), body.get("nova"));
         } catch (IllegalArgumentException e) {
             // Només l'error de l'actual compta com a intent fallit: evita provar contrasenyes amb un token robat
             if (e.getMessage().contains("actual no és correcta")) rateLimiter.registraFallada(ip, caller.getEmail());
             throw e;
         }
         auditLog.log(caller.getId(), "PASSWORD_CHANGED", caller.getId().toString());
-        return ResponseEntity.noContent().build();
+        // Les sessions anteriors queden tancades; aquesta continua amb un token nou
+        return ResponseEntity.ok(new com.examplatform.dto.LoginResponse(jwtUtil.generateToken(actualitzat),
+                actualitzat.getId(), actualitzat.getName(), actualitzat.getEmail(), actualitzat.getRole()));
     }
 
     @PatchMapping("/{id}/password")
@@ -80,11 +84,18 @@ public class UserController {
     public ResponseEntity<Void> resetPassword(@PathVariable UUID id,
                                               @RequestBody Map<String, String> body,
                                               @AuthenticationPrincipal com.examplatform.domain.model.User caller) {
-        String pwd = body.get("password");
-        if (pwd == null || pwd.length() < 8 || pwd.length() > 72)
-            throw new IllegalArgumentException("La contrasenya ha de tenir entre 8 i 72 caràcters");
-        userService.resetPassword(id, pwd);
+        userService.resetPassword(id, body.get("password"));
         auditLog.log(caller.getId(), "PASSWORD_RESET", id.toString());
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Tanca totes les sessions obertes d'un usuari (per exemple, si se li ha robat un token o ha deixat una sessió oberta). */
+    @PostMapping("/{id}/revoca-sessions")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> revocaSessions(@PathVariable UUID id,
+                                               @AuthenticationPrincipal com.examplatform.domain.model.User caller) {
+        userService.revocaSessions(id);
+        auditLog.log(caller.getId(), "SESSIONS_REVOCADES", id.toString());
         return ResponseEntity.noContent().build();
     }
 

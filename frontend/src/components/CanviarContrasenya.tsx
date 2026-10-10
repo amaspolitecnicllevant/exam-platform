@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { canviaLaMevaContrasenya } from '../api/users'
+import { canviaLaMevaContrasenya, minimContrasenya } from '../api/users'
+import { useAuth } from '../context/AuthContext'
 
 /** Finestra perquè l'usuari canviï la seva pròpia contrasenya (cal l'actual). */
 export default function CanviarContrasenya({ onClose }: { onClose: () => void }) {
@@ -9,15 +10,19 @@ export default function CanviarContrasenya({ onClose }: { onClose: () => void })
   const [error, setError] = useState('')
   const [fet, setFet] = useState(false)
   const [enviant, setEnviant] = useState(false)
+  const { user, setUser } = useAuth()
+  const minim = minimContrasenya(user?.role)
 
   async function envia(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    if (nova.length < 8 || nova.length > 72) return setError('La contrasenya nova ha de tenir entre 8 i 72 caràcters')
+    if (nova.length < minim || nova.length > 72) return setError(`La contrasenya nova ha de tenir entre ${minim} i 72 caràcters`)
     if (nova !== repeteix) return setError('Les dues contrasenyes noves no coincideixen')
     setEnviant(true)
     try {
-      await canviaLaMevaContrasenya(actual, nova)
+      const sessio = await canviaLaMevaContrasenya(actual, nova)
+      // Les sessions anteriors s'han tancat: aquesta continua amb el token nou
+      setUser({ userId: sessio.userId, name: sessio.name, email: sessio.email, role: sessio.role, token: sessio.token })
       setFet(true)
     } catch (err: any) {
       const d = err?.response?.data
@@ -43,7 +48,7 @@ export default function CanviarContrasenya({ onClose }: { onClose: () => void })
               <input type="password" autoComplete="current-password" required value={actual}
                 onChange={e => setActual(e.target.value)} className={camp} />
             </label>
-            <label className="block text-sm">Contrasenya nova (mínim 8 caràcters)
+            <label className="block text-sm">Contrasenya nova (mínim {minim} caràcters)
               <input type="password" autoComplete="new-password" required value={nova}
                 onChange={e => setNova(e.target.value)} className={camp} />
             </label>

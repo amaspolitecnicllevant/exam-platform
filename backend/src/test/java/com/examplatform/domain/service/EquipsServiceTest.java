@@ -39,6 +39,7 @@ class EquipsServiceTest {
     @Mock EquipAulaRepository equipRepository;
     @Mock EquipsReferenciaRepository referenciaRepository;
     @Mock AuditLogService auditLog;
+    @Mock com.examplatform.infrastructure.persistence.ExamRepository examRepository;
 
     EquipsService service;
     Aula aula;
@@ -46,7 +47,7 @@ class EquipsServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new EquipsService(aulaRepository, equipRepository, referenciaRepository, auditLog, TOKEN, 45, 7, 2);
+        service = new EquipsService(aulaRepository, equipRepository, referenciaRepository, examRepository, auditLog, TOKEN, 45, 7, 2);
         aula = Aula.builder().id(UUID.randomUUID()).nom("A101").xarxaCidr("10.100.94.0/24").build();
         admin = User.builder().id(UUID.randomUUID()).role(Role.ADMIN).build();
     }
@@ -69,7 +70,7 @@ class EquipsServiceTest {
 
     @Test
     void sense_testimoni_configurat_la_recepcio_esta_desactivada() {
-        EquipsService off = new EquipsService(aulaRepository, equipRepository, referenciaRepository, auditLog, "", 45, 7, 2);
+        EquipsService off = new EquipsService(aulaRepository, equipRepository, referenciaRepository, examRepository, auditLog, "", 45, 7, 2);
 
         assertThatThrownBy(() -> off.registraInforme(TOKEN, "10.100.94.19", informe("pc19", LLISTA), ARA))
                 .isInstanceOf(ResponseStatusException.class).hasMessageContaining("no està activada");
@@ -210,7 +211,7 @@ class EquipsServiceTest {
         when(aulaRepository.existsById(aula.getId())).thenReturn(true);
         when(equipRepository.findByAulaIdOrderByNomAsc(aula.getId())).thenReturn(List.of(equips));
         when(referenciaRepository.findById(EquipsReferencia.ID)).thenReturn(Optional.ofNullable(ref));
-        return service.equipsDeLAula(aula.getId(), ARA);
+        return service.equipsDeLAula(aula.getId(), admin, ARA);
     }
 
     @Test
@@ -303,7 +304,7 @@ class EquipsServiceTest {
     void consultar_una_aula_inexistent_es_un_error() {
         when(aulaRepository.existsById(any())).thenReturn(false);
 
-        assertThatThrownBy(() -> service.equipsDeLAula(UUID.randomUUID(), ARA)).isInstanceOf(NoSuchElementException.class);
+        assertThatThrownBy(() -> service.equipsDeLAula(UUID.randomUUID(), admin, ARA)).isInstanceOf(NoSuchElementException.class);
     }
 
     // ── Referència i neteja ───────────────────────────────────────────────────
@@ -489,5 +490,61 @@ class EquipsServiceTest {
 
         assertThatThrownBy(() -> service.demanaRestauracio(UUID.randomUUID(), admin, ARA)).isInstanceOf(NoSuchElementException.class);
         assertThatThrownBy(() -> service.cancelaRestauracio(UUID.randomUUID(), admin)).isInstanceOf(NoSuchElementException.class);
+    }
+
+    // ── Qui pot veure l'estat d'una aula ──────────────────────────────────────
+
+    private User professor() {
+        return User.builder().id(UUID.randomUUID()).role(Role.PROFESSOR).build();
+    }
+
+    private Exam examenAmbAula(Aula a) {
+        return Exam.builder().id(UUID.randomUUID()).aula(a).build();
+    }
+
+    @Test
+    void un_professor_sense_cap_examen_en_aquella_aula_no_en_veu_l_estat() {
+        User prof = professor();
+        when(aulaRepository.existsById(aula.getId())).thenReturn(true);
+        Aula altra = Aula.builder().id(UUID.randomUUID()).nom("A102").xarxaCidr("10.100.95.0/24").build();
+        when(examRepository.findGestionablesPer(prof.getId())).thenReturn(List.of(examenAmbAula(altra), Exam.builder().id(UUID.randomUUID()).build()));
+
+        assertThatThrownBy(() -> service.equipsDeLAula(aula.getId(), prof, ARA))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        verifyNoInteractions(equipRepository);
+    }
+
+    @Test
+    void un_professor_amb_un_examen_en_aquella_aula_en_veu_l_estat_pero_sense_ips_ni_empremtes() {
+        User prof = professor();
+        when(aulaRepository.existsById(aula.getId())).thenReturn(true);
+        when(examRepository.findGestionablesPer(prof.getId())).thenReturn(List.of(examenAmbAula(aula)));
+        EquipAula alterat = equip("pc1", "una cosa diferent", ARA.minusMinutes(5), true);
+        alterat.setRestauracioResultat("l'script ha fallat");
+        alterat.setRestauracioResultatEl(ARA);
+        when(equipRepository.findByAulaIdOrderByNomAsc(aula.getId())).thenReturn(List.of(alterat));
+        when(referenciaRepository.findById(EquipsReferencia.ID)).thenReturn(Optional.of(referencia(LLISTA)));
+
+        EquipsDto.Equip e = service.equipsDeLAula(aula.getId(), prof, ARA).equips().get(0);
+
+        assertThat(e.estat()).isEqualTo(Estat.ALTERAT);             // l'estat sí que el veu
+        assertThat(e.nom()).isEqualTo("pc1");
+        assertThat(e.ip()).isEmpty();                                // però no la xarxa
+        assertThat(e.diferencies()).isEmpty();                       // ni els fitxers
+        assertThat(e.restauracioResultat()).isNull();                // ni el resultat intern de les restauracions
+    }
+
+    @Test
+    void l_administrador_ho_veu_tot_sense_comprovar_els_examens() {
+        when(aulaRepository.existsById(aula.getId())).thenReturn(true);
+        EquipAula alterat = equip("pc1", "una cosa diferent", ARA.minusMinutes(5), true);
+        when(equipRepository.findByAulaIdOrderByNomAsc(aula.getId())).thenReturn(List.of(alterat));
+        when(referenciaRepository.findById(EquipsReferencia.ID)).thenReturn(Optional.of(referencia(LLISTA)));
+
+        EquipsDto.Equip e = service.equipsDeLAula(aula.getId(), admin, ARA).equips().get(0);
+
+        assertThat(e.ip()).isEqualTo("10.100.94.1");
+        assertThat(e.diferencies()).isNotEmpty();
+        verifyNoInteractions(examRepository);
     }
 }

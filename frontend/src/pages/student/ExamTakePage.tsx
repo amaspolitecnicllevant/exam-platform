@@ -458,7 +458,7 @@ function ExamTake() {
             {htmlPreviews[q.id] && (
               <iframe
                 srcDoc={answers[q.id] ?? ''}
-                sandbox="allow-scripts"
+                sandbox=""
                 className="w-full border rounded bg-white"
                 style={{ height: '300px' }}
                 title={`preview-${q.id}`}

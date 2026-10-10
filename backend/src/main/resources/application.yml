@@ -33,6 +33,8 @@ jwt:
   # Obligatori: Base64 d'almenys 32 bytes (p. ex. `openssl rand -base64 48`). Sense valor per defecte.
   secret: ${JWT_SECRET:}
   expiration-ms: ${JWT_EXPIRATION_MS:14400000}  # 4h per defecte
+  # Vida màxima d'una sessió: el token es pot renovar, però no més enllà d'aquest temps des del login (12 h per defecte)
+  max-session-ms: ${JWT_MAX_SESSION_MS:43200000}
 
 equips:
   # Testimoni compartit amb els ordinadors de les aules perquè puguin enviar-hi l'informe d'estat.

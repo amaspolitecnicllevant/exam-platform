@@ -65,6 +65,11 @@ export function ConfiguracioProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => { load() }, [])
+  // En entrar o sortir, el servidor serveix una configuració diferent (el professorat veu els llindars antitrampes)
+  useEffect(() => {
+    window.addEventListener('auth-canviat', load)
+    return () => window.removeEventListener('auth-canviat', load)
+  }, [])
 
   return (
     <ConfiguracioContext.Provider value={{ config, reload: load }}>

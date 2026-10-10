@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Layout from '../../components/Layout'
-import { getUsers, createUser, deleteUser, resetPassword } from '../../api/users'
+import { getUsers, createUser, deleteUser, resetPassword, revocaSessions, minimContrasenya } from '../../api/users'
 import ImportacioUsuaris from '../../components/ImportacioUsuaris'
 import type { User, Role } from '../../types'
 
@@ -54,11 +54,16 @@ export default function UsersPage() {
       await resetPassword(resetUser.id, newPwd)
       setResetMsg('Contrasenya canviada correctament.')
       setNewPwd('')
-    } catch {
-      setResetMsg('Error canviant la contrasenya.')
+    } catch (err: any) {
+      setResetMsg('Error: ' + (err?.response?.data?.error || 'no s\'ha pogut canviar la contrasenya.'))
     } finally {
       setResetting(false)
     }
+  }
+
+  const handleRevoca = async (u: User) => {
+    if (!confirm(`Tancar totes les sessions obertes de ${u.name}? Haurà de tornar a entrar amb la seva contrasenya.`)) return
+    try { await revocaSessions(u.id); alert('Sessions tancades.') } catch { alert('No s\'han pogut tancar les sessions.') }
   }
 
   return (
@@ -109,6 +114,10 @@ export default function UsersPage() {
                       className="text-brand-600 hover:underline text-xs">
                       Contrasenya
                     </button>
+                    <button onClick={() => handleRevoca(u)} title="Tanca totes les sessions obertes d'aquest usuari"
+                      className="text-amber-700 hover:underline text-xs">
+                      Tancar sessions
+                    </button>
                     <button onClick={() => handleDelete(u.id)}
                       className="text-red-600 hover:underline text-xs">
                       Eliminar
@@ -132,10 +141,10 @@ export default function UsersPage() {
             <form onSubmit={handleReset} className="px-6 py-4 space-y-3">
               <input
                 type="password"
-                placeholder="Nova contrasenya (mínim 8 caràcters)"
+                placeholder={`Nova contrasenya (mínim ${minimContrasenya(resetUser.role)} caràcters)`}
                 value={newPwd}
                 onChange={e => setNewPwd(e.target.value)}
-                required minLength={8}
+                required minLength={minimContrasenya(resetUser.role)}
                 className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
               {resetMsg && (
@@ -148,7 +157,7 @@ export default function UsersPage() {
                   className="border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                   Tancar
                 </button>
-                <button type="submit" disabled={resetting || newPwd.length < 8}
+                <button type="submit" disabled={resetting || newPwd.length < minimContrasenya(resetUser.role)}
                   className="bg-brand-600 text-white rounded-lg px-4 py-2 text-sm hover:bg-brand-700 disabled:opacity-50">
                   {resetting ? 'Desant…' : 'Desar'}
                 </button>

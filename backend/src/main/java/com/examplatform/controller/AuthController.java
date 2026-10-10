@@ -46,7 +46,17 @@ public class AuthController {
      */
     @PostMapping("/refresh")
     @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
-    public LoginResponse refresh(@org.springframework.security.core.annotation.AuthenticationPrincipal User user) {
-        return new LoginResponse(jwtUtil.generateToken(user), user.getId(), user.getName(), user.getEmail(), user.getRole());
+    public LoginResponse refresh(jakarta.servlet.http.HttpServletRequest request,
+                                 @org.springframework.security.core.annotation.AuthenticationPrincipal User user) {
+        String header = request.getHeader("Authorization");
+        String actual = header != null && header.startsWith("Bearer ") ? header.substring(7) : "";
+        String nou;
+        try {
+            nou = jwtUtil.renova(actual, user);
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.UNAUTHORIZED, "La sessió ha caducat: torna a entrar");
+        }
+        return new LoginResponse(nou, user.getId(), user.getName(), user.getEmail(), user.getRole());
     }
 }

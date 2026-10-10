@@ -3,12 +3,14 @@ package com.examplatform.domain.service;
 import com.examplatform.domain.model.Aula;
 import com.examplatform.domain.model.EquipAula;
 import com.examplatform.domain.model.EquipsReferencia;
+import com.examplatform.domain.model.Role;
 import com.examplatform.domain.model.User;
 import com.examplatform.dto.EquipsDto;
 import com.examplatform.dto.EquipsDto.Estat;
 import com.examplatform.infrastructure.persistence.AulaRepository;
 import com.examplatform.infrastructure.persistence.EquipAulaRepository;
 import com.examplatform.infrastructure.persistence.EquipsReferenciaRepository;
+import com.examplatform.infrastructure.persistence.ExamRepository;
 import com.examplatform.util.CidrUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -46,6 +48,7 @@ public class EquipsService {
     private final AulaRepository aulaRepository;
     private final EquipAulaRepository equipRepository;
     private final EquipsReferenciaRepository referenciaRepository;
+    private final ExamRepository examRepository;
     private final AuditLogService auditLog;
     private final String token;
     private final Duration senseNoticies;
@@ -53,7 +56,8 @@ public class EquipsService {
     private final int maxPerAula;
 
     public EquipsService(AulaRepository aulaRepository, EquipAulaRepository equipRepository,
-                         EquipsReferenciaRepository referenciaRepository, AuditLogService auditLog,
+                         EquipsReferenciaRepository referenciaRepository, ExamRepository examRepository,
+                         AuditLogService auditLog,
                          @Value("${equips.token:}") String token,
                          @Value("${equips.sense-noticies-minuts:45}") int senseNoticiesMinuts,
                          @Value("${equips.avis-dies:7}") int avisDies,
@@ -61,6 +65,7 @@ public class EquipsService {
         this.aulaRepository = aulaRepository;
         this.equipRepository = equipRepository;
         this.referenciaRepository = referenciaRepository;
+        this.examRepository = examRepository;
         this.auditLog = auditLog;
         this.token = token == null ? "" : token;
         this.senseNoticies = Duration.ofMinutes(senseNoticiesMinuts);
@@ -145,12 +150,20 @@ public class EquipsService {
 
     // ── Consulta ──────────────────────────────────────────────────────────────
 
+    /**
+     * Estat dels ordinadors d'una aula. L'administració ho veu tot; un professor només l'aula on té algun examen i
+     * sense els detalls tècnics (adreces IP, empremtes de fitxers, resultat de les restauracions).
+     */
     @Transactional(readOnly = true)
-    public EquipsDto equipsDeLAula(UUID aulaId, LocalDateTime ara) {
+    public EquipsDto equipsDeLAula(UUID aulaId, User usuari, LocalDateTime ara) {
         if (!aulaRepository.existsById(aulaId)) throw new NoSuchElementException("Aula no trobada: " + aulaId);
+        boolean admin = usuari.getRole() == Role.ADMIN;
+        if (!admin && !teExamenAAula(usuari, aulaId)) {
+            throw new org.springframework.security.access.AccessDeniedException("No tens cap examen en aquesta aula");
+        }
         EquipsReferencia ref = referenciaRepository.findById(EquipsReferencia.ID).orElse(null);
         List<EquipsDto.Equip> equips = equipRepository.findByAulaIdOrderByNomAsc(aulaId).stream()
-                .map(e -> dto(e, ref, ara)).toList();
+                .map(e -> dto(e, ref, ara, admin)).toList();
         int preparats = 0, alterats = 0, silenci = 0, altres = 0, fa = 0;
         for (EquipsDto.Equip e : equips) {
             if (e.faTemps()) fa++;
@@ -165,14 +178,21 @@ public class EquipsService {
                 preparats, alterats, silenci, altres, fa, equips);
     }
 
-    private EquipsDto.Equip dto(EquipAula e, EquipsReferencia ref, LocalDateTime ara) {
+    private boolean teExamenAAula(User usuari, UUID aulaId) {
+        return examRepository.findGestionablesPer(usuari.getId()).stream()
+                .anyMatch(x -> x.getAula() != null && aulaId.equals(x.getAula().getId()));
+    }
+
+    private EquipsDto.Equip dto(EquipAula e, EquipsReferencia ref, LocalDateTime ara, boolean detall) {
         Estat estat = estat(e, ref, ara);
         Duration sense = Duration.between(e.getDarrerInforme(), ara);
-        return new EquipsDto.Equip(e.getId(), e.getNom(), e.getIp(), e.getDarrerInforme(), estat,
+        return new EquipsDto.Equip(e.getId(), e.getNom(), detall ? e.getIp() : "", e.getDarrerInforme(), estat,
                 sense.compareTo(faTemps) >= 0, Math.max(0, sense.toDays()),
                 e.getArribaPlataforma(), e.getArribaIsard(), e.getNavegador(), e.getDiscLliureMb(), e.getArrencada(),
-                e.getUsuarisDins(), avisos(e), estat == Estat.ALTERAT ? diferencies(ref.getIntegritat(), e.getIntegritat()) : List.of(),
-                restauracioPendent(e, ara), e.getRestauracioDemanadaEl(), e.getRestauracioResultat(), e.getRestauracioResultatEl());
+                e.getUsuarisDins(), avisos(e),
+                detall && estat == Estat.ALTERAT ? diferencies(ref.getIntegritat(), e.getIntegritat()) : List.of(),
+                restauracioPendent(e, ara), e.getRestauracioDemanadaEl(),
+                detall ? e.getRestauracioResultat() : null, detall ? e.getRestauracioResultatEl() : null);
     }
 
     Estat estat(EquipAula e, EquipsReferencia ref, LocalDateTime ara) {

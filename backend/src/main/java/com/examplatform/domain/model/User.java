@@ -39,6 +39,11 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private Role role;
 
+    /** Es puja en canviar o reinicialitzar la contrasenya, o en tancar les sessions: invalida tots els tokens anteriors. */
+    @Column(name = "token_version", nullable = false)
+    @Builder.Default
+    private int tokenVersion = 0;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

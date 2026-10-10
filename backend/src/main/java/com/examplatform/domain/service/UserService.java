@@ -42,6 +42,7 @@ public class UserService {
     @Transactional
     public UserDto create(UserDto.CreateRequest req, User caller) {
         assertPotCrearRol(caller, req.role());
+        comprovaLongitud(req.role(), req.password());
         if (userRepository.existsByEmail(req.email())) {
             throw new IllegalArgumentException("Ja existeix un usuari amb l'email: " + req.email());
         }
@@ -78,10 +79,33 @@ public class UserService {
                 .orElseThrow(() -> new NoSuchElementException("Usuari no trobat: " + id));
     }
 
+    /** Llargada mínima de la contrasenya: més exigent per al professorat i l'administració, que tenen més accés. */
+    public static int minimLongitud(Role rol) {
+        return rol == Role.STUDENT ? 8 : 12;
+    }
+
+    private static void comprovaLongitud(Role rol, String contrasenya) {
+        int min = minimLongitud(rol);
+        if (contrasenya == null || contrasenya.length() < min || contrasenya.length() > 72) {
+            throw new IllegalArgumentException("La contrasenya ha de tenir entre " + min + " i 72 caràcters");
+        }
+    }
+
+    /** L'administrador posa una contrasenya nova a un usuari; les sessions que tenia obertes es tanquen. */
     @Transactional
     public void resetPassword(UUID id, String newPassword) {
         User user = getEntityById(id);
+        comprovaLongitud(user.getRole(), newPassword);
         user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setTokenVersion(user.getTokenVersion() + 1);
+        userRepository.save(user);
+    }
+
+    /** Tanca totes les sessions obertes d'un usuari (els seus tokens deixen de ser vàlids). */
+    @Transactional
+    public void revocaSessions(UUID id) {
+        User user = getEntityById(id);
+        user.setTokenVersion(user.getTokenVersion() + 1);
         userRepository.save(user);
     }
 
@@ -90,17 +114,20 @@ public class UserService {
      * contrasenya local) no en poden canviar.
      */
     @Transactional
-    public void canviaContrasenya(UUID userId, String actual, String nova) {
+    public User canviaContrasenya(UUID userId, String actual, String nova) {
         User user = getEntityById(userId);
         if (user.getPasswordHash() == null)
             throw new IllegalArgumentException("Aquest compte entra amb Google i no té contrasenya pròpia");
         if (actual == null || !passwordEncoder.matches(actual, user.getPasswordHash()))
             throw new IllegalArgumentException("La contrasenya actual no és correcta");
-        if (nova == null || nova.length() < 8 || nova.length() > 72)
-            throw new IllegalArgumentException("La contrasenya nova ha de tenir entre 8 i 72 caràcters");
+        int min = minimLongitud(user.getRole());
+        if (nova == null || nova.length() < min || nova.length() > 72)
+            throw new IllegalArgumentException("La contrasenya nova ha de tenir entre " + min + " i 72 caràcters");
         if (nova.equals(actual))
             throw new IllegalArgumentException("La contrasenya nova ha de ser diferent de l'actual");
         user.setPasswordHash(passwordEncoder.encode(nova));
-        userRepository.save(user);
+        // Les altres sessions (un token robat, un altre ordinador) es tanquen; qui canvia la contrasenya rep un token nou
+        user.setTokenVersion(user.getTokenVersion() + 1);
+        return userRepository.save(user);
     }
 }

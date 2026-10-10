@@ -25,6 +25,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('auth')
       localStorage.removeItem('token')
     }
+    // La configuració que serveix el servidor depèn de qui ha entrat (el professorat veu els llindars): es recarrega
+    window.dispatchEvent(new Event('auth-canviat'))
   }
 
   const logout = () => setUser(null)

@@ -50,11 +50,14 @@ public class EquipsController {
         return ResponseEntity.ok(r.restaura() ? "RESTAURA" : "OK");
     }
 
-    /** Els professors també la veuen: abans d'un examen han de saber quins ordinadors fa temps que no s'encenen. */
+    /**
+     * Els professors també la veuen, però només l'aula on tenen algun examen i sense detalls tècnics: abans d'un examen
+     * han de saber quins ordinadors fa temps que no s'encenen.
+     */
     @GetMapping("/api/aules/{aulaId}/equips")
     @PreAuthorize("hasAnyRole('PROFESSOR','ADMIN')")
-    public EquipsDto equips(@PathVariable UUID aulaId) {
-        return servei.equipsDeLAula(aulaId, LocalDateTime.now());
+    public EquipsDto equips(@PathVariable UUID aulaId, @AuthenticationPrincipal User usuari) {
+        return servei.equipsDeLAula(aulaId, usuari, LocalDateTime.now());
     }
 
     @PostMapping("/api/equips/{equipId}/referencia")

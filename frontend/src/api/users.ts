@@ -9,8 +9,16 @@ export const deleteUser  = (id: string) => client.delete(`/users/${id}`)
 export const resetPassword = (id: string, password: string) =>
   client.patch(`/users/${id}/password`, { password })
 
+/** Canvia la contrasenya pròpia. Les altres sessions es tanquen; la resposta porta un token nou per a aquesta. */
+export interface SessioNova { token: string; userId: string; name: string; email: string; role: Role }
 export const canviaLaMevaContrasenya = (actual: string, nova: string) =>
-  client.post('/users/me/password', { actual, nova })
+  client.post<SessioNova>('/users/me/password', { actual, nova }).then(r => r.data)
+
+/** Tanca totes les sessions obertes d'un usuari (només administradors). */
+export const revocaSessions = (id: string) => client.post(`/users/${id}/revoca-sessions`)
+
+/** Llargada mínima de la contrasenya: més exigent per al professorat i l'administració. */
+export const minimContrasenya = (role: Role | undefined) => (role === 'STUDENT' ? 8 : 12)
 
 export const importCsv = (file: File, role?: Role) => {
   const form = new FormData()

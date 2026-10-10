@@ -29,9 +29,14 @@ public class ConfiguracioController {
         return oauthClients.getIfAvailable() != null;
     }
 
+    /** Pública (la pantalla d'entrada en necessita la imatge), però els llindars només els veu el professorat i l'administració. */
     @GetMapping
-    public ConfiguracioDto get() {
-        return ConfiguracioDto.from(configuracioService.get(), googleActiu());
+    public ConfiguracioDto get(org.springframework.security.core.Authentication auth) {
+        boolean personal = auth != null && auth.isAuthenticated() && auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_PROFESSOR"));
+        return personal
+                ? ConfiguracioDto.from(configuracioService.get(), googleActiu())
+                : ConfiguracioDto.publica(configuracioService.get(), googleActiu());
     }
 
     @GetMapping("/logo")

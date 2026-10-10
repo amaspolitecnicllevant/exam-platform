@@ -199,7 +199,7 @@ export default function RespostaCorreccio({ q, answer, session, titol, mostrarRe
             {htmlPreview ? 'Amagar' : 'Mostrar'} previsualització HTML
           </button>
           {htmlPreview && (
-            <iframe srcDoc={answer.contingut} sandbox="allow-scripts"
+            <iframe srcDoc={answer.contingut} sandbox=""
               className="w-full border rounded bg-white" style={{ height: '250px' }}
               title={`html-preview-${answer.id}`} />
           )}

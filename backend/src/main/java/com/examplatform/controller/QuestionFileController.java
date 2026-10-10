@@ -51,14 +51,23 @@ public class QuestionFileController {
         return ResponseEntity.noContent().build();
     }
 
+    private static final java.util.Set<String> TIPUS_IMATGE_SEGURS =
+            java.util.Set.of("image/png", "image/jpeg", "image/gif", "image/webp");
+
     @GetMapping("/api/files/{fileId}/download")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Resource> download(@PathVariable UUID fileId,
                                              @AuthenticationPrincipal User user) {
         QuestionFileService.Descarrega d = fileService.download(fileId, user);
+        // El tipus el va indicar qui va pujar el fitxer: només es respecta si és una imatge segura (les fan servir els
+        // enunciats); la resta es serveix com a descàrrega genèrica, mai com a HTML o SVG que el navegador pugui executar
+        String tipus = TIPUS_IMATGE_SEGURS.contains(String.valueOf(d.contentType()).toLowerCase(java.util.Locale.ROOT))
+                ? d.contentType().toLowerCase(java.util.Locale.ROOT) : MediaType.APPLICATION_OCTET_STREAM_VALUE;
         return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(d.contentType()))
+                .contentType(MediaType.parseMediaType(tipus))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + d.filename() + "\"")
+                .header("X-Content-Type-Options", "nosniff")
+                .header("Content-Security-Policy", "sandbox; default-src 'none'")
                 .body(d.resource());
     }
 }
