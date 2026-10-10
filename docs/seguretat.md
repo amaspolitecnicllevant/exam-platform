@@ -26,6 +26,7 @@ imatges Docker. Les dependències de Maven i de npm s'han escanejat el 10 d'octu
 | 17 | Mitjana | Un professor veia noms i correus de tots els usuaris (`GET /api/users`) i podia afegir a un grup o a un examen qualsevol alumne | ✅ Només els alumnes de les seves assignatures, dels seus grups i els que ha creat; també es comprova en afegir alumnes a grups i exàmens |
 | 18 | Mitjana | Imatges de Docker amb vulnerabilitats (escaneig amb Trivy): `docker-cli` del backend (2 altes) i `libexpat`, `pcre2` i `tiff` de nginx (3 altes) | ✅ Els `Dockerfile` fan `apk upgrade`. Verificat: el frontend queda sense cap crítica ni alta, i el backend només conserva `spring-webmvc` (vegeu «Dependències») |
 | 19 | Baixa | `postgres:16-alpine` conté 25 vulnerabilitats altes/crítiques, totes al binari `gosu` (compilat amb una versió antiga de Go) | 📝 Risc acceptat: `gosu` només s'executa en arrencar el contenidor per deixar de ser `root` i no rep dades de ningú. S'arreglarà quan l'imatge oficial es reconstrueixi (`docker compose pull db backup`) |
+| 20 | Mitjana | Cap límit general de peticions: una sola adreça podia saturar el servidor | ✅ nginx limita per adreça (429): tota l'API a 60 peticions/s (ràfega de 200), el login a 5/s (ràfega de 50) i els informes d'ordinadors a 2/s; màxim 100 peticions simultànies. Provat amb Docker |
 | 15 | Mitjana | Dependències amb vulnerabilitats conegudes (Tomcat 10.1.55, Jackson 2.21.4, driver de PostgreSQL 42.7.11, log4j-api 2.24.3) | ✅ Actualitzades a Tomcat 10.1.60, Jackson 2.21.7, PostgreSQL 42.7.14 i log4j-api 2.25.5 (`backend/pom.xml`). Queden 2 de `spring-webmvc` (SSE i XSLT, que no fem servir) |
 
 ## Revisió de l'autorització (10 d'octubre)
@@ -51,6 +52,13 @@ Les versions corregides es fixen a `backend/pom.xml` perquè Spring Boot 3.5.16 
 les inclogui o en tingui de més noves. Per tornar a escanejar: `mvn dependency:list -DincludeScope=runtime` i consultar l'API d'OSV (`https://api.osv.dev/v1/querybatch`), i
 `npm audit --omit=dev` al frontend. Només queden dues vulnerabilitats de `spring-webmvc` 6.2.19 (corregides a Spring 7): afecten el flux d'esdeveniments (SSE) i `XsltView`,
 que l'aplicació no fa servir, i dues de `react-router` (redirecció oberta amb una URL de l'usuari i la hidratació de SSR), que no són explotables aquí.
+
+## Límits de peticions (nginx)
+
+`frontend/nginx-limits.conf` (zones) i `frontend/nginx-comu.conf` (rutes) limiten per adreça, i s'apliquen igual en HTTP i en HTTPS. Una persona normal no hi arriba (l'autodesat d'un examen són 1-2 peticions per
+segon i carregar la pàgina unes quantes desenes d'un cop). **Cas que cal conèixer:** si molts usuaris surten a la xarxa amb **la mateixa adreça** (NAT o proxy), compten com un de sol i es podrien tallar.
+Als ordinadors de l'aula cadascú té la seva adreça, però si això canvia, cal pujar el `rate` de la zona `api` a `nginx-limits.conf` (i el `burst` de `nginx-comu.conf`) i reconstruir el frontend.
+Els tallats es veuen al registre d'nginx (`docker compose logs frontend | grep limiting`). La prova és a `infra/prova-seguretat/prova_nginx.py`.
 
 ## Imatges de Docker
 

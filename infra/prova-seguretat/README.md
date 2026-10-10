@@ -25,3 +25,21 @@ pkill -f "[e]xam-platform-backend"; docker rm -f pg-prova
 
 El backend només es refia de `X-Real-IP` si ve d'un proxy intern (`127.x.x.x` ho és): la prova l'usa per simular adreces diferents.
 Última execució completa: 56 comprovacions, totes correctes (2026-10-10).
+
+## Límits de peticions d'nginx (`prova_nginx.py`)
+
+Comprova que nginx talla (429) qui bombardeja l'API, el login o els informes d'ordinadors, i que l'ús normal no es toca, tant en HTTP com en HTTPS. Necessita Docker:
+construeix la imatge del frontend, la posa darrere d'un «backend» fals i hi llança el bombardeig.
+
+```bash
+docker build -t prova-nginx frontend && docker network create prova-xarxa
+docker run -d --rm --name backend --network prova-xarxa nginx:alpine          # backend fals (respondrà 502/404: només importa que no sigui 429)
+docker run -d --rm --name prova-web --network prova-xarxa -p 127.0.0.1:18081:80 prova-nginx
+# HTTPS: certificat autosignat i la plantilla de infra/tls (com al docker-compose.https.yml)
+docker run -d --rm --name prova-web-https --network prova-xarxa -p 127.0.0.1:18443:443 -e HTTPS_PORT=18443 \
+  -v $PWD/infra/tls/nginx-https.conf.template:/etc/nginx/templates/default.conf.template:ro \
+  -v /ruta/server.crt:/etc/nginx/tls/server.crt:ro -v /ruta/server.key:/etc/nginx/tls/server.key:ro prova-nginx
+python3 infra/prova-seguretat/prova_nginx.py
+docker rm -f backend prova-web prova-web-https; docker network rm prova-xarxa
+```
+

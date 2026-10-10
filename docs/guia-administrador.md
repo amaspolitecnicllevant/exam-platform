@@ -288,6 +288,7 @@ BACKUP_GID=1000
 | Còpia ara | `infra/backup/fes-copia.sh` |
 | Comprovar una còpia | `infra/backup/restaura.sh --prova` (no toca res) |
 | Renovar el certificat HTTPS | `infra/tls/renova-certificat.sh` (el certificat dura 825 dies; no cal tocar els ordinadors) |
+| Si algú rep errors 429 («massa peticions») | Hi ha un límit de peticions per adreça a nginx (vegeu [seguretat](seguretat.md)). Si molts usuaris surten amb la mateixa adreça (NAT o proxy), puja el `rate` de `frontend/nginx-limits.conf` i reconstrueix el frontend. |
 | Restringir l'accés a la xarxa del centre | `sudo infra/restringeix-xarxa.sh` (Docker se salta el tallafocs UFW: aquest script ho resol) |
 
 **Seguretat bàsica**
