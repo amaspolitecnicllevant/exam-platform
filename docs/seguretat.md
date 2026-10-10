@@ -24,6 +24,8 @@ imatges Docker. Les dependències de Maven i de npm s'han escanejat el 10 d'octu
 | 14 | Baixa | Contrasenyes de només 8 caràcters per a tothom | ✅ 12 per al professorat i l'administració (8 per als alumnes) |
 | 16 | Mitjana | `GET /api/matricules?modulId=…&curs=…` i `?alumneId=…` no filtraven per usuari: un professor podia llistar els alumnes de qualsevol mòdul o les matrícules de qualsevol alumne (només la consulta sense paràmetres estava limitada) | ✅ Totes les consultes de matrícules es limiten als mòduls que imparteix el professor (l'administració ho veu tot) |
 | 17 | Mitjana | Un professor veia noms i correus de tots els usuaris (`GET /api/users`) i podia afegir a un grup o a un examen qualsevol alumne | ✅ Només els alumnes de les seves assignatures, dels seus grups i els que ha creat; també es comprova en afegir alumnes a grups i exàmens |
+| 18 | Mitjana | Imatges de Docker amb vulnerabilitats (escaneig amb Trivy): `docker-cli` del backend (2 altes) i `libexpat`, `pcre2` i `tiff` de nginx (3 altes) | ✅ Els `Dockerfile` fan `apk upgrade`. Verificat: el frontend queda sense cap crítica ni alta, i el backend només conserva `spring-webmvc` (vegeu «Dependències») |
+| 19 | Baixa | `postgres:16-alpine` conté 25 vulnerabilitats altes/crítiques, totes al binari `gosu` (compilat amb una versió antiga de Go) | 📝 Risc acceptat: `gosu` només s'executa en arrencar el contenidor per deixar de ser `root` i no rep dades de ningú. S'arreglarà quan l'imatge oficial es reconstrueixi (`docker compose pull db backup`) |
 | 15 | Mitjana | Dependències amb vulnerabilitats conegudes (Tomcat 10.1.55, Jackson 2.21.4, driver de PostgreSQL 42.7.11, log4j-api 2.24.3) | ✅ Actualitzades a Tomcat 10.1.60, Jackson 2.21.7, PostgreSQL 42.7.14 i log4j-api 2.25.5 (`backend/pom.xml`). Queden 2 de `spring-webmvc` (SSE i XSLT, que no fem servir) |
 
 ## Revisió de l'autorització (10 d'octubre)
@@ -49,6 +51,13 @@ Les versions corregides es fixen a `backend/pom.xml` perquè Spring Boot 3.5.16 
 les inclogui o en tingui de més noves. Per tornar a escanejar: `mvn dependency:list -DincludeScope=runtime` i consultar l'API d'OSV (`https://api.osv.dev/v1/querybatch`), i
 `npm audit --omit=dev` al frontend. Només queden dues vulnerabilitats de `spring-webmvc` 6.2.19 (corregides a Spring 7): afecten el flux d'esdeveniments (SSE) i `XsltView`,
 que l'aplicació no fa servir, i dues de `react-router` (redirecció oberta amb una URL de l'usuari i la hidratació de SSR), que no són explotables aquí.
+
+## Imatges de Docker
+
+`infra/escaneja-imatges.sh` escaneja amb Trivy totes les imatges de la plataforma (les pròpies, la BD i les del sandbox d'execució). Resultat del 10 d'octubre de 2026: `bash:5` i
+`eclipse-temurin` (jre i jdk) sense cap vulnerabilitat crítica o alta; la imatge del backend només conserva `spring-webmvc` (vegeu «Dependències»); la del frontend, cap; i `postgres:16-alpine`
+té les de `gosu` (punt 19). Les vulnerabilitats de paquets del sistema es corregeixen reconstruint **sense la memòria cau** de Docker, i convé fer-ho cada mes:
+`docker compose build --pull --no-cache backend frontend`. També `docker compose pull db backup` per tenir la imatge de PostgreSQL més recent.
 
 ## Prova automàtica
 

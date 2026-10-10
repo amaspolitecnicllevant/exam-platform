@@ -7,7 +7,8 @@ RUN mvn package -DskipTests -q
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-RUN apk add --no-cache docker-cli
+# apk upgrade: porta els últims pegats de seguretat dels paquets del sistema (la imatge base pot anar endarrerida)
+RUN apk upgrade --no-cache && apk add --no-cache docker-cli
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 COPY --from=build /app/target/*.jar app.jar
 RUN mkdir -p /tmp/exam-scripts && chown appuser:appgroup /tmp/exam-scripts

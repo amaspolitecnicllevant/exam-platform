@@ -283,6 +283,8 @@ BACKUP_GID=1000
 | Veure l'estat | `docker compose ps` |
 | Veure què passa | `docker compose logs -f backend` |
 | **Actualitzar** | `git pull`, `docker compose build backend frontend`, `docker compose up -d backend frontend`. **Abans, comprova que no hi ha cap examen en marxa** (el backend es reinicia uns 20 s). Si hi ha migracions de BD, fes una còpia abans. |
+| **Pegats de seguretat del sistema** (cada mes, o si surt un avís) | `docker compose build --pull --no-cache backend frontend && docker compose up -d backend frontend` (amb `--no-cache`, perquè Docker no reutilitzi la capa amb els paquets antics). Mateixes precaucions que a *Actualitzar*. |
+| Escanejar les imatges de Docker | `infra/escaneja-imatges.sh` (Trivy; només llegeix i mostra les vulnerabilitats crítiques i altes amb correcció) |
 | Còpia ara | `infra/backup/fes-copia.sh` |
 | Comprovar una còpia | `infra/backup/restaura.sh --prova` (no toca res) |
 | Renovar el certificat HTTPS | `infra/tls/renova-certificat.sh` (el certificat dura 825 dies; no cal tocar els ordinadors) |
