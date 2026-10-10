@@ -2,7 +2,7 @@
 
 Resum de l'auditoria de seguretat del 9 d'octubre de 2026 i de com s'ha tancat cada troballa. No és una prova d'intrusió: és una revisió del
 codi, la configuració, la infraestructura i els scripts. L'autorització dels serveis s'ha revisat per mostreig, i no s'han pogut escanejar les
-dependències de Maven ni les imatges Docker.
+imatges Docker. Les dependències de Maven i de npm s'han escanejat el 10 d'octubre de 2026 amb la base de dades OSV (punt 15).
 
 **Llegenda:** ✅ fet al codi o a la documentació · 🔧 requereix una acció a la VM (vegeu «Pendent a la VM») · 📝 risc acceptat o recomanació.
 
@@ -22,6 +22,20 @@ dependències de Maven ni les imatges Docker.
 | 12 | Baixa | Qualsevol professor veia IP, noms i empremtes dels ordinadors de qualsevol aula | ✅ Només l'aula on té un examen i sense detalls tècnics |
 | 13 | Baixa | Contrasenyes i testimoni a la línia d'ordres del bucle de l'aula | ✅ Per l'entrada estàndard de SSH |
 | 14 | Baixa | Contrasenyes de només 8 caràcters per a tothom | ✅ 12 per al professorat i l'administració (8 per als alumnes) |
+| 15 | Mitjana | Dependències amb vulnerabilitats conegudes (Tomcat 10.1.55, Jackson 2.21.4, driver de PostgreSQL 42.7.11, log4j-api 2.24.3) | ✅ Actualitzades a Tomcat 10.1.60, Jackson 2.21.7, PostgreSQL 42.7.14 i log4j-api 2.25.5 (`backend/pom.xml`). Queden 2 de `spring-webmvc` (SSE i XSLT, que no fem servir) |
+
+## Dependències
+
+Les versions corregides es fixen a `backend/pom.xml` perquè Spring Boot 3.5.16 (l'última 3.5.x) porta les antigues. Es poden treure quan una versió de Spring Boot ja
+les inclogui o en tingui de més noves. Per tornar a escanejar: `mvn dependency:list -DincludeScope=runtime` i consultar l'API d'OSV (`https://api.osv.dev/v1/querybatch`), i
+`npm audit --omit=dev` al frontend. Només queden dues vulnerabilitats de `spring-webmvc` 6.2.19 (corregides a Spring 7): afecten el flux d'esdeveniments (SSE) i `XsltView`,
+que l'aplicació no fa servir, i dues de `react-router` (redirecció oberta amb una URL de l'usuari i la hidratació de SSR), que no són explotables aquí.
+
+## Prova automàtica
+
+`infra/prova-seguretat/` conté una prova de 40 comprovacions per HTTP que s'executa contra una instància local temporal (mai contra producció): configuració pública, autorització,
+revocació de sessions, contrasenyes, bloqueig per compte i adreça, usuari inhabilitat, informes d'ordinadors i restauració, i entrades dolentes. Convé repetir-la després de tocar
+qualsevol cosa de seguretat.
 
 ## Què s'ha fet exactament
 
