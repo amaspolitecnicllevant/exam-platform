@@ -7,8 +7,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -20,16 +22,32 @@ public class MatriculaService {
     private final ModulRepository     modulRepository;
     private final ImparticioRepository imparticioRepository;
 
-    @Transactional(readOnly = true)
-    public List<MatriculaDto> findByAlumne(UUID alumneId) {
-        return matriculaRepository.findByAlumneId(alumneId).stream()
+    /**
+     * Mòduls les matrícules dels quals pot veure l'usuari: {@code null} vol dir tots (l'administració); un professor, només els que
+     * imparteix; qualsevol altre rol, cap. Sense això, un professor podria consultar els alumnes de qualsevol mòdul o les matrícules de
+     * qualsevol alumne.
+     */
+    private Set<UUID> modulsVisibles(User usuari) {
+        if (usuari.getRole() == Role.ADMIN) return null;
+        if (usuari.getRole() != Role.PROFESSOR) return Set.of();
+        return new HashSet<>(imparticioRepository.findModulIdsByProfessorId(usuari.getId()));
+    }
+
+    private List<MatriculaDto> nomesVisibles(List<Matricula> matricules, User usuari) {
+        Set<UUID> moduls = modulsVisibles(usuari);
+        return matricules.stream()
+                .filter(m -> moduls == null || moduls.contains(m.getModul().getId()))
                 .map(MatriculaDto::from).toList();
     }
 
     @Transactional(readOnly = true)
-    public List<MatriculaDto> findByModulAndCurs(UUID modulId, String curs) {
-        return matriculaRepository.findByModulIdAndCurs(modulId, curs).stream()
-                .map(MatriculaDto::from).toList();
+    public List<MatriculaDto> findByAlumne(UUID alumneId, User usuari) {
+        return nomesVisibles(matriculaRepository.findByAlumneId(alumneId), usuari);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MatriculaDto> findByModulAndCurs(UUID modulId, String curs, User usuari) {
+        return nomesVisibles(matriculaRepository.findByModulIdAndCurs(modulId, curs), usuari);
     }
 
     /**

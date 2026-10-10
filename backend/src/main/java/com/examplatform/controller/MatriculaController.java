@@ -26,8 +26,8 @@ public class MatriculaController {
                                    @RequestParam(required = false) UUID modulId,
                                    @RequestParam(required = false) String curs,
                                    @AuthenticationPrincipal User user) {
-        if (alumneId != null) return matriculaService.findByAlumne(alumneId);
-        if (modulId != null && curs != null) return matriculaService.findByModulAndCurs(modulId, curs);
+        if (alumneId != null) return matriculaService.findByAlumne(alumneId, user);
+        if (modulId != null && curs != null) return matriculaService.findByModulAndCurs(modulId, curs, user);
         // Sense filtres: les matrícules visibles per a l'usuari (per filtrar alumnes per cicle/mòdul/curs)
         if (modulId == null && curs == null) return matriculaService.findVisibles(user);
         return List.of();

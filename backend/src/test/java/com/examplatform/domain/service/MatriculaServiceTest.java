@@ -119,10 +119,84 @@ class MatriculaServiceTest {
                 .alumne(alumne).modul(modul).curs("2026-27").build();
         when(matriculaRepository.findByAlumneId(alumne.getId())).thenReturn(List.of(m));
 
-        List<MatriculaDto> result = service.findByAlumne(alumne.getId());
+        List<MatriculaDto> result = service.findByAlumne(alumne.getId(), admin());
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).curs()).isEqualTo("2026-27");
+    }
+
+    // ── Un professor només veu les matrícules dels mòduls que imparteix ──────
+
+    private User admin() {
+        return User.builder().id(UUID.randomUUID()).name("Admin").email("admin@test.cat").role(Role.ADMIN).build();
+    }
+
+    private User professor() {
+        return User.builder().id(UUID.randomUUID()).name("Prof").email("prof@test.cat").role(Role.PROFESSOR).build();
+    }
+
+    private Matricula matricula(User alumne, Modul modul) {
+        return Matricula.builder().id(UUID.randomUUID()).alumne(alumne).modul(modul).curs("2026-27").build();
+    }
+
+    @Test
+    void un_professor_nomes_veu_les_matricules_d_un_alumne_dels_moduls_que_imparteix() {
+        User alumne = alumne();
+        Modul meu = modul();
+        Modul altre = modul();
+        User prof = professor();
+        when(matriculaRepository.findByAlumneId(alumne.getId()))
+                .thenReturn(List.of(matricula(alumne, meu), matricula(alumne, altre)));
+        when(imparticioRepository.findModulIdsByProfessorId(prof.getId())).thenReturn(List.of(meu.getId()));
+
+        List<MatriculaDto> result = service.findByAlumne(alumne.getId(), prof);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).modulId()).isEqualTo(meu.getId());
+    }
+
+    @Test
+    void un_professor_no_pot_llistar_els_alumnes_d_un_modul_que_no_imparteix() {
+        Modul altre = modul();
+        User prof = professor();
+        when(matriculaRepository.findByModulIdAndCurs(altre.getId(), "2026-27"))
+                .thenReturn(List.of(matricula(alumne(), altre), matricula(alumne(), altre)));
+        when(imparticioRepository.findModulIdsByProfessorId(prof.getId())).thenReturn(List.of(UUID.randomUUID()));
+
+        assertThat(service.findByModulAndCurs(altre.getId(), "2026-27", prof)).isEmpty();
+    }
+
+    @Test
+    void un_professor_si_que_llista_els_alumnes_del_seu_modul() {
+        Modul meu = modul();
+        User prof = professor();
+        when(matriculaRepository.findByModulIdAndCurs(meu.getId(), "2026-27"))
+                .thenReturn(List.of(matricula(alumne(), meu), matricula(alumne(), meu)));
+        when(imparticioRepository.findModulIdsByProfessorId(prof.getId())).thenReturn(List.of(meu.getId()));
+
+        assertThat(service.findByModulAndCurs(meu.getId(), "2026-27", prof)).hasSize(2);
+    }
+
+    @Test
+    void l_administracio_ho_veu_tot_i_un_alumne_no_veu_res() {
+        Modul modul = modul();
+        User alumne = alumne();
+        when(matriculaRepository.findByModulIdAndCurs(modul.getId(), "2026-27")).thenReturn(List.of(matricula(alumne, modul)));
+
+        assertThat(service.findByModulAndCurs(modul.getId(), "2026-27", admin())).hasSize(1);
+        assertThat(service.findByModulAndCurs(modul.getId(), "2026-27", alumne())).isEmpty();
+        verifyNoInteractions(imparticioRepository);
+    }
+
+    @Test
+    void un_professor_sense_cap_modul_assignat_no_veu_res() {
+        Modul modul = modul();
+        User alumne = alumne();
+        User prof = professor();
+        when(matriculaRepository.findByAlumneId(alumne.getId())).thenReturn(List.of(matricula(alumne, modul)));
+        when(imparticioRepository.findModulIdsByProfessorId(prof.getId())).thenReturn(List.of());
+
+        assertThat(service.findByAlumne(alumne.getId(), prof)).isEmpty();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

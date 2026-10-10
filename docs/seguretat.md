@@ -22,7 +22,24 @@ imatges Docker. Les dependències de Maven i de npm s'han escanejat el 10 d'octu
 | 12 | Baixa | Qualsevol professor veia IP, noms i empremtes dels ordinadors de qualsevol aula | ✅ Només l'aula on té un examen i sense detalls tècnics |
 | 13 | Baixa | Contrasenyes i testimoni a la línia d'ordres del bucle de l'aula | ✅ Per l'entrada estàndard de SSH |
 | 14 | Baixa | Contrasenyes de només 8 caràcters per a tothom | ✅ 12 per al professorat i l'administració (8 per als alumnes) |
+| 16 | Mitjana | `GET /api/matricules?modulId=…&curs=…` i `?alumneId=…` no filtraven per usuari: un professor podia llistar els alumnes de qualsevol mòdul o les matrícules de qualsevol alumne (només la consulta sense paràmetres estava limitada) | ✅ Totes les consultes de matrícules es limiten als mòduls que imparteix el professor (l'administració ho veu tot) |
 | 15 | Mitjana | Dependències amb vulnerabilitats conegudes (Tomcat 10.1.55, Jackson 2.21.4, driver de PostgreSQL 42.7.11, log4j-api 2.24.3) | ✅ Actualitzades a Tomcat 10.1.60, Jackson 2.21.7, PostgreSQL 42.7.14 i log4j-api 2.25.5 (`backend/pom.xml`). Queden 2 de `spring-webmvc` (SSE i XSLT, que no fem servir) |
+
+## Revisió de l'autorització (10 d'octubre)
+
+S'han inventariat tots els endpoints (rol de cada un) i, per a cada servei que rep un identificador, s'ha comprovat que hi hagi una comprovació de propietat. Tot el que és
+del professorat comprova que l'examen sigui seu o del seu mòdul (`assertOwnership`), els grups i les invitacions són del seu creador, i l'alumne només accedeix a la seva sessió,
+les seves respostes i els seus fitxers. La importació d'usuaris força el rol d'alumne i només deixa matricular en mòduls que el professor imparteix. Les imatges dels enunciats
+es validen (llista blanca, signatura del fitxer i mida). L'única troballa real ha estat la dels filtres de matrícules (punt 16).
+
+**Decisions i riscos que queden (no s'han canviat perquè afecten el funcionament):**
+- **Un professor veu tots els usuaris** (`GET /api/users`): noms i correus de tots els alumnes i del personal, també dels mòduls que no imparteix. És una decisió de disseny (la guia
+  ho diu), però és dada personal. Es podria limitar als alumnes dels seus mòduls, els dels seus grups i els que ha creat; això canviaria com s'afegeixen alumnes a un grup o a una recuperació.
+- **`GET /api/exams/{id}` per a un alumne** deixa veure un examen publicat encara que no sigui dels destinataris, si es coneix l'UUID (que no es pot endevinar). Es podria exigir
+  la mateixa elegibilitat que per començar-lo; no s'ha fet perquè hi ha casos d'accés (exàmens sense mòdul, programats) que no es poden provar sense navegador.
+- **La BD s'accedeix amb el superusuari de PostgreSQL** (`POSTGRES_USER`). Un rol propi sense privilegis de superusuari limitaria el dany d'una injecció SQL (no n'hi ha cap de coneguda: totes
+  les consultes són parametritzades). És un canvi de la BD en producció que cal fer amb cura.
+- Registre per invitació: qui té l'enllaç pot crear un compte d'alumne amb qualsevol correu (no es verifica). L'enllaç caduca i té un màxim d'usos.
 
 ## Dependències
 
