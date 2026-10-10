@@ -247,10 +247,13 @@ l'examen (convalidació, baixa justificada), afegeix-lo al grup a mà.
 
 ## 8. Grups i alumnes
 
+- **Quins alumnes veus:** només els de **les assignatures (mòduls) que imparteixes**, els dels grups que has creat i els que has donat d'alta tu. No veus la resta de l'alumnat
+  ni el personal, i tampoc no pots afegir a un grup o a un examen un alumne que no veus. Si cal que un alumne d'un altre mòdul faci una recuperació o una convalidació,
+  demana a l'administració que el matriculi al teu mòdul.
 - **Grups:** conjunts d'alumnes, amb un mòdul opcional. Un alumne pot ser a molts grups. Pots tenir un grup per a tothom i un altre només per als de la recuperació.
 - **Afegir alumnes a un grup:** cerca per nom o correu i filtres de cicle, mòdul i curs. S'obre filtrat pel mòdul del grup i amb el curs més recent;
   **Marcar els N visibles** els selecciona tots. Els alumnes sense matrícula només surten si treus els filtres.
-- **Pestanya Alumnes:** tots els alumnes, filtrables també per grup o «sense grup»; des d'aquí pots assignar els grups d'un alumne.
+- **Pestanya Alumnes:** els teus alumnes, filtrables també per grup o «sense grup»; des d'aquí pots assignar els grups d'un alumne.
 - **Links de convit:** un link per a un mòdul i un curs, amb data de caducitat i nombre d'usos opcionals. El comparteixes per Classroom, WhatsApp, etc.
   Qui no tingui compte, es registra i queda matriculat; qui ja en tingui, queda matriculat. Els correus de professors i administradors es rebutgen.
 

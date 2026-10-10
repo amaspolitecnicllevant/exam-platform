@@ -292,7 +292,7 @@ BACKUP_GID=1000
 
 - Només es pot entrar des de la xarxa del centre si el servidor té una IP privada i el router no reenvia ports cap a ell. Comprova-ho amb qui administra la xarxa.
 - Guarda `infra/tls/certs/ca.key` **fora del servidor** i no la copiïs enlloc més; qui la tingui pot fer certificats en què confiarien tots els ordinadors.
-- Un professor només pot gestionar (i veure'n els resultats) els exàmens que ha creat o que són d'un mòdul que imparteix (i els administradors, tots), i veu les matrícules dels mòduls que imparteix; **la llista d'usuaris, en canvi, la veuen tots els professors**. L'autorització es comprova sempre al servidor, mai al navegador.
+- Un professor només pot gestionar (i veure'n els resultats) els exàmens que ha creat o que són d'un mòdul que imparteix (i els administradors, tots), i veu les matrícules dels mòduls que imparteix; **la llista d'usuaris només mostra als professors els alumnes de les seves assignatures** (mòduls), els dels seus grups i els que han donat d'alta ells (i a ells mateixos); l'administració ho veu tot. Un alumne d'un altre mòdul (convalidació, recuperació) l'ha de matricular l'administració abans que el professor el pugui veure. L'autorització es comprova sempre al servidor, mai al navegador.
 
 ---
 

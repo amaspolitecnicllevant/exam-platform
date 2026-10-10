@@ -158,7 +158,7 @@ public class ExamService {
         }
         exam.setStatus(ExamStatus.PUBLISHED);
         examRepository.save(exam);
-        if (alumneIds != null) audiencia.assigna(exam, alumneIds);
+        if (alumneIds != null) audiencia.assigna(exam, alumneIds, requestingUser);
 
         // Si l'examen té grup programat, crea les sessions pels alumnes que no en tenguin
         if (exam.getScheduledGrup() != null) {

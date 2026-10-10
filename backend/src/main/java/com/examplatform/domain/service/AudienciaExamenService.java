@@ -25,6 +25,7 @@ public class AudienciaExamenService {
     private final MatriculaRepository matriculaRepository;
     private final UserRepository userRepository;
     private final ExamRepository examRepository;
+    private final AlumnesVisibles alumnesVisibles;
 
     /**
      * Crea la sessió pendent dels alumnes que encara no en tenen i torna quants n'ha creat. Han de ser
@@ -32,8 +33,9 @@ public class AudienciaExamenService {
      * del curs anterior). Si algun no és vàlid no es fa res.
      */
     @Transactional
-    public int assigna(Exam exam, Collection<UUID> alumneIds) {
+    public int assigna(Exam exam, Collection<UUID> alumneIds, User actor) {
         if (alumneIds == null || alumneIds.isEmpty()) throw new IllegalArgumentException("Tria almenys un alumne");
+        alumnesVisibles.assertVisibles(actor, alumneIds);
         Set<UUID> ids = new LinkedHashSet<>(alumneIds);
         Map<UUID, User> alumnes = new HashMap<>();
         userRepository.findAllById(ids).forEach(u -> alumnes.put(u.getId(), u));
@@ -64,7 +66,7 @@ public class AudienciaExamenService {
      * l'examen (quan s'activi, només el veuran ells); en un d'actiu, només si ja era restringit.
      */
     @Transactional
-    public int afegeix(Exam exam, Collection<UUID> alumneIds) {
+    public int afegeix(Exam exam, Collection<UUID> alumneIds, User actor) {
         if (exam.getStatus() == ExamStatus.DRAFT) {
             if (exam.getScheduledAt() != null) {
                 throw new IllegalStateException("Aquest examen està programat per a un grup: anul·la la programació per triar-ne els alumnes");
@@ -78,7 +80,7 @@ public class AudienciaExamenService {
         } else if (!exam.isRestringit()) {
             throw new IllegalStateException("Aquest examen és per a tots els alumnes del mòdul: no cal afegir-hi ningú");
         }
-        return assigna(exam, alumneIds);
+        return assigna(exam, alumneIds, actor);
     }
 
     /** Torna un esborrany a «tots els del mòdul»: treu els destinataris que encara no han obert l'examen. */

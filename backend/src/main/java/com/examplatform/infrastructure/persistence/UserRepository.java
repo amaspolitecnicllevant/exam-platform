@@ -18,4 +18,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Query("SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END FROM User u WHERE u.email = lower(trim(:email))")
     boolean existsByEmail(@Param("email") String email);
     List<User> findByRole(Role role);
+
+    /** Els comptes que ha creat un usuari (per exemple, un professor). */
+    List<User> findByCreatPer(java.util.UUID creatPer);
 }

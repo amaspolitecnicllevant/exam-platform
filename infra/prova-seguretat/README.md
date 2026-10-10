@@ -24,4 +24,4 @@ pkill -f "[e]xam-platform-backend"; docker rm -f pg-prova
 ```
 
 El backend només es refia de `X-Real-IP` si ve d'un proxy intern (`127.x.x.x` ho és): la prova l'usa per simular adreces diferents.
-Última execució completa: 40 comprovacions, totes correctes (2026-10-10).
+Última execució completa: 56 comprovacions, totes correctes (2026-10-10).

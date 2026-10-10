@@ -5,6 +5,7 @@ import com.examplatform.domain.model.User;
 import com.examplatform.dto.UserDto;
 import com.examplatform.infrastructure.persistence.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -32,12 +33,13 @@ class UserServiceTest {
     @Mock com.examplatform.infrastructure.persistence.ExamSessionRepository sessionRepository;
     @Mock com.examplatform.infrastructure.persistence.ExamRepository examRepository;
     @Mock com.examplatform.infrastructure.persistence.GrupRepository grupRepository;
+    @Mock AlumnesVisibles alumnesVisibles;
 
     UserService service;
 
     @BeforeEach
     void setUp() {
-        service = new UserService(userRepository, passwordEncoder, sessionRepository, examRepository, grupRepository);
+        service = new UserService(userRepository, passwordEncoder, sessionRepository, examRepository, grupRepository, alumnesVisibles);
     }
 
     // ── delete ────────────────────────────────────────────────────────────────
@@ -122,7 +124,7 @@ class UserServiceTest {
                 user(Role.PROFESSOR), user(Role.STUDENT), user(Role.ADMIN));
         when(userRepository.findAll()).thenReturn(users);
 
-        assertThat(service.findAll()).hasSize(3);
+        assertThat(service.findAll(ADMIN)).hasSize(3);
     }
 
     @Test
@@ -130,7 +132,7 @@ class UserServiceTest {
         List<User> students = List.of(user(Role.STUDENT), user(Role.STUDENT));
         when(userRepository.findByRole(Role.STUDENT)).thenReturn(students);
 
-        List<UserDto> result = service.findByRole(Role.STUDENT);
+        List<UserDto> result = service.findByRole(Role.STUDENT, ADMIN);
 
         assertThat(result).hasSize(2);
         assertThat(result).allMatch(u -> u.role() == Role.STUDENT);
@@ -303,5 +305,67 @@ class UserServiceTest {
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.create(req, ADMIN))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("12 i 72");
         org.mockito.Mockito.verify(userRepository, org.mockito.Mockito.never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    // ── Un professor només veu els alumnes de les seves assignatures ──────────
+
+    private User alumneNomenat(String nom) {
+        return User.builder().id(UUID.randomUUID()).name(nom).email(nom.toLowerCase() + "@x.cat").role(Role.STUDENT).build();
+    }
+
+    @Test
+    void un_professor_veu_els_alumnes_visibles_i_a_si_mateix_i_res_mes() {
+        User prof = User.builder().id(UUID.randomUUID()).name("Prof").email("p@x.cat").role(Role.PROFESSOR).build();
+        User anna = alumneNomenat("Anna"), berta = alumneNomenat("Berta");
+        when(alumnesVisibles.idsVisibles(prof)).thenReturn(java.util.Set.of(anna.getId(), berta.getId()));
+        when(userRepository.findAllById(any())).thenReturn(List.of(berta, anna));
+
+        List<UserDto> r = service.findAll(prof);
+
+        assertThat(r).extracting(UserDto::name).containsExactly("Anna", "Berta", "Prof");   // ordenats per nom
+        verify(userRepository, never()).findAll();
+    }
+
+    @Test
+    void un_professor_sense_alumnes_nomes_es_veu_a_si_mateix() {
+        User prof = User.builder().id(UUID.randomUUID()).name("Prof").email("p@x.cat").role(Role.PROFESSOR).build();
+        when(alumnesVisibles.idsVisibles(prof)).thenReturn(java.util.Set.of());
+
+        assertThat(service.findAll(prof)).extracting(UserDto::id).containsExactly(prof.getId());
+        verify(userRepository, never()).findAllById(any());
+    }
+
+    @Test
+    void un_professor_demanant_alumnes_nomes_rep_alumnes_i_demanant_professors_nomes_a_si_mateix() {
+        User prof = User.builder().id(UUID.randomUUID()).name("Prof").email("p@x.cat").role(Role.PROFESSOR).build();
+        User anna = alumneNomenat("Anna");
+        when(alumnesVisibles.idsVisibles(prof)).thenReturn(java.util.Set.of(anna.getId()));
+        when(userRepository.findAllById(any())).thenReturn(List.of(anna));
+
+        assertThat(service.findByRole(Role.STUDENT, prof)).extracting(UserDto::name).containsExactly("Anna");
+        assertThat(service.findByRole(Role.PROFESSOR, prof)).extracting(UserDto::name).containsExactly("Prof");
+        assertThat(service.findByRole(Role.ADMIN, prof)).isEmpty();
+    }
+
+    @Test
+    void l_administracio_ho_veu_tot_sense_consultar_la_visibilitat() {
+        when(userRepository.findAll()).thenReturn(List.of(user(Role.STUDENT), user(Role.PROFESSOR)));
+
+        assertThat(service.findAll(ADMIN)).hasSize(2);
+        verifyNoInteractions(alumnesVisibles);
+    }
+
+    @Test
+    void en_crear_un_alumne_es_desa_qui_l_ha_creat_perque_el_professor_el_continui_veient() {
+        User prof = User.builder().id(UUID.randomUUID()).name("Prof").email("p@x.cat").role(Role.PROFESSOR).build();
+        when(userRepository.existsByEmail("nou@x.cat")).thenReturn(false);
+        when(passwordEncoder.encode(any())).thenReturn("hash");
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.create(new UserDto.CreateRequest("Nou", "nou@x.cat", "password1", Role.STUDENT), prof);
+
+        ArgumentCaptor<User> c = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(c.capture());
+        assertThat(c.getValue().getCreatPer()).isEqualTo(prof.getId());
     }
 }

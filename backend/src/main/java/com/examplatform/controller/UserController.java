@@ -28,14 +28,15 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','PROFESSOR')")
-    public List<UserDto> findAll() {
-        return userService.findAll();
+    public List<UserDto> findAll(@AuthenticationPrincipal com.examplatform.domain.model.User caller) {
+        return userService.findAll(caller);
     }
 
     @GetMapping("/role/{role}")
     @PreAuthorize("hasAnyRole('ADMIN','PROFESSOR')")
-    public List<UserDto> findByRole(@PathVariable Role role) {
-        return userService.findByRole(role);
+    public List<UserDto> findByRole(@PathVariable Role role,
+                                    @AuthenticationPrincipal com.examplatform.domain.model.User caller) {
+        return userService.findByRole(role, caller);
     }
 
     @PostMapping

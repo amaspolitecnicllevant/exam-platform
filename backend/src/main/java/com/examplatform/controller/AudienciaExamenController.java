@@ -43,7 +43,7 @@ public class AudienciaExamenController {
     public AlumneAccesDto.Llista afegeix(@PathVariable UUID examId, @RequestBody AfegeixRequest req,
                                          @AuthenticationPrincipal User user) {
         Exam exam = examGestionat(examId, user);
-        int n = audiencia.afegeix(exam, req.alumneIds());
+        int n = audiencia.afegeix(exam, req.alumneIds(), user);
         auditLog.log(user.getId(), "EXAM_ALUMNES_AFEGITS", "examen " + examId + ": " + n + " alumne(s)");
         return audiencia.llista(exam);
     }

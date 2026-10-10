@@ -39,6 +39,10 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private Role role;
 
+    /** Qui va crear aquest compte (null si es va registrar per invitació, amb Google o ve d'abans). */
+    @Column(name = "creat_per")
+    private UUID creatPer;
+
     /** Es puja en canviar o reinicialitzar la contrasenya, o en tancar les sessions: invalida tots els tokens anteriors. */
     @Column(name = "token_version", nullable = false)
     @Builder.Default

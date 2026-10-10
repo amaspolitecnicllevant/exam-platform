@@ -24,6 +24,8 @@ class GrupServiceTest {
     @Mock ModulRepository modulRepository;
     @Mock MatriculaRepository matriculaRepository;
 
+    @Mock AlumnesVisibles alumnesVisibles;
+
     GrupService service;
 
     User professor;
@@ -31,7 +33,7 @@ class GrupServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new GrupService(grupRepository, userRepository, sessionRepository, examService, modulRepository, matriculaRepository);
+        service = new GrupService(grupRepository, userRepository, sessionRepository, examService, modulRepository, matriculaRepository, alumnesVisibles);
 
         professor = User.builder().id(UUID.randomUUID()).role(Role.PROFESSOR).build();
         admin     = User.builder().id(UUID.randomUUID()).role(Role.ADMIN).build();
@@ -217,5 +219,18 @@ class GrupServiceTest {
         e.setStatus(status);
         e.setModul(modul);
         return e;
+    }
+
+    @Test
+    void un_professor_no_pot_afegir_a_un_grup_un_alumne_que_no_es_de_les_seves_assignatures() {
+        Grup grup = Grup.builder().id(UUID.randomUUID()).name("G").createdBy(professor).build();
+        UUID alie = UUID.randomUUID();
+        when(grupRepository.findById(grup.getId())).thenReturn(java.util.Optional.of(grup));
+        org.mockito.Mockito.doThrow(new org.springframework.security.access.AccessDeniedException("no és teu"))
+                .when(alumnesVisibles).assertVisibles(professor, List.of(alie));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.setStudents(grup.getId(), List.of(alie), professor))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        org.mockito.Mockito.verify(grupRepository, org.mockito.Mockito.never()).save(org.mockito.ArgumentMatchers.any());
     }
 }

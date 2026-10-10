@@ -21,6 +21,7 @@ public class GrupService {
     private final ExamService        examService;
     private final ModulRepository    modulRepository;
     private final MatriculaRepository matriculaRepository;
+    private final AlumnesVisibles alumnesVisibles;
 
     @Transactional
     public GrupDto create(String name, User createdBy) {
@@ -46,6 +47,7 @@ public class GrupService {
     public GrupDto setStudents(UUID grupId, List<UUID> studentIds, User requestingUser) {
         Grup grup = getAndAssertOwnership(grupId, requestingUser);
 
+        alumnesVisibles.assertVisibles(requestingUser, studentIds);
         Set<User> students = new HashSet<>(userRepository.findAllById(studentIds));
         // Comprova que tots siguin alumnes
         students.forEach(u -> {

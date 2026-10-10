@@ -172,11 +172,12 @@ public class ImportacioUsuarisService {
         } else {
             boolean generada = contrasenya.isEmpty();
             if (generada) contrasenya = generaContrasenya();
-            else if (contrasenya.length() < 8 || contrasenya.length() > 72) {
-                return "la contrasenya ha de tenir entre 8 i 72 caràcters (o deixa-la en blanc perquè se'n generi una)";
+            else if (contrasenya.length() < UserService.minimLongitud(rol) || contrasenya.length() > 72) {
+                return "la contrasenya ha de tenir entre " + UserService.minimLongitud(rol)
+                        + " i 72 caràcters (o deixa-la en blanc perquè se'n generi una)";
             }
             usuari = userRepository.save(User.builder().name(nom).email(email)
-                    .passwordHash(passwordEncoder.encode(contrasenya)).role(rol).build());
+                    .passwordHash(passwordEncoder.encode(contrasenya)).role(rol).creatPer(e.caller.getId()).build());
             e.creats++;
             if (generada) e.contrasenyes.add(new ImportacioDto.Credencial(nom, email, contrasenya));
         }

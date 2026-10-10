@@ -20,15 +20,37 @@ public class UserService {
     private final com.examplatform.infrastructure.persistence.ExamSessionRepository sessionRepository;
     private final com.examplatform.infrastructure.persistence.ExamRepository examRepository;
     private final com.examplatform.infrastructure.persistence.GrupRepository grupRepository;
+    private final AlumnesVisibles alumnesVisibles;
 
+    /**
+     * Els usuaris que veu qui ho demana. L'administració, tots. Un professor, només els alumnes de les seves assignatures (i dels seus
+     * grups, i els que ha creat) i ell mateix: no veu els noms ni els correus de la resta de l'alumnat ni del personal.
+     */
     @Transactional(readOnly = true)
-    public List<UserDto> findAll() {
-        return userRepository.findAll().stream().map(UserDto::from).toList();
+    public List<UserDto> findAll(User caller) {
+        if (caller.getRole() == Role.ADMIN) {
+            return userRepository.findAll().stream().map(UserDto::from).toList();
+        }
+        return visiblesPer(caller, null);
     }
 
     @Transactional(readOnly = true)
-    public List<UserDto> findByRole(Role role) {
-        return userRepository.findByRole(role).stream().map(UserDto::from).toList();
+    public List<UserDto> findByRole(Role role, User caller) {
+        if (caller.getRole() == Role.ADMIN) {
+            return userRepository.findByRole(role).stream().map(UserDto::from).toList();
+        }
+        return visiblesPer(caller, role);
+    }
+
+    private List<UserDto> visiblesPer(User caller, Role nomesRol) {
+        java.util.Map<UUID, User> visibles = new java.util.LinkedHashMap<>();
+        java.util.Set<UUID> ids = alumnesVisibles.idsVisibles(caller);
+        if (ids != null && !ids.isEmpty()) userRepository.findAllById(ids).forEach(u -> visibles.put(u.getId(), u));
+        visibles.put(caller.getId(), caller);
+        return visibles.values().stream()
+                .filter(u -> nomesRol == null || u.getRole() == nomesRol)
+                .sorted(java.util.Comparator.comparing(User::getName, java.text.Collator.getInstance(java.util.Locale.forLanguageTag("ca"))))
+                .map(UserDto::from).toList();
     }
 
     /** Un professor només pot donar d'alta alumnes; l'admin, qualsevol rol. */
@@ -51,6 +73,7 @@ public class UserService {
                 .email(req.email())
                 .passwordHash(passwordEncoder.encode(req.password()))
                 .role(req.role())
+                .creatPer(caller.getId())
                 .build();
         return UserDto.from(userRepository.save(user));
     }

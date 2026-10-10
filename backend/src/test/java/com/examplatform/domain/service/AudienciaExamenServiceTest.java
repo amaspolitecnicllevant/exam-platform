@@ -26,6 +26,11 @@ class AudienciaExamenServiceTest {
     com.examplatform.infrastructure.persistence.ExamRepository examRepository =
             mock(com.examplatform.infrastructure.persistence.ExamRepository.class);
     AudienciaExamenService service;
+    AlumnesVisibles alumnesVisibles = mock(AlumnesVisibles.class);
+    final User actor = User.builder().id(UUID.randomUUID()).role(Role.PROFESSOR).build();
+
+    private int assigna(Exam exam, java.util.Collection<UUID> ids) { return service.assigna(exam, ids, actor); }
+    private int afegeix(Exam exam, java.util.Collection<UUID> ids) { return service.afegeix(exam, ids, actor); }
 
     Modul modul = Modul.builder().id(UUID.randomUUID()).nom("Sistemes").build();
     Exam exam = Exam.builder().id(UUID.randomUUID()).title("Ex").restringit(true).modul(modul).build();
@@ -37,7 +42,7 @@ class AudienciaExamenServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AudienciaExamenService(sessionRepository, matriculaRepository, userRepository, examRepository);
+        service = new AudienciaExamenService(sessionRepository, matriculaRepository, userRepository, examRepository, alumnesVisibles);
         when(userRepository.findAllById(any())).thenAnswer(inv -> {
             Iterable<UUID> ids = inv.getArgument(0);
             List<User> out = new java.util.ArrayList<>();
@@ -50,7 +55,7 @@ class AudienciaExamenServiceTest {
 
     @Test
     void assigna_crea_la_sessio_pendent_dels_alumnes_triats() {
-        int n = service.assigna(exam, List.of(anna.getId(), bernat.getId()));
+        int n = assigna(exam, List.of(anna.getId(), bernat.getId()));
 
         assertThat(n).isEqualTo(2);
         var c = org.mockito.ArgumentCaptor.forClass(ExamSession.class);
@@ -65,7 +70,7 @@ class AudienciaExamenServiceTest {
     void assigna_no_duplica_els_que_ja_tenen_sessio() {
         when(sessionRepository.findStudentIdsByExamId(exam.getId())).thenReturn(List.of(anna.getId()));
 
-        assertThat(service.assigna(exam, List.of(anna.getId(), bernat.getId()))).isEqualTo(1);
+        assertThat(assigna(exam, List.of(anna.getId(), bernat.getId()))).isEqualTo(1);
         verify(sessionRepository, times(1)).save(any());
     }
 
@@ -74,11 +79,11 @@ class AudienciaExamenServiceTest {
         User prof = User.builder().id(UUID.randomUUID()).name("Prof").role(Role.PROFESSOR).build();
         doReturn(List.of(prof)).when(userRepository).findAllById(any());
 
-        assertThatThrownBy(() -> service.assigna(exam, List.of())).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> service.assigna(exam, null)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> service.assigna(exam, List.of(prof.getId())))
+        assertThatThrownBy(() -> assigna(exam, List.of())).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> assigna(exam, null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> assigna(exam, List.of(prof.getId())))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("alumnes");
-        assertThatThrownBy(() -> service.assigna(exam, List.of(UUID.randomUUID())))
+        assertThatThrownBy(() -> assigna(exam, List.of(UUID.randomUUID())))
                 .isInstanceOf(IllegalArgumentException.class);
         verify(sessionRepository, never()).save(any());
     }
@@ -87,7 +92,7 @@ class AudienciaExamenServiceTest {
     void assigna_rebutja_alumnes_no_matriculats_al_modul_i_els_nomena() {
         when(matriculaRepository.findAlumneIdsByModulId(modul.getId())).thenReturn(List.of(anna.getId()));
 
-        assertThatThrownBy(() -> service.assigna(exam, List.of(anna.getId(), bernat.getId())))
+        assertThatThrownBy(() -> assigna(exam, List.of(anna.getId(), bernat.getId())))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Bernat")
                 .hasMessageNotContaining("Anna");
         verify(sessionRepository, never()).save(any());
@@ -97,7 +102,7 @@ class AudienciaExamenServiceTest {
     void afegeix_a_un_esborrany_el_restringeix_i_assigna() {
         Exam esborrany = Exam.builder().id(exam.getId()).modul(modul).status(ExamStatus.DRAFT).build();
 
-        int n = service.afegeix(esborrany, List.of(anna.getId()));
+        int n = afegeix(esborrany, List.of(anna.getId()));
 
         assertThat(n).isEqualTo(1);
         assertThat(esborrany.isRestringit()).isTrue();
@@ -109,7 +114,7 @@ class AudienciaExamenServiceTest {
         Exam programat = Exam.builder().id(exam.getId()).modul(modul).status(ExamStatus.DRAFT)
                 .scheduledAt(LocalDateTime.now().plusDays(1)).build();
 
-        assertThatThrownBy(() -> service.afegeix(programat, List.of(anna.getId())))
+        assertThatThrownBy(() -> afegeix(programat, List.of(anna.getId())))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("programat");
         assertThat(programat.isRestringit()).isFalse();
         verify(sessionRepository, never()).save(any());
@@ -121,11 +126,11 @@ class AudienciaExamenServiceTest {
         exam.setStatus(ExamStatus.PUBLISHED);
         Exam tancat = Exam.builder().id(exam.getId()).modul(modul).status(ExamStatus.CLOSED).restringit(true).build();
 
-        assertThatThrownBy(() -> service.afegeix(actiuPerATots, List.of(anna.getId())))
+        assertThatThrownBy(() -> afegeix(actiuPerATots, List.of(anna.getId())))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("tots els alumnes");
-        assertThatThrownBy(() -> service.afegeix(tancat, List.of(anna.getId())))
+        assertThatThrownBy(() -> afegeix(tancat, List.of(anna.getId())))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("tancat");
-        assertThat(service.afegeix(exam, List.of(anna.getId()))).isEqualTo(1);   // actiu i restringit
+        assertThat(afegeix(exam, List.of(anna.getId()))).isEqualTo(1);   // actiu i restringit
     }
 
     @Test
@@ -195,5 +200,25 @@ class AudienciaExamenServiceTest {
         assertThat(l.alumnes()).extracting(AlumneAccesDto::nom).containsExactly("Anna", "Bernat", "Carla");
         assertThat(l.alumnes()).extracting(AlumneAccesDto::estat).containsExactly(
                 AlumneAccesDto.Estat.PENDENT, AlumneAccesDto.Estat.EN_CURS, AlumneAccesDto.Estat.ENTREGAT);
+    }
+
+    @Test
+    void no_es_pot_assignar_un_alumne_que_l_actor_no_veu() {
+        org.mockito.Mockito.doThrow(new org.springframework.security.access.AccessDeniedException("no és teu"))
+                .when(alumnesVisibles).assertVisibles(actor, List.of(anna.getId()));
+
+        assertThatThrownBy(() -> assigna(exam, List.of(anna.getId())))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        org.mockito.Mockito.verify(sessionRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    void afegir_alumnes_a_un_examen_tambe_comprova_la_visibilitat() {
+        Exam esborrany = Exam.builder().id(UUID.randomUUID()).title("E").status(ExamStatus.DRAFT).restringit(true).modul(modul).build();
+        org.mockito.Mockito.doThrow(new org.springframework.security.access.AccessDeniedException("no és teu"))
+                .when(alumnesVisibles).assertVisibles(actor, List.of(bernat.getId()));
+
+        assertThatThrownBy(() -> afegeix(esborrany, List.of(bernat.getId())))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
     }
 }

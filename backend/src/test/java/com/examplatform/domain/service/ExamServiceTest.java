@@ -121,7 +121,7 @@ class ExamServiceTest {
 
         assertThat(exam.isRestringit()).isTrue();
         assertThat(exam.getStatus()).isEqualTo(ExamStatus.PUBLISHED);
-        verify(audiencia).assigna(exam, alumnes);
+        verify(audiencia).assigna(exam, alumnes, professor);
     }
 
     @Test
@@ -190,7 +190,7 @@ class ExamServiceTest {
         when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
         when(examRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         List<UUID> alumnes = List.of(UUID.randomUUID());
-        when(audiencia.assigna(exam, alumnes)).thenThrow(new IllegalArgumentException("No estan matriculats"));
+        when(audiencia.assigna(exam, alumnes, professor)).thenThrow(new IllegalArgumentException("No estan matriculats"));
 
         assertThatThrownBy(() -> service.publish(exam.getId(), professor, alumnes))
                 .isInstanceOf(IllegalArgumentException.class);
