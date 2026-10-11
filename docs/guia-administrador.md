@@ -5,7 +5,7 @@ l'aplicació, com està muntada i, sobretot, **què es pot configurar** i on: al
 *Configuració* de l'aplicació o, per a uns pocs valors, al `docker-compose.yml`.
 
 Altres guies: [professor](guia-professor.md) · [alumne](guia-alumne.md) · [desplegament en una VM](desplegament-vm.md) ·
-[HTTPS](https.md) · [còpies de seguretat](copies-seguretat.md) · [usuaris d'examen als ordinadors](usuari-examen-linux.md) · [seguretat: auditoria i estat](seguretat.md) · [funcionalitats per rol](funcionalitats.md).
+[HTTPS](https.md) · [còpies de seguretat](copies-seguretat.md) · [usuaris d'examen als ordinadors](usuari-examen-linux.md) · [seguretat: auditoria i estat](seguretat.md) · [desplegament pendent](desplegament-pendent.md) · [funcionalitats per rol](funcionalitats.md).
 
 ---
 
