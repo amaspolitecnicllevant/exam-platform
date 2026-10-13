@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import client from '../api/client'
 
 interface Props {
@@ -43,6 +44,8 @@ export default function Md({ children, className, imatgesLocals }: Props) {
   return (
     <div className={`prose prose-sm max-w-none ${className ?? ''}`}>
       <ReactMarkdown
+        // Taules, llistes de tasques i text ratllat (GFM)
+        remarkPlugins={[remarkGfm]}
         // Només les imatges de l'examen (fitxer:<id>) són permeses; la resta d'URL segueixen la política per defecte
         urlTransform={url => (url.startsWith(PREFIX) ? url : defaultUrlTransform(url))}
         components={{
@@ -55,6 +58,18 @@ export default function Md({ children, className, imatgesLocals }: Props) {
               ? <ImatgeFitxer id={s.slice(PREFIX.length)} alt={alt ?? ''} locals={imatgesLocals} />
               : <span className="text-xs text-gray-400 italic">[imatge externa no permesa{alt ? `: ${alt}` : ''}]</span>
           },
+          // Sense el plugin de tipografia, les taules no tenen vores: les estilem aquí
+          table: ({ children }) => (
+            <div className="overflow-x-auto my-2">
+              <table className="border-collapse text-sm">{children}</table>
+            </div>
+          ),
+          th: ({ children, style }) => (
+            <th style={style} className="border border-gray-300 bg-gray-100 px-3 py-1.5 font-semibold">{children}</th>
+          ),
+          td: ({ children, style }) => (
+            <td style={style} className="border border-gray-300 px-3 py-1.5">{children}</td>
+          ),
           code: ({ children }) => (
             <code className="bg-gray-100 text-gray-800 px-1 py-0.5 rounded text-xs font-mono">
               {children}
