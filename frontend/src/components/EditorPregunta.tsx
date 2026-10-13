@@ -205,7 +205,7 @@ export default function EditorPregunta({ examId, pregunta, posicio, fitxers = []
   return (
     <div className="fixed inset-0 bg-black/40 flex items-start justify-center z-50 p-4 overflow-y-auto">
       <form onSubmit={desa} className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 space-y-4 my-4 text-gray-900">
-        <h2 className="text-lg font-semibold">{q ? `Editar la pregunta ${q.ordre}` : 'Afegir una pregunta'}</h2>
+        <h2 className="text-lg font-semibold">{q ? `Editar la pregunta ${q.numero ?? q.ordre}` : 'Afegir una pregunta'}</h2>
 
         <div className="grid grid-cols-3 gap-3">
           <label className="col-span-2">

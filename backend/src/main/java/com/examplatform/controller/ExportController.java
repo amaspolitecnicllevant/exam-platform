@@ -57,7 +57,7 @@ public class ExportController {
                     Answer answer = perPregunta.get(q.getId());
                     csv.printRecord(
                             studentName, studentEmail,
-                            q.getOrdre(), q.getTipus(), q.getPunts(),
+                            Numeracio.numero(q), q.getTipus(), q.getPunts(),
                             answer != null ? sanitizeCsvCell(answer.getContingut()) : "",
                             answer != null ? sanitizeCsvCell(answer.getExecutionOutput()) : "",
                             answer != null ? answer.getAutoScore() : null,

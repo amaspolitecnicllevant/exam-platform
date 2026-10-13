@@ -45,7 +45,7 @@ public class CopiesService {
                 .filter(q -> q.getTipus() != QuestionType.SECTION)
                 .sorted(Comparator.comparingInt(Question::getOrdre))
                 .peek(q -> preguntesPerId.put(q.getId(), q))
-                .map(q -> new DeteccioCopies.Pregunta(q.getId(), q.getOrdre(), q.getTipus(), q.getEnunciat(),
+                .map(q -> new DeteccioCopies.Pregunta(q.getId(), Numeracio.numero(q), q.getTipus(), q.getEnunciat(),
                         q.getModelResposta(), q.getCorrectChoice(), q.isAnulada(), q.isAmbApunts(),
                         perPregunta.getOrDefault(q.getId(), List.of())))
                 .toList();

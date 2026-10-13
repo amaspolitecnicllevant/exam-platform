@@ -69,7 +69,7 @@ export default function ExamPreviewPage() {
   const potEditar = estatEdicio?.editable === true
 
   const elimina = async (q: Question) => {
-    if (!examId || !confirm(`Eliminar ${q.tipus === 'SECTION' ? 'la secció' : 'la pregunta ' + q.ordre}? No es pot desfer.`)) return
+    if (!examId || !confirm(`Eliminar ${q.tipus === 'SECTION' ? 'la secció' : 'la pregunta ' + q.numero}? No es pot desfer.`)) return
     setErrorEditor('')
     try { await eliminaPregunta(examId, q.id); await carrega() }
     catch (e: any) { setErrorEditor(e?.response?.data?.error || 'No s\'ha pogut eliminar') }
@@ -421,7 +421,7 @@ export default function ExamPreviewPage() {
             <div key={q.id} className="bg-white border rounded-xl p-6 space-y-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="bg-brand-100 text-brand-700 text-xs px-2 py-0.5 rounded font-medium">{q.ordre}</span>
+                  <span className="bg-brand-100 text-brand-700 text-xs px-2 py-0.5 rounded font-medium">{q.numero}</span>
                   <span className="text-xs text-gray-400">{TYPE_LABEL[q.tipus] ?? q.tipus} · {q.punts} pts</span>
                   <label className="flex items-center gap-1 text-xs text-gray-500 cursor-pointer"
                     title="Els alumnes poden fer servir apunts en paper en aquesta pregunta">

@@ -1,5 +1,6 @@
 package com.examplatform.domain.service.exportacio;
 
+import com.examplatform.domain.service.Numeracio;
 import com.examplatform.domain.model.Answer;
 import com.examplatform.domain.model.Question;
 import com.examplatform.domain.model.QuestionType;
@@ -41,12 +42,12 @@ public final class ExportacioFitxers {
                 Answer r = a.respostes().get(q.getId());
                 if (r == null || !r.teFitxer()) continue;
                 Path ruta = Path.of(r.getFitxerRuta());
-                String descripcio = a.nom() + " · P" + q.getOrdre() + " · " + r.getFitxerNom();
+                String descripcio = a.nom() + " · P" + Numeracio.numero(q) + " · " + r.getFitxerNom();
                 if (!Files.isReadable(ruta)) {
                     absents.add(descripcio);
                     continue;
                 }
-                String nom = unic(usats, directori + "/P" + q.getOrdre() + "-" + DadesExamen.nomNet(r.getFitxerNom(), 100));
+                String nom = unic(usats, directori + "/P" + Numeracio.numero(q) + "-" + DadesExamen.nomNet(r.getFitxerNom(), 100));
                 entrades.add(new Entrada(nom, ruta));
             }
         }

@@ -105,7 +105,7 @@ public class StatsService {
         BigDecimal rendiment = mitjanaPunts == null || q.getPunts().signum() == 0 ? null
                 : mitjanaPunts.multiply(CENT).divide(q.getPunts(), 1, RoundingMode.HALF_UP);
         return new ExamStatsDto.Pregunta(
-                q.getId(), q.getOrdre(), q.getTipus(), q.getEnunciat(), q.getPunts(), q.isAnulada(), q.getRa(),
+                q.getId(), Numeracio.numero(q), q.getTipus(), q.getEnunciat(), q.getPunts(), q.isAnulada(), q.getRa(),
                 contestades, entregades.size() - contestades,
                 mitjanaPunts, rendiment,
                 choice && !entregades.isEmpty() ? percent(correctes, entregades.size()) : null,

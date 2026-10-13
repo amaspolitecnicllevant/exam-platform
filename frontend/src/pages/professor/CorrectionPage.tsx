@@ -130,8 +130,8 @@ export default function CorrectionPage() {
     try {
       await patchQuestion(examId, q.id, { anulada: !q.anulada })
       setAvis(q.anulada
-        ? `S'ha tret el bonus de la pregunta ${q.ordre}: torna a comptar la nota de cada alumne.`
-        : `Pregunta ${q.ordre} marcada com a bonus: tothom en té els ${q.punts} punts.`)
+        ? `S'ha tret el bonus de la pregunta ${q.numero}: torna a comptar la nota de cada alumne.`
+        : `Pregunta ${q.numero} marcada com a bonus: tothom en té els ${q.punts} punts.`)
       reload()
     } catch (err: any) {
       setAvis(errorDe(err, 'No s\'ha pogut canviar el bonus'))
@@ -267,7 +267,7 @@ export default function CorrectionPage() {
             return (
               <div key={q.id} className={`bg-white border rounded-xl p-4 flex items-start gap-4 ${q.anulada ? 'border-green-200' : ''}`}>
                 <span className="bg-brand-100 text-brand-700 text-xs px-2 py-0.5 rounded font-medium shrink-0 mt-0.5">
-                  {q.ordre}
+                  {q.numero}
                 </span>
                 <div className="flex-1 min-w-0">
                   <Md className="text-sm text-gray-800 line-clamp-2">{q.enunciat}</Md>
@@ -340,7 +340,7 @@ export default function CorrectionPage() {
                       const n = pendentsPerPregunta(q)
                       return (
                         <option key={q.id} value={q.id}>
-                          {q.ordre}. {q.enunciat.replace(/\s+/g, ' ').slice(0, 70)} {n > 0 ? `— ${n} pendents` : ''}
+                          {q.numero}. {q.enunciat.replace(/\s+/g, ' ').slice(0, 70)} {n > 0 ? `— ${n} pendents` : ''}
                         </option>
                       )
                     })}
@@ -524,7 +524,7 @@ export default function CorrectionPage() {
                   return (
                     <RespostaCorreccio key={q.id} q={q} answer={answer} session={selected}
                       titol={<>
-                        <span className="bg-brand-100 text-brand-700 text-xs px-2 py-0.5 rounded shrink-0">{q.ordre}</span>
+                        <span className="bg-brand-100 text-brand-700 text-xs px-2 py-0.5 rounded shrink-0">{q.numero}</span>
                         <Md className="text-sm text-gray-800">{q.enunciat}</Md>
                       </>}
                       {...accions} />

@@ -20,7 +20,10 @@ export interface User {
 
 export interface Question {
   id: string
+  /** Posició interna (les seccions també compten): només per moure i afegir */
   ordre: number
+  /** Número visible (sense comptar les seccions); null a les seccions */
+  numero: number | null
   tipus: QuestionType
   enunciat: string
   punts: number

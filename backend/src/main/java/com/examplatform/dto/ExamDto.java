@@ -1,5 +1,6 @@
 package com.examplatform.dto;
 
+import com.examplatform.domain.service.Numeracio;
 import com.examplatform.domain.model.Exam;
 import com.examplatform.domain.model.ExamStatus;
 
@@ -44,10 +45,12 @@ public record ExamDto(
 
     public static ExamDto from(Exam e, boolean includeAnswers,
                                 Map<UUID, List<QuestionFileDto>> filesMap) {
+        Map<UUID, Integer> numeros = Numeracio.numeros(e.getQuestions());
         List<QuestionDto> qs = e.getQuestions().stream()
                 .map(q -> {
                     List<QuestionFileDto> files = filesMap.getOrDefault(q.getId(), List.of());
-                    return includeAnswers ? QuestionDto.from(q, files) : QuestionDto.forStudent(q, files);
+                    Integer numero = numeros.get(q.getId());
+                    return includeAnswers ? QuestionDto.from(q, files, numero) : QuestionDto.forStudent(q, files, numero);
                 })
                 .toList();
         return new ExamDto(e.getId(), e.getTitle(), e.getDurada(), e.getInstruccions(),

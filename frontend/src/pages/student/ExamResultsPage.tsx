@@ -119,7 +119,7 @@ export default function ExamResultsPage() {
             <div key={q.id} className="bg-white border rounded-xl p-6 space-y-3">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs bg-brand-100 text-brand-700 px-2 py-0.5 rounded">{q.ordre}</span>
+                  <span className="text-xs bg-brand-100 text-brand-700 px-2 py-0.5 rounded">{q.numero}</span>
                   <span className="text-xs text-gray-400">{q.tipus}</span>
                   {q.anulada && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Bonus: tothom té els punts</span>}
                 </div>

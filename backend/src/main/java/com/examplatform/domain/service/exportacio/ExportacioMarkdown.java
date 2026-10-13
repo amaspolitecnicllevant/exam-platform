@@ -1,5 +1,6 @@
 package com.examplatform.domain.service.exportacio;
 
+import com.examplatform.domain.service.Numeracio;
 import com.examplatform.domain.model.Answer;
 import com.examplatform.domain.model.Question;
 import com.examplatform.domain.model.QuestionType;
@@ -81,7 +82,7 @@ public final class ExportacioMarkdown {
             sb.append("### ").append(o.anonim() ? codis.get(a.sessio().getId())
                     : unaLinia(a.nom()) + " <" + unaLinia(a.email()) + ">").append("\n\n");
             for (Question q : d.preguntes()) {
-                sb.append("**P").append(q.getOrdre()).append("**\n\n").append(resposta(q, a.respostes().get(q.getId()))).append("\n");
+                sb.append("**P").append(Numeracio.numero(q)).append("**\n\n").append(resposta(q, a.respostes().get(q.getId()))).append("\n");
             }
         }
         return sb.toString();
@@ -89,7 +90,7 @@ public final class ExportacioMarkdown {
 
     private static String pregunta(Question q, boolean ambModel) {
         StringBuilder sb = new StringBuilder();
-        sb.append("### P").append(q.getOrdre()).append(" · ").append(etiquetaTipus(q.getTipus()))
+        sb.append("### P").append(Numeracio.numero(q)).append(" · ").append(etiquetaTipus(q.getTipus()))
                 .append(" · ").append(CsvSegur.curt(q.getPunts())).append(" punts");
         if (q.isAmbApunts()) sb.append(" · es poden fer servir apunts");
         if (q.isAnulada()) sb.append(" · anul·lada (bonus)");

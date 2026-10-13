@@ -105,7 +105,7 @@ public class RevisioIaService {
             perNom.computeIfAbsent(normalitza(a.nom()), k -> new ArrayList<>()).add(a);
         }
         Map<Integer, Question> perOrdre = new HashMap<>();
-        for (Question q : d.preguntes()) perOrdre.put(q.getOrdre(), q);
+        for (Question q : d.preguntes()) perOrdre.put(Numeracio.numero(q), q);
 
         // Resolució prèvia, per detectar files repetides (mateix alumne i pregunta)
         record Resolta(RevisioIaParser.Fila fila, DadesExamen.Alumne alumne, Question pregunta, String error) {}
@@ -131,7 +131,7 @@ public class RevisioIaService {
             RevisioIaParser.Fila f = r.fila();
             String codi = r.alumne() == null ? null : codis.get(r.alumne().sessio().getId());
             String nom = r.alumne() == null ? curt(f.alumne()) : r.alumne().nom();
-            Integer ordre = r.pregunta() == null ? null : r.pregunta().getOrdre();
+            Integer ordre = r.pregunta() == null ? null : Numeracio.numero(r.pregunta());
             String just = f.justificacio() == null ? "" : f.justificacio().strip();
 
             if (r.error() != null) {

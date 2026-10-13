@@ -3,6 +3,7 @@ package com.examplatform.dto;
 import com.examplatform.domain.model.Question;
 import com.examplatform.domain.model.QuestionType;
 import com.examplatform.domain.service.FormatsFitxer;
+import com.examplatform.domain.service.Numeracio;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -11,6 +12,8 @@ import java.util.UUID;
 public record QuestionDto(
         UUID id,
         int ordre,
+        /** Número visible (sense comptar les seccions); null a les seccions. */
+        Integer numero,
         QuestionType tipus,
         String enunciat,
         BigDecimal punts,
@@ -32,7 +35,11 @@ public record QuestionDto(
         List<String> formatsPermesos
 ) {
     public static QuestionDto from(Question q, List<QuestionFileDto> files) {
-        return new QuestionDto(q.getId(), q.getOrdre(), q.getTipus(), q.getEnunciat(),
+        return from(q, files, numeroDe(q));
+    }
+
+    public static QuestionDto from(Question q, List<QuestionFileDto> files, Integer numero) {
+        return new QuestionDto(q.getId(), q.getOrdre(), numero, q.getTipus(), q.getEnunciat(),
                 q.getPunts(), q.getModelResposta(), q.getOutputContains(),
                 q.getOutputExact(), q.getOutputRegex(), q.getTestScript(), q.getClaus(),
                 parseChoices(q.getChoices()), q.getCorrectChoice(), q.isBarrejarOpcions(), q.isAnulada(), q.isAmbApunts(),
@@ -44,7 +51,11 @@ public record QuestionDto(
     }
 
     public static QuestionDto forStudent(Question q, List<QuestionFileDto> files) {
-        return new QuestionDto(q.getId(), q.getOrdre(), q.getTipus(), q.getEnunciat(),
+        return forStudent(q, files, numeroDe(q));
+    }
+
+    public static QuestionDto forStudent(Question q, List<QuestionFileDto> files, Integer numero) {
+        return new QuestionDto(q.getId(), q.getOrdre(), numero, q.getTipus(), q.getEnunciat(),
                 q.getPunts(), null, null, null, null, null, null,
                 parseChoices(q.getChoices()), null, q.isBarrejarOpcions(), q.isAnulada(), q.isAmbApunts(),
                 null, null, files, formats(q));
@@ -52,6 +63,10 @@ public record QuestionDto(
 
     public static QuestionDto forStudent(Question q) {
         return forStudent(q, List.of());
+    }
+
+    private static Integer numeroDe(Question q) {
+        return q.getTipus() == QuestionType.SECTION ? null : Numeracio.numero(q);
     }
 
     private static List<String> formats(Question q) {
