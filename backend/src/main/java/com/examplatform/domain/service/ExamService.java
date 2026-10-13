@@ -225,7 +225,12 @@ public class ExamService {
             throw new IllegalStateException(
                     "Només es pot esborrar un examen en estat DRAFT (estat actual: " + exam.getStatus() + ")");
         }
-        sessionRepository.findByExamId(id).forEach(s -> fitxersStorage.esborraSessio(s.getId()));
+        List<ExamSession> sessions = sessionRepository.findByExamId(id);
+        sessions.forEach(s -> fitxersStorage.esborraSessio(s.getId()));
+        // exam_sessions.exam_id no té ON DELETE CASCADE: cal esborrar-les explícitament (p. ex. sessions
+        // assignades en esborranys restringits) abans que l'examen, o Hibernate ho rebutja en el flush
+        sessionRepository.deleteAll(sessions);
+        sessionRepository.flush();
         examRepository.deleteById(id);
     }
 

@@ -278,6 +278,22 @@ class ExamServiceTest {
     }
 
     @Test
+    void delete_esborra_les_sessions_abans_de_l_examen() {
+        Exam exam = exam(ExamStatus.DRAFT, professor);
+        when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
+        ExamSession s1 = ExamSession.builder().id(UUID.randomUUID()).exam(exam).build();
+        List<ExamSession> sessions = List.of(s1);
+        when(sessionRepository.findByExamId(exam.getId())).thenReturn(sessions);
+
+        service.delete(exam.getId(), professor);
+
+        var ordre = org.mockito.Mockito.inOrder(sessionRepository, examRepository);
+        ordre.verify(sessionRepository).deleteAll(sessions);
+        ordre.verify(sessionRepository).flush();
+        ordre.verify(examRepository).deleteById(exam.getId());
+    }
+
+    @Test
     void delete_rebutjat_no_toca_cap_fitxer() {
         Exam exam = exam(ExamStatus.PUBLISHED, professor);
         when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
