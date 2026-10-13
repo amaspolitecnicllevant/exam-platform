@@ -291,6 +291,21 @@ Dissenya la xarxa de l'enunciat i entrega:
 
 ---
 
+### 6.8 Format dins de l'enunciat: negreta, codi i taules
+
+L'enunciat admet Markdown: `**negreta**`, `` `codi en línia` ``, llistes, blocs de codi amb ``` i **taules**. Una taula necessita una línia de capçalera, una línia separadora (`|---|---|`) i una línia per fila, amb una línia en blanc abans. Els dos punts de la línia separadora fixen l'alineació: `:--` esquerra, `:-:` centrat, `--:` dreta.
+
+```markdown
+## 6. [short] [pts:1]
+Segons aquesta taula, quina valoració correspon a un índex de 47?
+
+| Rang  | Valoració   |
+|:-----:|-------------|
+| 0–40  | Crítica     |
+| 41–70 | Millorable  |
+| 71–100| Bona        |
+```
+
 ## 7. Exemple complet
 
 ````markdown
@@ -466,6 +481,7 @@ Quan generis un examen seguint aquesta guia:
 - `fitxer`: usa-ho només quan l'alumne ha de lliurar un document o una simulació (Word, Excel, Packet Tracer). Indica els formats amb `[formats:…]` i descriu clarament què ha de contenir el lliurament. No hi posis `:::clau`, `:::output-*` ni `:::test`; `:::model` només com a nota per al professor.
 - `bash-script` i `ps-script`: inclou `:::model` i un `:::test` robust que creï les seves dades a `/tmp` i comprovi el resultat de manera objectiva. Tria dades de prova amb què **una solució incorrecta però plausible falli** (p. ex. si es demana comptar recursivament, posa fitxers en subdirectoris perquè un `ls` sense recursió doni un altre resultat).
 - Tingues en compte l'entorn (§6.6): sense xarxa, només `/tmp` és escrivible, Linux (no Windows), 15 s per execució.
+- Per a dades tabulars usa una taula Markdown (§6.8), no text alineat amb espais.
 - No usis `###` dins dels enunciats. Per a subtítols, usa negreta.
 - No incloguis imatges (`![](…)`): el format no les admet i no es mostrarien. Si una pregunta en necessita una, descriu-ne en el text què hauria de mostrar; el professor l'hi afegirà després des de la plataforma.
 - Escriu els enunciats en **català**, llevat que s'indiqui una altra llengua, i no hi incloguis la solució.
