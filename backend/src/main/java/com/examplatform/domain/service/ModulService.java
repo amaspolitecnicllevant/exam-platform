@@ -28,6 +28,14 @@ public class ModulService {
                 .map(ModulDto::from).toList();
     }
 
+    /** Mòduls que imparteix un professor (l'administració els veu tots). */
+    @Transactional(readOnly = true)
+    public List<ModulDto> findByProfessor(com.examplatform.domain.model.User user) {
+        if (user.getRole() == com.examplatform.domain.model.Role.ADMIN) return findAll();
+        java.util.Set<UUID> ids = new java.util.HashSet<>(imparticioRepository.findModulIdsByProfessorId(user.getId()));
+        return findAll().stream().filter(m -> ids.contains(m.id())).toList();
+    }
+
     @Transactional(readOnly = true)
     public List<ModulDto> findByCicle(UUID cicleId) {
         return modulRepository.findByCicleIdOrderByCodiAsc(cicleId).stream()

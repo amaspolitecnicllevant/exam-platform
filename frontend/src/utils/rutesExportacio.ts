@@ -1,6 +1,6 @@
 /** Tipus d'exportació d'un examen i la ruta de l'API que el genera. */
 export type TipusExportacio =
-  | 'notes' | 'notes-ra' | 'excel' | 'informe' | 'respostes' | 'clau' | 'fitxers' | 'csv-detallat'
+  | 'notes' | 'notes-competencies' | 'excel' | 'informe' | 'respostes' | 'clau' | 'fitxers' | 'csv-detallat'
 
 export interface OpcionsExportacio {
   /** Només per a `respostes`: amb noms i correus (per defecte, anònim) */
@@ -11,7 +11,7 @@ export interface OpcionsExportacio {
 
 const RUTES: Record<TipusExportacio, string> = {
   'notes': 'notes.csv',
-  'notes-ra': 'notes-ra.csv',
+  'notes-competencies': 'notes-competencies.csv',
   'excel': 'examen.xlsx',
   'informe': 'informe.md',
   'respostes': 'respostes.md',

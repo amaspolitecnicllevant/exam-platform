@@ -171,12 +171,12 @@ export default function ExamSintaxiPage() {
           <p className="text-sm text-gray-600">
             Cada pregunta comença amb una línia <code className="bg-gray-100 px-1 rounded">##</code>:
           </p>
-          <CodeBlock code={`## 3 [CHOICE] [pts:2.5] [ra:RA1] [dif:mitjana] [ordre:fix]`} />
+          <CodeBlock code={`## 3 [CHOICE] [pts:2.5] [co:CO1] [dif:mitjana] [ordre:fix]`} />
           <Table rows={[
             { cap: 'N', desc: 'Número d\'ordre de la pregunta (enter positiu, únic).' },
             { cap: '[TIPUS]', desc: 'Tipus de pregunta (vegeu la taula de tipus).' },
             { cap: '[pts:X]', desc: 'Punts de la pregunta (decimal amb punt). La suma total ha de ser exactament 10.' },
-            { cap: '[ra:RA1]', desc: 'Opcional. Resultat d\'aprenentatge; permet veure la nota per RA.' },
+            { cap: '[co:CO1]', desc: 'Opcional. Codi de la competència que treballa la pregunta; permet veure la nota per competència. Si l\'examen ja té mòdul, ha de ser una de les competències del mòdul (o de les UT de l\'examen).' },
             { cap: '[dif:mitjana]', desc: 'Opcional. Dificultat: baixa, mitjana o alta.' },
             { cap: '[apunts]', desc: 'Opcional. En aquesta pregunta es poden fer servir apunts en paper. També es pot posar al títol d\'una secció (### Pràctica [apunts]) per marcar-ne totes les preguntes.' },
             { cap: '[formats:docx,pkt]', desc: 'Opcional, només [fitxer]. Extensions que l\'alumne pot pujar (docx, xlsx, pptx, odt, ods, odp, pdf, pkt, pka, pkz, zip, png, jpg, txt). Sense l\'etiqueta, s\'admeten tots.' },

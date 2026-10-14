@@ -1,7 +1,7 @@
 import client from './client'
 import type { Modul, Imparticio } from '../types'
 
-export const getModuls = (params?: { cicleId?: string; departamentId?: string }): Promise<Modul[]> =>
+export const getModuls = (params?: { cicleId?: string; departamentId?: string; meus?: boolean }): Promise<Modul[]> =>
   client.get('/moduls', { params }).then(r => r.data)
 
 export const createModul = (codi: string, nom: string, cicleId: string): Promise<Modul> =>

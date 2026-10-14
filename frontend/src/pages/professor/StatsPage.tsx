@@ -254,7 +254,7 @@ function FilaPregunta({ p, entregats }: { p: PreguntaStats; entregats: number })
               <p className="text-gray-800 line-clamp-2" title={p.enunciat}>{p.enunciat}</p>
               <div className="flex flex-wrap gap-1.5 mt-1 text-xs">
                 <span className="text-gray-400">{p.tipus}</span>
-                {p.ra && <span className="bg-indigo-100 text-indigo-700 px-1.5 rounded">{p.ra}</span>}
+                {p.competencia && <span className="bg-indigo-100 text-indigo-700 px-1.5 rounded">{p.competencia}</span>}
                 {p.bonus && <span className="bg-green-100 text-green-700 px-1.5 rounded">Bonus</span>}
                 {dificil && <span className="bg-amber-100 text-amber-800 px-1.5 rounded">⚠ Rendiment baix</span>}
                 {opcions.length > 0 && entregats > 0 && (

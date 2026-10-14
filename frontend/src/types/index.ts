@@ -40,7 +40,8 @@ export interface Question {
   anulada: boolean
   /** Es poden fer servir apunts (en paper) en aquesta pregunta */
   ambApunts: boolean
-  ra?: string
+  /** Codi de la competència que treballa la pregunta (p. ex. CO1) */
+  competencia?: string
   dificultat?: 'baixa' | 'mitjana' | 'alta'
   files?: QuestionFile[]
   /** Només FILE_UPLOAD: extensions (sense punt) que l'alumne pot pujar */
@@ -155,7 +156,31 @@ export interface Exam {
   restringit: boolean
   /** Ja té sessions d'alumnes (només ve informat al llistat del professor) */
   teSessions?: boolean
+  /** UT que avalua l'examen (buit = sense restricció de competències) */
+  unitats: UnitatProg[]
+  /** Totes les competències del mòdul de l'examen */
+  competencies: CompetenciaProg[]
   questions: Question[]
+}
+
+export interface CompetenciaProg {
+  id: string
+  codi: string
+  descripcio: string
+}
+
+export interface UnitatProg {
+  id: string
+  codi: string
+  nom: string
+  /** Codis de les competències que treballa la unitat */
+  competencies: string[]
+}
+
+export interface Programacio {
+  modulId: string
+  competencies: CompetenciaProg[]
+  unitats: UnitatProg[]
 }
 
 export interface Answer {
@@ -183,7 +208,7 @@ export interface PreguntaStats {
   enunciat: string
   punts: number
   bonus: boolean
-  ra?: string
+  competencia?: string
   respostes: number
   senseResposta: number
   mitjanaPunts: number | null

@@ -161,8 +161,9 @@ export default function ExamsPage() {
       const updated = await assignModul(assigningModul.id, selectedModul)
       setExams(prev => prev.map(e => e.id === updated.id ? { ...updated, teSessions: e.teSessions } : e))
       setAssigningModul(null)
-    } catch {
-      setFeedback('Error assignant el mòdul')
+    } catch (err: any) {
+      setAssigningModul(null)
+      setFeedback(err?.response?.data?.error || 'Error assignant el mòdul')
     }
   }
 

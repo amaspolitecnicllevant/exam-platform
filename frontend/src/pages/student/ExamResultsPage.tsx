@@ -7,7 +7,7 @@ import { getExam } from '../../api/exams'
 import type { Session, Exam } from '../../types'
 import { descarregaFitxerResposta } from '../../api/respostaFitxer'
 import { formatMida } from '../../utils/fitxers'
-import { notaTotal, notaPerRa, puntsPregunta, puntsMaxims, sobreDeu } from '../../notes'
+import { notaTotal, notaPerCompetencia, puntsPregunta, puntsMaxims, sobreDeu } from '../../notes'
 
 export default function ExamResultsPage() {
   const { sessionId } = useParams<{ sessionId: string }>()
@@ -72,18 +72,18 @@ export default function ExamResultsPage() {
           </div>
         </div>
 
-        {/* Desglossament per RA */}
+        {/* Desglossament per competència */}
         {(() => {
-          const entries = notaPerRa(exam.questions, session.answers)
-            .map(([ra, g]) => [ra, { ...g, hasScore: true }] as const)
+          const entries = notaPerCompetencia(exam.questions, session.answers)
+            .map(([co, g]) => [co, { ...g, hasScore: true }] as const)
           if (entries.length === 0) return null
           return (
             <div className="bg-white border border-indigo-100 rounded-xl px-5 py-4 space-y-3">
-              <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">Nota per Resultat d'Aprenentatge</p>
+              <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">Nota per competència</p>
               <div className="flex flex-wrap gap-4">
-                {entries.map(([ra, { pts, scored, hasScore }]) => (
-                  <div key={ra} className="text-center min-w-[80px]">
-                    <div className="text-xs font-semibold text-indigo-700 mb-1">{ra}</div>
+                {entries.map(([co, { pts, scored, hasScore }]) => (
+                  <div key={co} className="text-center min-w-[80px]" title={exam.competencies?.find(c => c.codi === co)?.descripcio || undefined}>
+                    <div className="text-xs font-semibold text-indigo-700 mb-1">{co}</div>
                     {hasScore
                       ? <div className={`text-lg font-bold tabular-nums ${scored / pts >= 0.5 ? 'text-green-600' : 'text-red-500'}`}>
                           {scored.toFixed(2)}<span className="text-xs font-normal text-gray-400">/{pts}</span>

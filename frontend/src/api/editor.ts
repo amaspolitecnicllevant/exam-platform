@@ -14,7 +14,7 @@ export interface PreguntaEdicio {
   outputRegex?: string
   testScript?: string
   claus?: string
-  ra?: string
+  competencia?: string
   dificultat?: string
   barrejarOpcions?: boolean
   ambApunts?: boolean

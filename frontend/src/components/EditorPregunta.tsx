@@ -2,7 +2,8 @@ import { useRef, useState } from 'react'
 import Md from './Md'
 import { afegeixPregunta, actualitzaPregunta, pujaImatge, type PreguntaEdicio } from '../api/editor'
 import { deleteQuestionFile } from '../api/questionFiles'
-import type { Question, QuestionFile, QuestionType } from '../types'
+import type { CompetenciaProg, Question, QuestionFile, QuestionType } from '../types'
+import SelectorCompetencia from './SelectorCompetencia'
 import { esImatge, extensioPermesa, idsReferenciats, insereix, markdownImatge, substitueix, treuReferencies } from '../utils/imatges'
 
 const TIPUS: { valor: QuestionType; text: string }[] = [
@@ -38,6 +39,8 @@ interface Props {
   posicio?: number
   /** Fitxers actuals de la pregunta (per mostrar-ne les imatges). */
   fitxers?: QuestionFile[]
+  /** Competències que es poden triar (null = sense programació: text lliure). */
+  competenciesPermeses?: CompetenciaProg[] | null
   onClose: () => void
   /** Cridada quan s'ha desat: el pare recarrega l'examen. */
   onDesat: () => void
@@ -55,7 +58,7 @@ function criteriInicial(q?: Question): Criteri {
   return 'cap'
 }
 
-export default function EditorPregunta({ examId, pregunta, posicio, fitxers = [], onClose, onDesat }: Props) {
+export default function EditorPregunta({ examId, pregunta, posicio, fitxers = [], competenciesPermeses = null, onClose, onDesat }: Props) {
   const q = pregunta
   const [tipus, setTipus] = useState<QuestionType>(q?.tipus ?? 'SHORT')
   const [enunciat, setEnunciat] = useState(q?.enunciat ?? '')
@@ -72,7 +75,7 @@ export default function EditorPregunta({ examId, pregunta, posicio, fitxers = []
   const [criteri, setCriteri] = useState<Criteri>(criteriInicial(q))
   const [criteriText, setCriteriText] = useState(q?.testScript ?? q?.outputExact ?? q?.outputContains ?? q?.outputRegex ?? '')
   const [claus, setClaus] = useState(q?.claus ?? '')
-  const [ra, setRa] = useState(q?.ra ?? '')
+  const [competencia, setCompetencia] = useState(q?.competencia ?? '')
   const [dificultat, setDificultat] = useState<string>(q?.dificultat ?? '')
   const [apunts, setApunts] = useState(q?.ambApunts ?? false)
   const [formats, setFormats] = useState((q?.formatsPermesos ?? []).join(', '))
@@ -143,7 +146,7 @@ export default function EditorPregunta({ examId, pregunta, posicio, fitxers = []
     const base: PreguntaEdicio = { tipus, enunciat: text }
     if (esSeccio) return base
     base.punts = Number(punts.replace(',', '.'))
-    base.ra = ra.trim()
+    base.competencia = competencia.trim()
     base.dificultat = dificultat
     base.ambApunts = apunts
     if (esTest) {
@@ -340,8 +343,8 @@ export default function EditorPregunta({ examId, pregunta, posicio, fitxers = []
         {!esSeccio && (
           <div className="grid grid-cols-3 gap-3 items-end">
             <label>
-              <span className={etiquetaCls}>RA</span>
-              <input value={ra} onChange={e => setRa(e.target.value)} placeholder="RA1" className={campCls} />
+              <span className={etiquetaCls}>Competència</span>
+              <SelectorCompetencia value={competencia} onChange={setCompetencia} permeses={competenciesPermeses} className={campCls} />
             </label>
             <label>
               <span className={etiquetaCls}>Dificultat</span>

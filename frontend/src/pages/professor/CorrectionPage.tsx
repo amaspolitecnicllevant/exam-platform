@@ -5,7 +5,7 @@ import Md from '../../components/Md'
 import { getSessionsByExam, getSession } from '../../api/sessions'
 import { getExam, runAnswer, setManualScore, setComment, patchQuestion, acceptProposal, acceptAllProposals } from '../../api/exams'
 import type { Exam, Session, Answer, Question } from '../../types'
-import { notaTotal, notaPerRa, puntsMaxims, sobreDeu } from '../../notes'
+import { notaTotal, notaPerCompetencia, puntsMaxims, sobreDeu } from '../../notes'
 import { useLlindarFocus } from '../../context/ConfiguracioContext'
 import RespostaCorreccio, { Referencia, isPendent } from '../../components/correccio/RespostaCorreccio'
 import type { AccionsCorreccio } from '../../components/correccio/RespostaCorreccio'
@@ -273,7 +273,7 @@ export default function CorrectionPage() {
                   <Md className="text-sm text-gray-800 line-clamp-2">{q.enunciat}</Md>
                   <div className="flex items-center gap-3 mt-1 text-xs text-gray-400 flex-wrap">
                     <span>{q.punts} pts</span>
-                    {q.ra && <span className="bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-medium">{q.ra}</span>}
+                    {q.competencia && <span className="bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-medium">{q.competencia}</span>}
                     {q.dificultat && <span className={`px-1.5 py-0.5 rounded font-medium ${
                       q.dificultat === 'baixa' ? 'bg-green-100 text-green-700' :
                       q.dificultat === 'mitjana' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
@@ -477,17 +477,17 @@ export default function CorrectionPage() {
                   </div>
                 </div>
 
-                {/* Desglossament per RA */}
+                {/* Desglossament per competència */}
                 {(() => {
-                  const entries = notaPerRa(questions, selected.answers)
+                  const entries = notaPerCompetencia(questions, selected.answers)
                   if (entries.length === 0) return null
                   return (
                     <div className="bg-white border border-indigo-100 rounded-xl px-4 py-3 space-y-2">
-                      <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">Nota per RA</p>
+                      <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">Nota per competència</p>
                       <div className="flex flex-wrap gap-3">
-                        {entries.map(([ra, { pts, scored }]) => (
-                          <div key={ra} className="flex items-center gap-1.5">
-                            <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded font-medium">{ra}</span>
+                        {entries.map(([co, { pts, scored }]) => (
+                          <div key={co} className="flex items-center gap-1.5" title={exam?.competencies.find(c => c.codi === co)?.descripcio || undefined}>
+                            <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded font-medium">{co}</span>
                             <span className="text-sm font-semibold text-gray-700">{scored.toFixed(2)}</span>
                             <span className="text-xs text-gray-400">/ {pts.toFixed(2)}</span>
                           </div>

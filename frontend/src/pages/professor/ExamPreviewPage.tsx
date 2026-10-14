@@ -9,6 +9,9 @@ import { llistaFormats } from '../../utils/fitxers'
 import EditorPregunta from '../../components/EditorPregunta'
 import { getEstatEdicio, eliminaPregunta, mouPregunta, type EstatEdicio } from '../../api/editor'
 import { idsReferenciats } from '../../utils/imatges'
+import { competenciesPermeses, descripcioCompetencia } from '../../utils/competencies'
+import SelectorCompetencia from '../../components/SelectorCompetencia'
+import UnitatsExamen from '../../components/UnitatsExamen'
 
 const DIF_COLORS: Record<string, string> = {
   baixa:   'bg-green-100 text-green-700',
@@ -26,7 +29,7 @@ const TYPE_LABEL: Partial<Record<QuestionType, string>> = {
   FILE_UPLOAD: 'Lliurament de fitxer',
 }
 
-type RaEdit = { ra: string; dif: string }
+type CoEdit = { co: string; dif: string }
 
 export default function ExamPreviewPage() {
   const { examId } = useParams<{ examId: string }>()
@@ -39,9 +42,9 @@ export default function ExamPreviewPage() {
   const [titolValue, setTitolValue] = useState('')
   const [duradaValue, setDuradaValue] = useState('')
   const [dadesError, setDadesError] = useState('')
-  // edició RA/dif per pregunta: null = no editant, {} = editant
-  const [editingRa, setEditingRa] = useState<Record<string, RaEdit | null>>({})
-  const [savingRa, setSavingRa] = useState<Record<string, boolean>>({})
+  // edició competència/dif per pregunta: null = no editant, {} = editant
+  const [editingCo, setEditingCo] = useState<Record<string, CoEdit | null>>({})
+  const [savingCo, setSavingCo] = useState<Record<string, boolean>>({})
   // fitxers: local state per les preguntes
   const [questionFiles, setQuestionFiles] = useState<Record<string, QuestionFile[]>>({})
   const [uploadingFor, setUploadingFor] = useState<string | null>(null)
@@ -127,11 +130,11 @@ export default function ExamPreviewPage() {
     setExam(updated)
   }
 
-  const startEditRa = (q: Question) =>
-    setEditingRa(prev => ({ ...prev, [q.id]: { ra: q.ra ?? '', dif: q.dificultat ?? '' } }))
+  const startEditCo = (q: Question) =>
+    setEditingCo(prev => ({ ...prev, [q.id]: { co: q.competencia ?? '', dif: q.dificultat ?? '' } }))
 
-  const cancelEditRa = (qId: string) =>
-    setEditingRa(prev => ({ ...prev, [qId]: null }))
+  const cancelEditCo = (qId: string) =>
+    setEditingCo(prev => ({ ...prev, [qId]: null }))
 
   /** Marca o desmarca "amb apunts" en una o més preguntes (p. ex. totes les d'una secció). */
   const setApunts = async (ids: string[], ambApunts: boolean) => {
@@ -165,25 +168,27 @@ export default function ExamPreviewPage() {
     })
   }
 
-  const saveRa = async (qId: string) => {
+  const saveCo = async (qId: string) => {
     if (!examId) return
-    const edit = editingRa[qId]
+    const edit = editingCo[qId]
     if (!edit) return
-    setSavingRa(prev => ({ ...prev, [qId]: true }))
+    setSavingCo(prev => ({ ...prev, [qId]: true }))
     try {
-      await patchQuestion(examId, qId, { ra: edit.ra, dificultat: edit.dif })
+      await patchQuestion(examId, qId, { competencia: edit.co, dificultat: edit.dif })
       setExam(prev => {
         if (!prev) return prev
         return {
           ...prev,
           questions: prev.questions.map(q =>
-            q.id === qId ? { ...q, ra: edit.ra || undefined, dificultat: (edit.dif as Question['dificultat']) || undefined } : q
+            q.id === qId ? { ...q, competencia: edit.co.trim().toUpperCase() || undefined, dificultat: (edit.dif as Question['dificultat']) || undefined } : q
           )
         }
       })
-      setEditingRa(prev => ({ ...prev, [qId]: null }))
+      setEditingCo(prev => ({ ...prev, [qId]: null }))
+    } catch (e: any) {
+      setErrorEditor(e?.response?.data?.error || 'No s\'ha pogut desar la competència')
     } finally {
-      setSavingRa(prev => ({ ...prev, [qId]: false }))
+      setSavingCo(prev => ({ ...prev, [qId]: false }))
     }
   }
 
@@ -340,29 +345,32 @@ export default function ExamPreviewPage() {
           )
         })()}
 
-        {/* Resum RA / dificultat */}
+        <UnitatsExamen exam={exam} onCanvi={setExam} />
+
+        {/* Resum competència / dificultat */}
         {(() => {
           const real = exam.questions.filter(q => q.tipus !== 'SECTION')
-          const raMap: Record<string, number> = {}
+          const coMap: Record<string, number> = {}
           const difMap: Record<string, number> = { baixa: 0, mitjana: 0, alta: 0, '—': 0 }
           real.forEach(q => {
-            const ra = q.ra || '—'
-            raMap[ra] = (raMap[ra] ?? 0) + 1
+            const co = q.competencia || '—'
+            coMap[co] = (coMap[co] ?? 0) + 1
             const dif = q.dificultat || '—'
             difMap[dif] = (difMap[dif] ?? 0) + 1
           })
-          const hasRa  = real.some(q => q.ra)
+          const hasCo  = real.some(q => q.competencia)
           const hasDif = real.some(q => q.dificultat)
-          if (!hasRa && !hasDif) return null
+          if (!hasCo && !hasDif) return null
           return (
             <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm space-y-2">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Distribució de preguntes</p>
-              {hasRa && (
+              {hasCo && (
                 <div className="flex flex-wrap gap-2">
-                  <span className="text-xs text-gray-400 self-center">RA:</span>
-                  {Object.entries(raMap).sort(([a],[b]) => a.localeCompare(b)).map(([ra, count]) => (
-                    <span key={ra} className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded font-medium">
-                      {ra} · {count}
+                  <span className="text-xs text-gray-400 self-center">Competència:</span>
+                  {Object.entries(coMap).sort(([a],[b]) => a.localeCompare(b)).map(([co, count]) => (
+                    <span key={co} className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded font-medium"
+                      title={descripcioCompetencia(exam, co)}>
+                      {co} · {count}
                     </span>
                   ))}
                 </div>
@@ -415,7 +423,7 @@ export default function ExamPreviewPage() {
           // Les imatges que l'enunciat ja mostra no són «arxius de dades»
           const mostrades = idsReferenciats(q.enunciat)
           const files    = (questionFiles[q.id] ?? []).filter(f => !mostrades.has(f.id))
-          const editing  = editingRa[q.id]
+          const editing  = editingCo[q.id]
 
           return (
             <div key={q.id} className="bg-white border rounded-xl p-6 space-y-3">
@@ -429,41 +437,41 @@ export default function ExamPreviewPage() {
                       className="accent-brand-600 w-3.5 h-3.5" />
                     📖 Amb apunts
                   </label>
-                  {/* RA i dificultat (badges o edició inline) */}
+                  {/* Competència i dificultat (badges o edició inline) */}
                   {editing ? (
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <input
-                        type="text"
-                        value={editing.ra}
-                        onChange={e => setEditingRa(prev => ({ ...prev, [q.id]: { ...prev[q.id]!, ra: e.target.value } }))}
-                        placeholder="RA (p.ex. RA1)"
-                        className="border rounded px-2 py-0.5 text-xs w-24 focus:outline-none focus:ring-1 focus:ring-brand-400"
+                      <SelectorCompetencia
+                        value={editing.co}
+                        onChange={co => setEditingCo(prev => ({ ...prev, [q.id]: { ...prev[q.id]!, co } }))}
+                        permeses={competenciesPermeses(exam)}
+                        className="border rounded px-2 py-0.5 text-xs max-w-[16rem] focus:outline-none focus:ring-1 focus:ring-brand-400"
                       />
                       <select
                         value={editing.dif}
-                        onChange={e => setEditingRa(prev => ({ ...prev, [q.id]: { ...prev[q.id]!, dif: e.target.value } }))}
+                        onChange={e => setEditingCo(prev => ({ ...prev, [q.id]: { ...prev[q.id]!, dif: e.target.value } }))}
                         className="border rounded px-1.5 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-brand-400">
                         <option value="">— dif —</option>
                         <option value="baixa">baixa</option>
                         <option value="mitjana">mitjana</option>
                         <option value="alta">alta</option>
                       </select>
-                      <button onClick={() => saveRa(q.id)} disabled={savingRa[q.id]}
+                      <button onClick={() => saveCo(q.id)} disabled={savingCo[q.id]}
                         className="text-xs bg-brand-600 text-white px-2 py-0.5 rounded hover:bg-brand-700 disabled:opacity-50">
-                        {savingRa[q.id] ? '…' : 'OK'}
+                        {savingCo[q.id] ? '…' : 'OK'}
                       </button>
-                      <button onClick={() => cancelEditRa(q.id)}
+                      <button onClick={() => cancelEditCo(q.id)}
                         className="text-xs text-gray-400 hover:text-gray-600">×</button>
                     </div>
                   ) : (
-                    <button onClick={() => startEditRa(q)} title="Editar RA i dificultat"
+                    <button onClick={() => startEditCo(q)} title="Editar competència i dificultat"
                       className="flex items-center gap-1.5 group">
-                      {q.ra
-                        ? <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded font-medium">{q.ra}</span>
-                        : <span className="text-xs text-gray-300 group-hover:text-gray-400">+ RA</span>}
+                      {q.competencia
+                        ? <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded font-medium"
+                            title={descripcioCompetencia(exam, q.competencia)}>{q.competencia}</span>
+                        : <span className="text-xs text-gray-300 group-hover:text-gray-400">+ competència</span>}
                       {q.dificultat
                         ? <span className={`text-xs px-2 py-0.5 rounded font-medium ${DIF_COLORS[q.dificultat]}`}>{q.dificultat}</span>
-                        : q.ra && <span className="text-xs text-gray-300 group-hover:text-gray-400">+ dif</span>}
+                        : q.competencia && <span className="text-xs text-gray-300 group-hover:text-gray-400">+ dif</span>}
                     </button>
                   )}
                 </div>
@@ -601,6 +609,7 @@ export default function ExamPreviewPage() {
           pregunta={editor.pregunta}
           posicio={editor.posicio}
           fitxers={editor.pregunta ? questionFiles[editor.pregunta.id] : undefined}
+          competenciesPermeses={competenciesPermeses(exam)}
           onClose={() => setEditor(null)}
           onDesat={() => { carrega() }}
         />

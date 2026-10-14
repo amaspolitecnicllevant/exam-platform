@@ -149,6 +149,30 @@ class ModulServiceTest {
                 .nom("Sistemes Informàtics").cicle(cicle()).build();
     }
 
+    @Test
+    void findByProfessor_nomes_torna_els_moduls_que_imparteix() {
+        Cicle cicle = cicle();
+        Modul seu = Modul.builder().id(UUID.randomUUID()).codi("0483").nom("Seu").cicle(cicle).build();
+        Modul altre = Modul.builder().id(UUID.randomUUID()).codi("0485").nom("Altre").cicle(cicle).build();
+        User prof = professor();
+        when(modulRepository.findAll()).thenReturn(List.of(altre, seu));
+        when(imparticioRepository.findModulIdsByProfessorId(prof.getId())).thenReturn(List.of(seu.getId()));
+
+        assertThat(service.findByProfessor(prof)).extracting(ModulDto::codi).containsExactly("0483");
+    }
+
+    @Test
+    void findByProfessor_l_admin_els_veu_tots() {
+        Cicle cicle = cicle();
+        Modul a = Modul.builder().id(UUID.randomUUID()).codi("0483").nom("A").cicle(cicle).build();
+        Modul b = Modul.builder().id(UUID.randomUUID()).codi("0485").nom("B").cicle(cicle).build();
+        User admin = User.builder().id(UUID.randomUUID()).role(Role.ADMIN).build();
+        when(modulRepository.findAll()).thenReturn(List.of(b, a));
+
+        assertThat(service.findByProfessor(admin)).extracting(ModulDto::codi).containsExactly("0483", "0485");
+        verifyNoInteractions(imparticioRepository);
+    }
+
     private User professor() {
         return User.builder().id(UUID.randomUUID())
                 .name("Prof").email("prof@test.cat").role(Role.PROFESSOR).build();

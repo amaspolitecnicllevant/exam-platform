@@ -30,7 +30,7 @@ Un examen és un fitxer `.md` amb un títol, la durada i les preguntes:
 durada: 60
 ---
 ### Part 1 — Teoria
-## 1. [choice] [pts:2] [ra:RA1]
+## 1. [choice] [pts:2] [co:CO1]
 Quina capa gestiona l'adreçament IP?
 - a) Enllaç
 - b) Xarxa
@@ -94,7 +94,7 @@ A *Previsualitzar* i a la llista d'exàmens:
 | **Una pregunta per pantalla** | L'alumne veu les preguntes d'una en una, amb un índex per saltar a qualsevol (navegació lliure) |
 | **Mòdul** | Només el veuen els alumnes **matriculats** en aquest mòdul. Sense mòdul, el veu tothom |
 | **Aula** | Només es pot fer des de les màquines de l'aula (per adreça de xarxa) |
-| **RA i dificultat** | Per pregunta; permeten veure la nota per resultat d'aprenentatge |
+| **Competència i dificultat** | Per pregunta; la competència es tria entre les de les unitats de treball de l'examen i permet veure la nota per competència |
 | **Apunts** (`[apunts]`) | L'alumne veu que pot fer servir apunts en paper; l'informe de còpies hi és menys estricte |
 
 ---
@@ -208,8 +208,8 @@ El menú **Exportar** de cada examen ofereix:
 | Exportació | Per a què |
 |:--|:--|
 | **Notes per alumne (CSV)** | Passar les notes al full de qualificacions. S'obre a Excel en català |
-| **Notes per RA (CSV)** | Actes i programació |
-| **Excel (.xlsx)** | Notes, notes per RA i respostes en un sol fitxer |
+| **Notes per competència (CSV)** | Actes i programació |
+| **Excel (.xlsx)** | Notes, notes per competència i respostes en un sol fitxer |
 | **Informe (.md)** | Estadístiques per pregunta i les més difícils |
 | **Fitxers lliurats (ZIP)** | Un directori per alumne, per corregir els lliuraments fora de línia |
 | **Respostes per a una IA (.md)** | Vegeu més avall |

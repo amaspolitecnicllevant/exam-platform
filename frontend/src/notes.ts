@@ -37,15 +37,15 @@ export function sobreDeu(punts: number, maxim: number): number | null {
   return maxim > 0 ? Math.round(punts * 1000 / maxim) / 100 : null
 }
 
-/** Nota per resultat d'aprenentatge (inclou les preguntes amb bonus). */
-export function notaPerRa(questions: Question[], answers: Answer[]): [string, { pts: number; scored: number }][] {
+/** Nota per competència (inclou les preguntes amb bonus). */
+export function notaPerCompetencia(questions: Question[], answers: Answer[]): [string, { pts: number; scored: number }][] {
   const perPregunta = new Map(answers.map(a => [a.questionId, a]))
   const grups: Record<string, { pts: number; scored: number }> = {}
   for (const q of questions) {
-    if (!q.ra || q.tipus === 'SECTION') continue
-    grups[q.ra] ??= { pts: 0, scored: 0 }
-    grups[q.ra].pts += q.punts
-    grups[q.ra].scored += puntsPregunta(q, perPregunta.get(q.id)) ?? 0
+    if (!q.competencia || q.tipus === 'SECTION') continue
+    grups[q.competencia] ??= { pts: 0, scored: 0 }
+    grups[q.competencia].pts += q.punts
+    grups[q.competencia].scored += puntsPregunta(q, perPregunta.get(q.id)) ?? 0
   }
   return Object.entries(grups).sort(([a], [b]) => a.localeCompare(b))
 }

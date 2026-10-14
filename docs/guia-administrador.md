@@ -22,7 +22,7 @@ mesura que escriuen. L'**administrador** gestiona usuaris, l'estructura del cent
 | Control d'accés | per mòdul matriculat, per grup, per alumnes concrets i per **aula** (rang d'adreces de xarxa) |
 | Anti-còpia | informe de respostes molt semblants, pèrdues de focus, nom de l'alumne a la capçalera, opcions barrejades per alumne |
 | Dades | PostgreSQL; els fitxers (adjunts i lliuraments) al disc del servidor; còpia diària automàtica |
-| Resultats | notes per alumne, per RA, estadístiques, exportació a CSV/Excel, i respostes anònimes per revisar amb una IA |
+| Resultats | notes per alumne, per competència, estadístiques, exportació a CSV/Excel, i respostes anònimes per revisar amb una IA |
 
 L'aplicació **no depèn de cap servei extern**: funciona sencera dins la xarxa del centre. El login amb Google és opcional.
 

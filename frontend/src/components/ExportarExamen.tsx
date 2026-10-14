@@ -82,8 +82,8 @@ export default function ExportarExamen({ examId, titol, teFitxers = false }: {
           className="w-80 max-w-[calc(100vw-1rem)] overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg z-50 p-2 space-y-1 text-left">
           <p className="px-3 pt-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Notes</p>
           <Opcio tipus="notes" sufix="notes.csv" text="Notes per alumne (CSV)" detall="Nota sobre 10, punts i punts de cada pregunta" />
-          <Opcio tipus="notes-ra" sufix="notes-ra.csv" text="Notes per resultat d'aprenentatge (CSV)" />
-          <Opcio tipus="excel" sufix="examen.xlsx" text="Excel (.xlsx)" detall="Full de notes, de RA i de respostes" />
+          <Opcio tipus="notes-competencies" sufix="notes-competencies.csv" text="Notes per competència (CSV)" />
+          <Opcio tipus="excel" sufix="examen.xlsx" text="Excel (.xlsx)" detall="Full de notes, de competències i de respostes" />
 
           <p className="px-3 pt-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-t border-gray-100">Revisar amb una IA</p>
           <p className="px-3 text-xs text-gray-500">

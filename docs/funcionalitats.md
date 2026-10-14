@@ -75,7 +75,7 @@ Guies d'ús per rol: [administrador](guia-administrador.md) · [professor](guia-
   amb destinataris concrets. Migració V35 (`exams.restringit`).
 - **Editor de contingut** (a Previsualitzar): mentre l'examen **no té cap sessió d'alumne**, es pot reescriure qualsevol pregunta
   (tipus, enunciat en Markdown, punts, opcions i resposta correcta, resposta model, criteri de sortida o script de test,
-  conceptes clau, formats d'un lliurament, RA, dificultat, apunts), afegir-ne (a qualsevol posició), eliminar-ne i
+  conceptes clau, formats d'un lliurament, competència, dificultat, apunts), afegir-ne (a qualsevol posició), eliminar-ne i
   reordenar-les. Cada pregunta passa pel mateix parser que la importació, així que les regles són les mateixes.
   Amb sessions, l'examen queda bloquejat (es pot duplicar per fer-ne una versió nova). No es pot publicar si els punts no sumen 10.
 - **Imatges a l'enunciat**: botó «Afegir imatge» (PNG, JPG, GIF o WebP, màxim 5 MB; es comprova la signatura del fitxer; no
@@ -101,12 +101,12 @@ Guies d'ús per rol: [administrador](guia-administrador.md) · [professor](guia-
 - Modificar la resposta correcta d'una pregunta de tipus CHOICE (correcció posterior a la realització).
 - Marcar una pregunta com a **bonus** durant la correcció: tothom la té bé (punts sencers), l'hagi resposta o no, encara que ja s'hagués puntuat. Es pot desfer ("Treure bonus") i torna a comptar la nota de cada alumne.
 - Cada canvi de resposta correcta o de bonus queda a l'auditoria amb el valor anterior i el nou ("resposta correcta: a → c") i el nombre de respostes re-corregides.
-- Assignar o editar el **RA (Resultat d'Aprenentatge)** i la **dificultat** (baixa/mitjana/alta) de cada pregunta, tant des del Markdown (`[ra:RA1] [dif:alta]`) com des de la previsualització de l'examen (edició inline per pregunta).
-- Veure un resum de distribució de preguntes per RA i per dificultat a la previsualització.
+- Assignar o editar la **competència** (CO1, CO2…) i la **dificultat** (baixa/mitjana/alta) de cada pregunta, tant des del Markdown (`[co:CO1] [dif:alta]`) com des de la previsualització. La competència es tria entre les de les unitats de treball (UT) de l'examen, que es defineixen a la programació del mòdul (menú «Programació (UT i CO)»: formulari o importació d'un CSV).
+- Veure un resum de distribució de preguntes per competència i per dificultat a la previsualització.
 - Preguntes de **lliurament de fitxer** (`[fitxer]` amb `[formats:docx,xlsx,pkt]`): l'alumne puja un document Word o Excel, una simulació de Packet Tracer, un PDF… (un fitxer per pregunta, màxim 10 MB, sense macros ni executables). Es corregeixen a mà: el professor descarrega el fitxer des de la correcció i hi posa la nota; mentre no la posi, la resposta és «pendent de revisar».
 
 #### Exportacions
-- El menú **Exportar** de cada examen ofereix: notes per alumne (CSV), notes per resultat d'aprenentatge (CSV), Excel amb notes, RA i respostes, informe de l'examen (`.md`) amb estadístiques per pregunta, **ZIP amb els fitxers lliurats** (un directori per alumne) i el CSV detallat d'una fila per resposta.
+- El menú **Exportar** de cada examen ofereix: notes per alumne (CSV), notes per competència (CSV), Excel amb notes, competències i respostes, informe de l'examen (`.md`) amb estadístiques per pregunta, **ZIP amb els fitxers lliurats** (un directori per alumne) i el CSV detallat d'una fila per resposta.
 - **Respostes per a una IA** (`.md`): anònimes per defecte (els alumnes surten com «Alumne 7F3A2C», un codi estable derivat de la sessió), amb les instruccions per a qui revisa i la resposta model. El fitxer de **claus** (CSV) a part lliga cada codi amb l'alumne real, per tornar a posar les notes. Només es pot incloure el nom i el correu si es demana explícitament.
 - **Visibilitat dels alumnes per al professorat:** un professor només veu (llistes d'usuaris, grups, destinataris d'un examen, matrícules) els alumnes de les assignatures (mòduls) que imparteix, els dels grups que ha creat i els que ha donat d'alta ell mateix; no veu la resta de l'alumnat ni el personal. L'administració ho veu tot.
 - **Estat dels ordinadors de les aules** (pantalla *Aules → Ordinadors*; migració V37 `equips_aula`, `equips_referencia`): cada ordinador envia cada 15 minuts un informe d'estat (`POST /api/equips/informe`, sense sessió: només amb el testimoni `EQUIPS_TOKEN` i des de la xarxa d'una aula; l'aplicació no es connecta als ordinadors). S'assigna a l'aula pel CIDR de la IP d'origen. Estats: *Preparat*, *Alterat* (la llista d'integritat no coincideix amb la referència, amb les diferències), *No arriba a la plataforma*, *Apagat o sense informar* (més de 45 min) i *Fa N dies que no s'encén* (per defecte 7). Els **professors** veuen, a la llista d'exàmens amb aula, quins ordinadors fa temps que no s'encenen per demanar que els encenguin i comprovar-los; els **administradors** hi fixen la referència i esborren ordinadors. Vegeu `docs/usuari-examen-linux.md` (apartat 5c).
@@ -182,8 +182,8 @@ Guies d'ús per rol: [administrador](guia-administrador.md) · [professor](guia-
 ### Correccions
 - Veure totes les sessions d'un examen (alumnes, respostes, puntuació automàtica).
 - Re-corregir preguntes (després de marcar un bonus o canviar la resposta correcta).
-- Veure badges de RA i dificultat a la llista de preguntes.
-- Al detall de cada alumne: desglossament de nota per RA (punts obtinguts vs. possibles per cada RA).
+- Veure badges de competència i dificultat a la llista de preguntes.
+- Al detall de cada alumne: desglossament de nota per competència (punts obtinguts vs. possibles per cada competència).
 
 ---
 
@@ -216,7 +216,7 @@ Guies d'ús per rol: [administrador](guia-administrador.md) · [professor](guia-
 
 ### Resultats
 - Veure el resultat de la sessió un cop entregada (puntuació automàtica de CHOICE, indicació de preguntes amb bonus).
-- Desglossament de nota per RA (quan les notes estan publicades i hi ha preguntes amb RA assignat).
+- Desglossament de nota per competència (quan les notes estan publicades i hi ha preguntes amb competència assignada).
 - Si les notes **no estan publicades**, l'alumne veu "pendent de correcció" i no pot accedir a les puntuacions.
 
 ---

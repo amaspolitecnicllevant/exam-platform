@@ -3,10 +3,12 @@ package com.examplatform.controller;
 import com.examplatform.domain.service.ModulService;
 import com.examplatform.dto.ImparticioDto;
 import com.examplatform.dto.ModulDto;
+import com.examplatform.domain.model.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,7 +24,10 @@ public class ModulController {
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public List<ModulDto> list(@RequestParam(required = false) UUID cicleId,
-                               @RequestParam(required = false) UUID departamentId) {
+                               @RequestParam(required = false) UUID departamentId,
+                               @RequestParam(required = false, defaultValue = "false") boolean meus,
+                               @AuthenticationPrincipal User user) {
+        if (meus)                  return modulService.findByProfessor(user);
         if (cicleId != null)       return modulService.findByCicle(cicleId);
         if (departamentId != null) return modulService.findByDepartament(departamentId);
         return modulService.findAll();

@@ -15,7 +15,7 @@ instruccions: Text opcional per als alumnes.
 
 ### Part 1 — Teoria
 
-## 1. [choice] [pts:2] [ra:RA1] [dif:baixa]
+## 1. [choice] [pts:2] [co:CO1] [dif:baixa]
 Enunciat de la pregunta.
 
 - a) Opció A
@@ -84,7 +84,7 @@ Si en una secció es poden fer servir apunts (per exemple, la part pràctica), a
 ## 4. Capçalera de pregunta
 
 ```
-## N. [tipus] [pts:X] [ra:RA1] [dif:mitjana] [ordre:fix] [formats:docx,xlsx]
+## N. [tipus] [pts:X] [co:CO1] [dif:mitjana] [ordre:fix] [formats:docx,xlsx]
 ```
 
 | Element | Obligatori | Descripció |
@@ -92,7 +92,7 @@ Si en una secció es poden fer servir apunts (per exemple, la part pràctica), a
 | `N.` | Sí | Número de la pregunta. És orientatiu: la plataforma numera les preguntes segons l'ordre del fitxer |
 | `[tipus]` | Sí | Tipus de pregunta (vegeu §6). Majúscules o minúscules, amb guió o guió baix: `bash-cmd` = `BASH_CMD` |
 | `[pts:X]` | Sí | Punts de la pregunta. Decimals amb **punt**: `[pts:0.5]`, no `[pts:0,5]` |
-| `[ra:NOM]` | No | Resultat d'aprenentatge (p. ex. `[ra:RA1]`). Permet veure la nota per RA |
+| `[co:CODI]` | No | Competència que treballa la pregunta (p. ex. `[co:CO1]`). Permet veure la nota per competència. No és obligatòria: es pot posar després des de la previsualització. A la importació no es comprova; quan l'examen té mòdul, ha de ser una de les competències del mòdul (o de les UT de l'examen). **`[ra:…]` ja no s'admet** |
 | `[dif:NIVELL]` | No | Dificultat: només `baixa`, `mitjana` o `alta` |
 | `[ordre:fix]` | No | Només per a `choice`: les opcions surten en l'ordre del fitxer (vegeu §6.1) |
 | `[apunts]` | No | En aquesta pregunta es poden fer servir apunts (en paper). Vegeu §3 per marcar-ho a tota una secció |
@@ -101,7 +101,7 @@ Si en una secció es poden fer servir apunts (per exemple, la part pràctica), a
 - Les etiquetes opcionals van **després** de `[pts:X]`, en qualsevol ordre. `[apunts]` no porta valor.
 - No s'admeten altres etiquetes (p. ex. `[pes:1]`) ni altres dificultats: l'examen es rebutja indicant la línia.
 - L'enunciat va just després de la capçalera i pot tenir diverses línies i format Markdown (negreta, llistes, taules, `codi`, blocs de codi amb tres accents greus).
-- RA, dificultat i barreja d'opcions també es poden editar des de la previsualització de l'examen.
+- La competència, la dificultat i la barreja d'opcions també es poden editar des de la previsualització de l'examen.
 
 ---
 
@@ -317,7 +317,7 @@ instruccions: Llegeix cada pregunta atentament. Les respostes en blanc puntuen 0
 
 ### Part 1 — Teoria
 
-## 1. [choice] [pts:1] [ra:RA1] [dif:baixa]
+## 1. [choice] [pts:1] [co:CO1] [dif:baixa]
 Quin port fa servir per defecte un servidor DHCP?
 
 - a) 53
@@ -329,7 +329,7 @@ Quin port fa servir per defecte un servidor DHCP?
 b
 :::
 
-## 2. [choice] [pts:1] [ra:RA1] [dif:mitjana] [ordre:fix]
+## 2. [choice] [pts:1] [co:CO1] [dif:mitjana] [ordre:fix]
 Quins d'aquests protocols funcionen sobre UDP?
 
 - a) DNS
@@ -341,7 +341,7 @@ Quins d'aquests protocols funcionen sobre UDP?
 d
 :::
 
-## 3. [short] [pts:1.5] [ra:RA2]
+## 3. [short] [pts:1.5] [co:CO2]
 Què fa un servidor DHCP?
 
 :::model
@@ -353,7 +353,7 @@ adreça IP, direcció IP, IP | 0.75
 automàtic, automàticament, dinàmic, dinàmicament | 0.75
 :::
 
-## 4. [long] [pts:1.5] [ra:RA2] [dif:alta]
+## 4. [long] [pts:1.5] [co:CO2] [dif:alta]
 Explica com es resol un nom de domini (DNS) des que l'usuari escriu una adreça al navegador.
 
 :::model
@@ -368,7 +368,7 @@ autoritatiu, autoritari
 
 ### Part 2 — Pràctica
 
-## 5. [bash-cmd] [pts:1] [ra:RA3]
+## 5. [bash-cmd] [pts:1] [co:CO3]
 Escriu una comanda que mostri els números de l'1 al 5, un per línia.
 
 :::model
@@ -381,7 +381,7 @@ seq 1 5
 5
 :::
 
-## 6. [bash-cmd] [pts:1] [ra:RA3]
+## 6. [bash-cmd] [pts:1] [co:CO3]
 Escriu una comanda que mostri quants caràcters té la paraula `politecnic` (només el número).
 
 :::model
@@ -392,7 +392,7 @@ echo -n politecnic | wc -c
 10
 :::
 
-## 7. [bash-cmd] [pts:0.5] [ra:RA3] [dif:baixa]
+## 7. [bash-cmd] [pts:0.5] [co:CO3] [dif:baixa]
 Escriu una comanda que mostri la data d'avui en format `AAAA-MM-DD`.
 
 :::model
@@ -403,7 +403,7 @@ date +%F
 ^\d{4}-\d{2}-\d{2}$
 :::
 
-## 8. [bash-script] [pts:1.5] [ra:RA3] [dif:mitjana]
+## 8. [bash-script] [pts:1.5] [co:CO3] [dif:mitjana]
 Escriu un script que rebi un directori com a paràmetre i mostri `Fitxers: N`, on N és el nombre de fitxers (no directoris) que conté, recursivament.
 
 :::model
@@ -418,7 +418,7 @@ touch /tmp/prova/a.txt /tmp/prova/sub/b.txt /tmp/prova/sub/c.txt
 [ "$(bash "$SCRIPT_FILE" /tmp/prova 2>/dev/null)" = "Fitxers: 3" ] && exit 0 || exit 1
 :::
 
-## 9. [java-prog] [pts:1] [ra:RA4]
+## 9. [java-prog] [pts:1] [co:CO4]
 Escriu un programa Java que mostri la suma dels números de l'1 al 100.
 
 :::model
@@ -474,6 +474,7 @@ Quan generis un examen seguint aquesta guia:
 - Respon **només amb el contingut del fitxer `.md`**, sense text abans ni després.
 - La suma de `[pts:X]` ha de ser **exactament 10**. Usa decimals amb punt.
 - Usa només les etiquetes de §4 i els tipus de §6.
+- Competències: si el professor t'ha donat la llista de competències de l'examen (codi i descripció), posa a cada pregunta `[co:CODI]` amb la que treballa, fent servir **només** els codis de la llista i repartint-les de manera equilibrada. Si no te n'ha donat cap, no posis `[co:…]`.
 - **Tanca cada bloc `:::` abans d'obrir-ne un altre**, cada delimitador en una línia pròpia.
 - `choice`: 4 opcions (`- a)` a `- d)`), una sola correcta, la lletra a `:::model`. Si una opció és «Totes les anteriors» o similar, afegeix `[ordre:fix]`.
 - `short`, `text` i `long`: inclou `:::model` i un `:::clau` amb 2–4 conceptes imprescindibles, amb els sinònims habituals separats per comes.

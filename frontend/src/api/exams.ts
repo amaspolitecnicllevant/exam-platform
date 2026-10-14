@@ -24,7 +24,7 @@ export const createFromMd = (file: File) => {
   return client.post<Exam>('/exams', form).then(r => r.data)
 }
 
-export const patchQuestion = (examId: string, questionId: string, data: { correctChoice?: string; anulada?: boolean; ra?: string; dificultat?: string; barrejarOpcions?: boolean; ambApunts?: boolean }) =>
+export const patchQuestion = (examId: string, questionId: string, data: { correctChoice?: string; anulada?: boolean; competencia?: string; dificultat?: string; barrejarOpcions?: boolean; ambApunts?: boolean }) =>
   client.patch<{ id: string }>(`/exams/${examId}/questions/${questionId}`, data).then(r => r.data)
 
 export interface ExamSettings {
