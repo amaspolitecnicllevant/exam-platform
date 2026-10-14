@@ -81,7 +81,7 @@ fi
 
 # Comprovació: el servidor ha de presentar el certificat nou i verificar amb la nostra autoritat
 PORT=$(grep -E '^HTTPS_PORT=' "$INFRA/.env" 2>/dev/null | tail -1 | cut -d= -f2 || true)
-PORT=${PORT:-3443}
+PORT=${PORT:-443}
 if curl -sS -o /dev/null --max-time 10 --cacert "$DIR/ca.crt" "https://${NOMS[0]}:$PORT/"; then
   log "OK: https://${NOMS[0]}:$PORT verificat amb el certificat nou (caduca el $(openssl x509 -in "$DIR/server.crt" -noout -enddate | cut -d= -f2))."
 else

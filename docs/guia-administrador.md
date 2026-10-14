@@ -34,7 +34,7 @@ Quatre contenidors (`infra/docker-compose.yml`) i els que el backend llança per
 
 | Servei | Per a què | Port |
 |:--|:--|:--|
-| **frontend** | nginx: serveix la web i reenvia l'API al backend | 3000 (HTTP) i 3443 (HTTPS, si s'activa) |
+| **frontend** | nginx: serveix la web i reenvia l'API al backend | 3000 (HTTP) i 443 (HTTPS, si s'activa) |
 | **backend** | Spring Boot: l'API, la correcció i l'execució de codi | només `127.0.0.1:8080` (no accessible des de la xarxa) |
 | **db** | PostgreSQL 16 | només `127.0.0.1:5432` |
 | **backup** | còpia diària de la BD i dels fitxers | — |
@@ -118,16 +118,16 @@ Els altres usuaris els crees des de *Gestió d'usuaris* (un a un o important un 
 
 | Variable | Per defecte | Què fa |
 |:--|:--|:--|
-| `APP_ALLOWED_ORIGINS` | `http://localhost:3000` | Orígens des d'on es pot fer servir l'aplicació (CORS), separats per comes. Han de ser **exactament** el que escriuen els usuaris al navegador: esquema, nom o IP i port (`https://10.0.0.5:3443`). Si falta l'adreça que es fa servir, el navegador bloqueja les peticions i **el login falla**. Si s'hi entra per IP i per nom, posa-les totes dues. |
+| `APP_ALLOWED_ORIGINS` | `http://localhost:3000` | Orígens des d'on es pot fer servir l'aplicació (CORS), separats per comes. Han de ser **exactament** el que escriuen els usuaris al navegador: esquema, nom o IP i port (`https://10.0.0.5`). Si falta l'adreça que es fa servir, el navegador bloqueja les peticions i **el login falla**. Si s'hi entra per IP i per nom, posa-les totes dues. |
 | `FRONTEND_URL` | `http://localhost:3000` | URL pública, sense barra final. **Només la fa servir el login amb Google** (a on redirigeix en acabar). Amb usuari i contrasenya no té efecte. |
 | `COMPOSE_FILE` | *(només `docker-compose.yml`)* | Quins fitxers de compose s'apliquen, separats per «:». Serveix per activar l'HTTPS (`docker-compose.https.yml`) i la còpia remota (`docker-compose.copies-remotes.yml`). |
 | `JWT_MAX_SESSION_MS` | `43200000` | Vida màxima d'una sessió (12 h). El token es renova mentre s'usa, però **no més enllà d'aquest temps des del login**: passat aquest temps cal tornar a entrar. |
 | `EQUIPS_TOKEN` | *(buit: desactivat)* | Testimoni compartit amb els ordinadors de les aules perquè enviïn l'informe del seu estat (pantalla *Aules*). Genera'l amb `openssl rand -hex 24`. Sense valor, la recepció d'informes no funciona. |
 | `EQUIPS_SENSE_NOTICIES_MIN` | `45` | Minuts sense cap informe a partir dels quals un ordinador surt com a «sense notícies». Els ordinadors n'envien un cada 15. |
 | `EQUIPS_AVIS_DIES` | `7` | Dies sense cap informe a partir dels quals es diu que un ordinador **fa temps que no s'encén**. Els professors ho veuen en preparar un examen amb aula i han de demanar que s'encenguin. |
-| `HTTPS_PORT` | `3443` | Port de l'HTTPS. Vegeu [https.md](https.md) (certificats, instal·lació de `ca.crt` als ordinadors, renovació). |
+| `HTTPS_PORT` | `443` | Port de l'HTTPS. Vegeu [https.md](https.md) (certificats, instal·lació de `ca.crt` als ordinadors, renovació). |
 
-Amb l'HTTPS actiu, el port 3000 només redirigeix al 3443.
+Amb l'HTTPS actiu, el port 3000 només redirigeix al 443.
 
 ### 4.4 Execució del codi dels alumnes
 
@@ -227,8 +227,8 @@ vol dir tocar els tres llocs), imatges d'enunciat de 5 MB, i 128 processos per c
 ```bash
 DB_PASS=<openssl rand -hex 24>
 JWT_SECRET=<openssl rand -base64 48>
-APP_ALLOWED_ORIGINS=https://examens.centre.cat:3443,https://10.0.0.5:3443
-FRONTEND_URL=https://examens.centre.cat:3443
+APP_ALLOWED_ORIGINS=https://examens.centre.cat,https://10.0.0.5
+FRONTEND_URL=https://examens.centre.cat
 COMPOSE_FILE=docker-compose.yml:docker-compose.https.yml
 DOCKER_GID=988
 EXEC_MAX_CONCURRENT=16

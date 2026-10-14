@@ -60,7 +60,7 @@ A la VM, executa'l com a usuari normal (no root):
 
 Instal·la Docker Engine + plugin Compose, crea `/opt/exam-scripts` i `/opt/exam-files`, descarrega les
 imatges del sandbox (`bash:5`, `eclipse-temurin:21-jdk-alpine`, `postgres:16-alpine`) i configura UFW
-(ports 22, 3000 i 3443). Quan acabi, **tanca la sessió i torna a entrar** perquè el grup `docker`
+(ports 22, 3000 i 443). Quan acabi, **tanca la sessió i torna a entrar** perquè el grup `docker`
 tingui efecte. Comprova:
 
 ```bash
@@ -113,7 +113,7 @@ Valors a omplir o revisar:
 | Variable | Valor |
 |---|---|
 | `DB_PASS`, `JWT_SECRET` | els generats |
-| `FRONTEND_URL`, `APP_ALLOWED_ORIGINS` | `http://IP_VM:3000` (o `https://IP_VM:3443` amb HTTPS), sense barra final |
+| `FRONTEND_URL`, `APP_ALLOWED_ORIGINS` | `http://IP_VM:3000` (o `https://IP_VM` amb HTTPS), sense barra final |
 | `BACKUP_UID`, `BACKUP_GID` | resultat d'`id -u` i `id -g` |
 | `BACKUP_DIR` | millor un disc diferent o una carpeta sincronitzada fora de la VM |
 | `EXEC_MAX_CONCURRENT` | 16 (fins a 24 amb molts alumnes de Java) |

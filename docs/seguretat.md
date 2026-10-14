@@ -8,7 +8,7 @@ imatges Docker. Les dependències de Maven i de npm s'han escanejat el 10 d'octu
 
 | # | Gravetat | Troballa | Estat |
 |--:|:--|:--|:--|
-| 1 | Alta | La VM és accessible des de qualsevol xarxa (Docker publica 3000/3443 saltant-se UFW) | 🔧 `infra/restringeix-xarxa.sh` ja existeix i cal executar-lo; `prepara-vm.sh` accepta `XARXA_PERMESA` per a instal·lacions noves |
+| 1 | Alta | La VM és accessible des de qualsevol xarxa (Docker publica 3000/443 saltant-se UFW) | 🔧 `infra/restringeix-xarxa.sh` ja existeix i cal executar-lo; `prepara-vm.sh` accepta `XARXA_PERMESA` per a instal·lacions noves |
 | 2 | Alta | El backend té el socket de Docker (equival a `root` a la VM si algú aconseguís executar codi al backend) | 📝 Vegeu «Socket de Docker» |
 | 3 | Mitjana | Tokens renovables per sempre, sense revocació, i el filtre ignorava l'usuari inhabilitat | ✅ Vida màxima de la sessió (12 h), versió de token per usuari, usuari habilitat; botó *Tancar sessions* |
 | 4 | Mitjana | Permisos massa oberts a la VM (`.env`, còpies de la BD, lliuraments dels alumnes) | ✅ codi i guies · 🔧 s'ha d'aplicar a la VM actual |

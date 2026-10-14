@@ -52,15 +52,15 @@ sudo docker pull bash:5
 sudo docker pull eclipse-temurin:21-jdk-alpine
 sudo docker pull postgres:16-alpine
 
-echo "==> 5/5 Tallafocs (SSH, HTTP 3000, HTTPS 3443)"
+echo "==> 5/5 Tallafocs (SSH, HTTP 3000, HTTPS 443)"
 # XARXA_PERMESA=10.100.0.0/16 ./prepara-vm.sh  → només aquesta xarxa pot arribar a la VM (recomanat)
 if [ -n "${XARXA_PERMESA:-}" ]; then
-  sudo ufw allow from "$XARXA_PERMESA" to any port 22,3000,3443 proto tcp
+  sudo ufw allow from "$XARXA_PERMESA" to any port 22,3000,443 proto tcp
 else
-  echo "AVÍS: sense XARXA_PERMESA els ports 22, 3000 i 3443 s'obren a tota la xarxa. Torna-ho a executar amb XARXA_PERMESA=<xarxa/prefix>."
+  echo "AVÍS: sense XARXA_PERMESA els ports 22, 3000 i 443 s'obren a tota la xarxa. Torna-ho a executar amb XARXA_PERMESA=<xarxa/prefix>."
   sudo ufw allow 22/tcp
   sudo ufw allow 3000/tcp
-  sudo ufw allow 3443/tcp
+  sudo ufw allow 443/tcp
 fi
 sudo ufw --force enable
 sudo ufw status
@@ -69,6 +69,6 @@ echo
 echo "Fet. Tanca la sessió i torna a entrar (grup docker). Després comprova:"
 echo "  docker run --rm hello-world && docker compose version"
 echo
-echo "Recorda: els ports publicats per Docker SE SALTEN UFW (3000 i 3443 continuen oberts a tota la xarxa)."
+echo "Recorda: els ports publicats per Docker SE SALTEN UFW (3000 i 443 continuen oberts a tota la xarxa)."
 echo "Restringeix-los amb infra/restringeix-xarxa.sh --rang <xarxa/prefix> (regla a DOCKER-USER)."
 echo "Revisa també que el port de PostgreSQL no estigui exposat a infra/docker-compose.yml."

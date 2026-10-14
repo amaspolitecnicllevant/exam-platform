@@ -45,7 +45,7 @@ Els alumnes continuen tenint el seu usuari habitual per a la resta de classes.
 - Connexió a internet **només durant la instal·lació** (instal·la `openbox`, `x11-xkb-utils`, `x11-xserver-utils` i `libnss3-tools`).
 - El fitxer **`ca.crt`** de la CA del centre (a la VM és a `~/exam-platform/infra/tls/certs/ca.crt`; vegeu [https.md](https.md)). Se li dona a
   l'script perquè el navegador de l'usuari d'examen confiï en la plataforma (la casa és nova a cada sessió, així que no pot "recordar-ho").
-- L'adreça de la plataforma, per exemple `https://examens.politecnicllevant.cat:3443`.
+- L'adreça de la plataforma, per exemple `https://examens.politecnicllevant.cat`.
 
 ## 3. Instal·lar-ho
 
@@ -61,7 +61,7 @@ es toca el que falta o ha canviat. En acabar diu què ha fet, què ja hi era, i 
 
    ```
    sudo EXAMEN_CONTRASENYA='la-contrasenya-dels-alumnes' EXAMEN_INFORME_TOKEN='el-testimoni' ./prepara-usuari-examen.sh --tot \
-        --url https://examens.politecnicllevant.cat:3443 --ca ~/ca.crt --isard-url https://isard.politecnicllevant.cat
+        --url https://examens.politecnicllevant.cat --ca ~/ca.crt --isard-url https://isard.politecnicllevant.cat
    ```
 
    - La contrasenya (`EXAMEN_CONTRASENYA`) és la que faran servir els alumnes per als dos usuaris; **no ha de ser la de cap usuari real**. Només s'estableix si
@@ -93,7 +93,7 @@ for ip in $(cat ordinadors.txt); do
   SORTIDA=$( {
       printf '%s\n' "$SPW"
       printf "export EXAMEN_CONTRASENYA='%s' EXAMEN_INFORME_TOKEN='%s'\n" "$PW" "$TOKEN"
-      printf '%s\n' "cd /home/lmadmin && chmod +x prepara-usuari-examen.sh && ./prepara-usuari-examen.sh --tot --url https://examens.politecnicllevant.cat:3443 --ca /home/lmadmin/ca.crt --isard-url https://isard.politecnicllevant.cat < /dev/null"
+      printf '%s\n' "cd /home/lmadmin && chmod +x prepara-usuari-examen.sh && ./prepara-usuari-examen.sh --tot --url https://examens.politecnicllevant.cat --ca /home/lmadmin/ca.crt --isard-url https://isard.politecnicllevant.cat < /dev/null"
     } | ssh lmadmin@$ip "sudo -S -p '' bash -s" 2>&1 )
   RES=$(printf '%s\n' "$SORTIDA" | sed -n 's/^RESULTAT: //p' | tail -1)
   REINICI=$(printf '%s\n' "$SORTIDA" | sed -n 's/^REINICI: //p' | tail -1)
@@ -270,9 +270,9 @@ Guarda'l com a `prepara-usuari-examen.sh`.
 #
 # TOT EN UN (el normal): crea l'usuari de quiosc amb menú, l'usuari d'escriptori i l'informe d'estat:
 #     sudo EXAMEN_CONTRASENYA='…' EXAMEN_INFORME_TOKEN='…' ./prepara-usuari-examen.sh --tot \
-#          --url https://examens.centre.cat:3443 --ca ca.crt --isard-url https://isard.centre.cat
+#          --url https://examens.centre.cat --ca ca.crt --isard-url https://isard.centre.cat
 # Un sol usuari:
-#     sudo ./prepara-usuari-examen.sh --url https://examens.centre.cat:3443 --ca ca.crt
+#     sudo ./prepara-usuari-examen.sh --url https://examens.centre.cat --ca ca.crt
 #     sudo ./prepara-usuari-examen.sh --perfil escriptori --usuari examen-fitxers
 # Desfer:
 #     sudo ./prepara-usuari-examen.sh --tot --desfes [--esborra-usuari]
@@ -303,7 +303,7 @@ P="${PREFIX:-}"               # només per a proves: arrel falsa on escriure (no
   --usuari NOM        Usuari de quiosc, o l'únic si no hi ha --tot (per defecte: examen)
   --usuari-fitxers NOM  Usuari d'escriptori amb --tot (per defecte: examen-fitxers)
   --perfil quiosc|escriptori   Sense --tot (per defecte: quiosc)
-  --url URL           Adreça de la plataforma (obligatòria al perfil quiosc), p. ex. https://examens.centre.cat:3443
+  --url URL           Adreça de la plataforma (obligatòria al perfil quiosc), p. ex. https://examens.centre.cat
   --navegador firefox|chrome|chromium   Perfil quiosc (per defecte: firefox)
   --ca FITXER         ca.crt del centre, perquè el navegador de l'usuari confiï en la plataforma
   --menu              Perfil quiosc: en entrar, un menú (Plataforma d'exàmens / Aturar l'ordinador)

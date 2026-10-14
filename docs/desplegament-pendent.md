@@ -88,18 +88,18 @@ ssh administrador@10.100.79.224 'cd ~/exam-platform/infra
 echo "--- contenidors:"; docker ps --format "{{.Names}} {{.Status}}"
 echo "--- BD (ha de ser 40):"; docker exec infra-db-1 psql -U examuser examplatform -tAc "select max(version::int) from flyway_schema_history"
 echo "--- backend (ha de dir Started i cap ERROR):"; docker logs --since 3m infra-backend-1 2>&1 | grep -E "Started|ERROR|Successfully applied" | tail -4
-echo "--- web:"; curl -sk -o /dev/null -w "front %{http_code}\n" https://localhost:3443/
-echo "--- CSP sense scripts en línia (ha de dir 0):"; curl -sk https://localhost:3443/ | grep -oE "<script[^>]*>" | grep -vc "src="
-echo "--- capçalera CSP:"; curl -sk -I https://localhost:3443/ | grep -i content-security | cut -c1-110
-echo "--- configuració pública sense llindars (copiesLlindar ha de ser 0):"; curl -sk https://localhost:3443/api/configuracio | grep -o "\"copiesLlindar\":[0-9]*"
-echo "--- informe sense testimoni (401) i endpoints protegits (403):"; curl -sk -o /dev/null -w "informe %{http_code}\n" -X POST https://localhost:3443/api/equips/informe -d nom=x; curl -sk -o /dev/null -w "alertes %{http_code}\n" https://localhost:3443/api/admin/alertes'
+echo "--- web:"; curl -sk -o /dev/null -w "front %{http_code}\n" https://localhost/
+echo "--- CSP sense scripts en línia (ha de dir 0):"; curl -sk https://localhost/ | grep -oE "<script[^>]*>" | grep -vc "src="
+echo "--- capçalera CSP:"; curl -sk -I https://localhost/ | grep -i content-security | cut -c1-110
+echo "--- configuració pública sense llindars (copiesLlindar ha de ser 0):"; curl -sk https://localhost/api/configuracio | grep -o "\"copiesLlindar\":[0-9]*"
+echo "--- informe sense testimoni (401) i endpoints protegits (403):"; curl -sk -o /dev/null -w "informe %{http_code}\n" -X POST https://localhost/api/equips/informe -d nom=x; curl -sk -o /dev/null -w "alertes %{http_code}\n" https://localhost/api/admin/alertes'
 ```
 
 **Si alguna cosa no quadra:** la BD no és a 40, el backend té `ERROR`, o la web no respon → vés a l'apartat «Tornar enrere».
 
 ## 6. Proves al navegador **(tu)**
 
-Això és el que **no s'ha pogut comprovar visualment** i és el més important. Obre `https://examens.politecnicllevant.cat:3443` amb **Ctrl+F5** (perquè carregui el frontend nou) i prova, per ordre. Convé una finestra d'incògnit per a l'alumne, per tenir dues sessions alhora.
+Això és el que **no s'ha pogut comprovar visualment** i és el més important. Obre `https://examens.politecnicllevant.cat` amb **Ctrl+F5** (perquè carregui el frontend nou) i prova, per ordre. Convé una finestra d'incògnit per a l'alumne, per tenir dues sessions alhora.
 
 **Com a administrador**
 - [ ] Entres. Si la **barra de seguretat** de dalt surt amb alertes, **és normal** que hi hagi avisos antics de les proves; mira que el text s'entengui i que *Veure-les* desplegui la llista.

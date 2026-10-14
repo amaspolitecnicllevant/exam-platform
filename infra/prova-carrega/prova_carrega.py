@@ -15,7 +15,7 @@ no des del servidor, perquè el generador no robi CPU a allò que es vol mesurar
 
 Ús:
     export ADMIN_EMAIL=carrega-admin@prova.invalid ADMIN_PASSWORD=...
-    python3 prova_carrega.py --url https://examens.centre.cat:3443 --ca ca.crt --alumnes 120
+    python3 prova_carrega.py --url https://examens.centre.cat --ca ca.crt --alumnes 120
 """
 import argparse
 import io
@@ -465,7 +465,7 @@ class Ctx:
 
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--url", default="https://localhost:3443")
+    p.add_argument("--url", default="https://localhost")
     p.add_argument("--ca", default=True, help="certificat de la CA (ca.crt); per defecte, els del sistema")
     p.add_argument("--alumnes", type=int, default=120)
     p.add_argument("--durada", type=int, default=360, help="segons de l'examen simulat (no els 90 min reals)")

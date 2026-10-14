@@ -27,7 +27,7 @@ Els alumnes i l'examen són de prova: l'examen s'activa **només per a ells**, a
    ```bash
    pip install requests
    export ADMIN_EMAIL=carrega-admin@prova.invalid ADMIN_PASSWORD='la contrasenya de dalt'
-   python3 prova_carrega.py --url https://examens.centre.cat:3443 --ca ca.crt --alumnes 120
+   python3 prova_carrega.py --url https://examens.centre.cat --ca ca.crt --alumnes 120
    ```
    Opcions útils: `--alumnes 5 --durada 60` per a una prova ràpida; `--durada` és l'examen **simulat** (360 s per defecte, no 90 minuts).
 3. **Neteja** les dades de prova, a la màquina de l'aplicació, des de `infra/`:

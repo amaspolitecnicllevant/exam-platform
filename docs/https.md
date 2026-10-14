@@ -17,7 +17,7 @@ Totes les ordres s'executen des de la carpeta `infra/`.
   a una IP concreta: si canvia, el navegador avisarà fins que es torni a generar.
 - **Cal poder instal·lar l'autoritat als ordinadors** dels alumnes i dels professors (normalment ho fa
   qui administra els equips del centre). Fins que no hi sigui, el navegador mostrarà un avís de seguretat.
-- L'HTTPS va al port **3443** (els ports 80 i 443 d'aquesta màquina ja els fa servir un altre servei).
+- L'HTTPS va al port **443**. Si el port ja el fa servir un altre servei de la màquina, canvia `HTTPS_PORT` (p. ex. a 3443) i accedeix amb `https://nom:3443`.
   Es pot canviar amb `HTTPS_PORT` a `infra/.env`.
 
 ## 1. Generar els certificats
@@ -48,7 +48,7 @@ COMPOSE_FILE=docker-compose.yml:docker-compose.https.yml
 docker compose up -d frontend
 ```
 
-A partir d'aquí la web és a `https://192.168.1.20:3443`. L'adreça antiga (`http://192.168.1.20:3000`)
+A partir d'aquí la web és a `https://192.168.1.20`. L'adreça antiga (`http://192.168.1.20:3000`)
 redirigeix sola a la nova, de manera que els enllaços i les adreces d'interès continuen funcionant.
 
 Convé activar-ho un dia sense exàmens i quan l'autoritat ja estigui instal·lada als ordinadors.
@@ -84,7 +84,7 @@ certutil -d sql:$HOME/.pki/nssdb -A -t "C,," -n "Plataforma d'examens" -i ca.crt
 Mostra els certificats → Entitats → Importa* → `ca.crt` → marca *Confia en aquesta CA per identificar
 llocs web*.
 
-**Comprovar-ho:** obre `https://<IP>:3443`. No hi ha d'haver cap avís i el cadenat ha de sortir tancat.
+**Comprovar-ho:** obre `https://<IP>`. No hi ha d'haver cap avís i el cadenat ha de sortir tancat.
 
 ## Renovar el certificat
 

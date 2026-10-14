@@ -10,7 +10,7 @@ Altres guies: [professor](guia-professor.md) · [administrador](guia-administrad
 
 ### Entrar
 
-1. Obre al navegador l'adreça que t'ha donat el professor (per exemple `https://examens.centre.cat:3443`).
+1. Obre al navegador l'adreça que t'ha donat el professor (per exemple `https://examens.centre.cat`).
 2. Escriu el **correu i la contrasenya**.
 3. Si el professor t'ha donat un **link de convit** i encara no tens compte, el link et deixa registrar-te (nom, correu i contrasenya) i
    et matricula al mòdul. Si ja en tens, només et matricula.

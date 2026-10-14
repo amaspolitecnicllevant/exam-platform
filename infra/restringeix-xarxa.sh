@@ -4,12 +4,12 @@
 #   sudo ./restringeix-xarxa.sh                 aplica la restricció (rang per defecte: 10.100.0.0/16)
 #   sudo ./restringeix-xarxa.sh --rang 10.100.0.0/16
 #   ./restringeix-xarxa.sh --prova              només mostra què faria (no cal sudo)
-#   sudo ./restringeix-xarxa.sh --desfes        torna a obrir 22/3000/3443 a tothom
+#   sudo ./restringeix-xarxa.sh --desfes        torna a obrir 22/3000/443 a tothom
 #   sudo ./restringeix-xarxa.sh --forca         salta la comprovació de la teva connexió SSH
 #
 # Per què calen dues peces:
 #  - SSH (22): es limita amb UFW.
-#  - Web (3000/3443): Docker publica aquests ports saltant-se UFW, així que es limiten amb una regla a la
+#  - Web (3000/443): Docker publica aquests ports saltant-se UFW, així que es limiten amb una regla a la
 #    cadena DOCKER-USER d'iptables. Es desa com a servei systemd (exam-firewall) per sobreviure reinicis
 #    i reinicis de Docker.
 # IPv6: no s'obre cap port web per IPv6 (en treure les regles "Anywhere" d'UFW queda tancat).
@@ -31,7 +31,7 @@ done
 
 cd "$(dirname "$0")"
 HTTPS_PORT=$(grep -E '^HTTPS_PORT=' .env 2>/dev/null | tail -1 | cut -d= -f2 || true)
-HTTPS_PORT=${HTTPS_PORT:-3443}
+HTTPS_PORT=${HTTPS_PORT:-443}
 HTTP_PORT=3000
 IFACE=$(ip route show default 2>/dev/null | awk '/default/ {print $5; exit}')
 HELPER=/usr/local/sbin/exam-firewall-docker
