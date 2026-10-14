@@ -73,7 +73,8 @@ echo "Ports web:          $HTTP_PORT, $HTTPS_PORT (Docker, via DOCKER-USER) i SS
 
 # Salvaguarda: no tallar la connexió amb què s'executa això
 if (( ! PROVA && ! FORCA )); then
-  CLIENT="${SSH_CLIENT%% *}"
+  # sudo reinicia l'entorn: SSH_CLIENT pot no existir (amb set -u donaria error)
+  CLIENT="${SSH_CLIENT:-}"; CLIENT="${CLIENT%% *}"
   [[ -n "$CLIENT" ]] || CLIENT=$(who -m 2>/dev/null | grep -oE '\(([0-9]+\.){3}[0-9]+\)' | tr -d '()' || true)
   if [[ -n "$CLIENT" ]]; then
     if dins_del_rang "$CLIENT" "$RANG"; then
