@@ -62,7 +62,7 @@ b
 
 Mentre l'examen **no tingui cap sessió d'alumne**, pots reescriure qualsevol pregunta, afegir-ne (a qualsevol posició), eliminar-ne i
 reordenar-les, sense passar pel fitxer. Cada pregunta passa per les mateixes validacions que la importació.
-Pots afegir **imatges a l'enunciat** (PNG, JPG, GIF o WebP, fins a 5 MB).
+Pots afegir **imatges a l'enunciat** (PNG, JPG, GIF o WebP, fins a 5 MB). Si el fitxer `.md` ja porta `![descripció](https://…)`, la plataforma les descarrega en importar (vegeu la guia de sintaxi); si alguna no es pot baixar, la importació es rebutja amb el motiu.
 
 Quan algun alumne ja l'ha començat, l'examen **queda bloquejat**. Si hi has de fer canvis, **duplica'l**: es crea un esborrany «Còpia de…»
 amb les mateixes preguntes, configuració i fitxers de dades.

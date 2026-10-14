@@ -39,6 +39,7 @@ public class ExamService {
     private final com.examplatform.infrastructure.persistence.AnswerRepository answerRepository;
     private final com.examplatform.infrastructure.storage.FitxersRespostaStorage fitxersStorage;
     private final AudienciaExamenService audiencia;
+    private final ImportadorImatgesService importadorImatges;
 
     /** Durada màxima d'un examen en minuts (8 hores). */
     static final int DURADA_MAXIMA = 480;
@@ -48,7 +49,9 @@ public class ExamService {
     public ExamDto createFromMd(String mdContent, User professor) {
         Exam exam = examParser.parse(mdContent, professor);
         exam.getQuestions().forEach(q -> q.setExam(exam));
-        return ExamDto.from(examRepository.save(exam), true);
+        Exam desat = examRepository.save(exam);
+        importadorImatges.incorpora(desat);   // si una imatge falla, la transacció sencera es desfà
+        return ExamDto.from(desat, true);
     }
 
     @Transactional(readOnly = true)

@@ -44,7 +44,8 @@ class ExamServiceAssignModulTest {
     void setUp() {
         service   = new ExamService(examRepository, examParser, grupRepository,
                 questionRepository, modulRepository, imparticioRepository, aulaRepository,
-                sessionRepository, questionFileRepository, answerRepository, fitxersStorage, audiencia);
+                sessionRepository, questionFileRepository, answerRepository, fitxersStorage, audiencia,
+                org.mockito.Mockito.mock(ImportadorImatgesService.class));
         professor = user(Role.PROFESSOR);
         admin     = user(Role.ADMIN);
         altreProf = user(Role.PROFESSOR);

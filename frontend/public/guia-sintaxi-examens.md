@@ -461,7 +461,7 @@ Els fitxers desats a Windows (salts de línia CRLF) o amb BOM s'accepten sense p
 
 El Markdown només serveix per **crear** l'examen. Un cop importat, no cal tornar-lo a pujar per fer canvis:
 
-- **Imatges:** el Markdown no admet imatges (una línia `![](…)` no mostraria res). S'hi afegeixen des de la plataforma: a **Previsualitzar → ✎ Editar** d'una pregunta, amb el botó «🖼 Afegir imatge» (PNG, JPG, GIF o WebP, màxim 5 MB).
+- **Imatges:** si l'enunciat porta `![descripció](https://…/imatge.png)`, la plataforma **descarrega la imatge en importar** i la desa amb l'examen (com si l'haguessis afegit des de l'editor); també s'admeten imatges incrustades amb `![descripció](data:image/png;base64,…)`. Formats PNG, JPG, GIF o WebP, màxim 5 MB cada una i 60 per examen. L'adreça ha de ser pública (`http`/`https`, ports 80 i 443): el servidor no visita adreces de xarxes internes. **Si una imatge no es pot baixar, es rebutja tota la importació** i el missatge diu la pregunta, l'adreça i el motiu. Una ruta local (`![](img/x.png)`) no es pot pujar amb el `.md`: afegeix-la després des de **Previsualitzar → ✎ Editar** d'una pregunta, amb el botó «🖼 Afegir imatge». Les imatges dins de blocs de codi no es toquen.
 - **Canvis de text:** a **Previsualitzar** es pot editar qualsevol pregunta (enunciat, punts, opcions, resposta correcta, criteris de correcció…), afegir-ne, eliminar-ne i reordenar-les. Només és possible **mentre cap alumne no ha començat l'examen**; després, duplica l'examen per fer-ne una versió nova. Les regles són les mateixes d'aquesta guia, i la suma de punts ha de ser 10 per poder-lo activar.
 - **Destinataris:** a l'esborrany, el botó **Destinataris** permet que l'examen sigui només per a alumnes concrets o un grup (p. ex. una recuperació), i un cop actiu s'hi poden afegir més alumnes. Sense triar-ne, és per a tots els matriculats al mòdul.
 
@@ -483,5 +483,5 @@ Quan generis un examen seguint aquesta guia:
 - Tingues en compte l'entorn (§6.6): sense xarxa, només `/tmp` és escrivible, Linux (no Windows), 15 s per execució.
 - Per a dades tabulars usa una taula Markdown (§6.8), no text alineat amb espais.
 - No usis `###` dins dels enunciats. Per a subtítols, usa negreta.
-- No incloguis imatges (`![](…)`): el format no les admet i no es mostrarien. Si una pregunta en necessita una, descriu-ne en el text què hauria de mostrar; el professor l'hi afegirà després des de la plataforma.
+- Només inclou imatges (`![descripció](https://…)`) si el professor t'ha donat l'adreça exacta d'una imatge pública; **no t'inventis mai una URL**, perquè si no es pot baixar la importació es rebutja. Si una pregunta necessita una imatge i no en tens l'adreça, descriu en el text què hauria de mostrar; el professor l'hi afegirà després des de la plataforma.
 - Escriu els enunciats en **català**, llevat que s'indiqui una altra llengua, i no hi incloguis la solució.

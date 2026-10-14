@@ -38,6 +38,7 @@ class ExamServiceTest {
     @Mock com.examplatform.infrastructure.persistence.AnswerRepository answerRepository;
     @Mock com.examplatform.infrastructure.storage.FitxersRespostaStorage fitxersStorage;
     @Mock AudienciaExamenService audiencia;
+    @Mock ImportadorImatgesService importadorImatges;
 
     ExamService service;
 
@@ -49,7 +50,7 @@ class ExamServiceTest {
     void setUp() {
         service = new ExamService(examRepository, examParser, grupRepository,
                 questionRepository, modulRepository, imparticioRepository, aulaRepository,
-                sessionRepository, questionFileRepository, answerRepository, fitxersStorage, audiencia);
+                sessionRepository, questionFileRepository, answerRepository, fitxersStorage, audiencia, importadorImatges);
         professor = user(Role.PROFESSOR);
         altreProf = user(Role.PROFESSOR);
         admin     = user(Role.ADMIN);
@@ -251,6 +252,31 @@ class ExamServiceTest {
     }
 
     // ── delete ────────────────────────────────────────────────────────────────
+
+    @Test
+    void createFromMd_incorpora_les_imatges_de_l_examen_desat() {
+        Exam parsejat = exam(ExamStatus.DRAFT, professor);
+        when(examParser.parse("md", professor)).thenReturn(parsejat);
+        when(examRepository.save(parsejat)).thenReturn(parsejat);
+
+        service.createFromMd("md", professor);
+
+        var ordre = org.mockito.Mockito.inOrder(examRepository, importadorImatges);
+        ordre.verify(examRepository).save(parsejat);
+        ordre.verify(importadorImatges).incorpora(parsejat);
+    }
+
+    @Test
+    void createFromMd_propaga_l_error_d_una_imatge_perque_la_transaccio_es_desfaci() {
+        Exam parsejat = exam(ExamStatus.DRAFT, professor);
+        when(examParser.parse("md", professor)).thenReturn(parsejat);
+        when(examRepository.save(parsejat)).thenReturn(parsejat);
+        org.mockito.Mockito.doThrow(new IllegalArgumentException("Pregunta 3: no s'ha pogut incorporar la imatge"))
+                .when(importadorImatges).incorpora(parsejat);
+
+        assertThatThrownBy(() -> service.createFromMd("md", professor))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Pregunta 3");
+    }
 
     @Test
     void delete_proprietariPotEsborrar() {
