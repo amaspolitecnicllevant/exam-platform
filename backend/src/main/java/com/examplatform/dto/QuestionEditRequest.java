@@ -24,7 +24,7 @@ public record QuestionEditRequest(
         String outputRegex,
         String testScript,
         String claus,
-        String ra,
+        String competencia,
         String dificultat,
         Boolean barrejarOpcions,
         Boolean ambApunts,

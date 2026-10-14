@@ -15,7 +15,7 @@ public final class ExportacioExcel {
     private ExportacioExcel() {}
 
     public static byte[] excel(DadesExamen d) throws IOException {
-        return XlsxWriter.escriu(List.of(notes(d), notesRa(d), respostes(d)));
+        return XlsxWriter.escriu(List.of(notes(d), notesCompetencies(d), respostes(d)));
     }
 
     private static BigDecimal dosDecimals(BigDecimal n) {
@@ -46,22 +46,22 @@ public final class ExportacioExcel {
         return new XlsxWriter.Full("Notes", cap, files, amples, Set.of());
     }
 
-    static XlsxWriter.Full notesRa(DadesExamen d) {
-        List<String> ras = ExportacioNotes.resultatsAprenentatge(d);
+    static XlsxWriter.Full notesCompetencies(DadesExamen d) {
+        List<String> cos = ExportacioNotes.competencies(d);
         List<String> cap = new ArrayList<>(List.of("Alumne", "Correu"));
-        cap.addAll(ras);
+        cap.addAll(cos);
         cap.add("Nota global");
         List<List<Object>> files = new ArrayList<>();
         for (DadesExamen.Alumne a : d.entregats()) {
             List<Object> fila = new ArrayList<>(List.of(a.nom(), a.email()));
-            for (String ra : ras) fila.add(dosDecimals(ExportacioNotes.notaRa(d, a, ra)));
+            for (String co : cos) fila.add(dosDecimals(ExportacioNotes.notaCompetencia(d, a, co)));
             fila.add(dosDecimals(Puntuacio.notaSobreDeu(d.preguntes(), a.respostes())));
             files.add(fila);
         }
         List<Integer> amples = new ArrayList<>(List.of(32, 32));
-        ras.forEach(r -> amples.add(14));
+        cos.forEach(r -> amples.add(14));
         amples.add(14);
-        return new XlsxWriter.Full("Notes per RA", cap, files, amples, Set.of());
+        return new XlsxWriter.Full("Notes per competència", cap, files, amples, Set.of());
     }
 
     static XlsxWriter.Full respostes(DadesExamen d) {

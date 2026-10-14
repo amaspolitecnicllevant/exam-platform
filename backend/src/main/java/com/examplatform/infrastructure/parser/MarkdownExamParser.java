@@ -22,7 +22,7 @@ import java.util.regex.*;
 public class MarkdownExamParser implements ExamParser {
 
     private static final Pattern QUESTION_HEADER =
-            Pattern.compile("^##\\s+(\\d+)\\.?\\s+\\[(\\w+(?:-\\w+)?)\\]\\s+\\[pts:([\\d.]+)\\]((?:\\s+\\[(?:(?:ra|dif|ordre|formats):[^\\]]+|apunts)\\])*)\\s*$");
+            Pattern.compile("^##\\s+(\\d+)\\.?\\s+\\[(\\w+(?:-\\w+)?)\\]\\s+\\[pts:([\\d.]+)\\]((?:\\s+\\[(?:(?:co|dif|ordre|formats):[^\\]]+|apunts)\\])*)\\s*$");
 
     private static final Pattern SECTION_HEADER = Pattern.compile("^###\\s+(.+?)(\\s+\\[apunts\\])?\\s*$");
     private static final Pattern TAG_APUNTS = Pattern.compile("\\[apunts\\]");
@@ -33,7 +33,7 @@ public class MarkdownExamParser implements ExamParser {
     /** Línia separadora de Markdown: fora d'un enunciat és decorativa i s'ignora. */
     private static final Pattern HORIZONTAL_RULE = Pattern.compile("^(?:-{3,}|\\*{3,}|_{3,})\\s*$");
 
-    private static final Pattern TAG_RA    = Pattern.compile("\\[ra:([^\\]]+)\\]");
+    private static final Pattern TAG_CO    = Pattern.compile("\\[co:([^\\]]+)\\]");
     private static final Pattern TAG_ORDRE = Pattern.compile("\\[ordre:([^\\]]+)\\]");
     private static final Pattern TAG_DIF   = Pattern.compile("\\[dif:([^\\]]+)\\]");
     private static final Set<String> DIFICULTATS = Set.of("baixa", "mitjana", "alta");
@@ -283,11 +283,14 @@ public class MarkdownExamParser implements ExamParser {
         Matcher tags = Pattern.compile("\\[(\\w+):").matcher(t);
         while (tags.find()) {
             String tag = tags.group(1);
-            if (!Set.of("pts", "ra", "dif", "ordre", "formats").contains(tag)) {
-                return "Etiqueta desconeguda [" + tag + ":…]. Només s'admeten [ra:…], [dif:…], [ordre:fix], [formats:…] i [apunts], després de [pts:X]";
+            if (tag.equals("ra")) {
+                return "L'avaluació és per competències: usa [co:CO1] en lloc de [ra:…]";
+            }
+            if (!Set.of("pts", "co", "dif", "ordre", "formats").contains(tag)) {
+                return "Etiqueta desconeguda [" + tag + ":…]. Només s'admeten [co:…], [dif:…], [ordre:fix], [formats:…] i [apunts], després de [pts:X]";
             }
         }
-        return "Format: ## N. [tipus] [pts:X] i, opcionalment, [ra:RA1] [dif:mitjana] [ordre:fix] [formats:docx,xlsx] [apunts]";
+        return "Format: ## N. [tipus] [pts:X] i, opcionalment, [co:CO1] [dif:mitjana] [ordre:fix] [formats:docx,xlsx] [apunts]";
     }
 
     private Question buildQuestion(Draft d, int ordre, Exam exam) {
@@ -313,9 +316,9 @@ public class MarkdownExamParser implements ExamParser {
         Map<String, String> blocks = d.blocks;
         String rawEnunciat = String.join("\n", d.enunciat).strip();
 
-        String ra = null;
-        Matcher raM = TAG_RA.matcher(d.tags);
-        if (raM.find()) ra = raM.group(1).trim();
+        String competencia = null;
+        Matcher coM = TAG_CO.matcher(d.tags);
+        if (coM.find()) competencia = coM.group(1).trim().toUpperCase();
 
         String dificultat = null;
         Matcher difM = TAG_DIF.matcher(d.tags);
@@ -346,7 +349,7 @@ public class MarkdownExamParser implements ExamParser {
             Question q = buildChoiceQuestion(nom, ordre, pts, rawEnunciat, blocks, exam);
             q.setAmbApunts(d.ambApunts);
             q.setBarrejarOpcions(barrejarOpcions);
-            q.setRa(ra);
+            q.setCompetencia(competencia);
             q.setDificultat(dificultat);
             return q;
         }
@@ -367,7 +370,7 @@ public class MarkdownExamParser implements ExamParser {
                 .testScript(blocks.get("test"))
                 .claus(claus)
                 .ambApunts(d.ambApunts)
-                .ra(ra)
+                .competencia(competencia)
                 .dificultat(dificultat)
                 .formatsPermesos(formatsPermesos)
                 .build();

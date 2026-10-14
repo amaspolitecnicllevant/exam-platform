@@ -11,6 +11,10 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ExamRepository extends JpaRepository<Exam, UUID> {
+
+    /** Exàmens que avaluen una unitat de treball. */
+    @Query("SELECT COUNT(e) FROM Exam e JOIN e.unitats u WHERE u.id = :unitatId")
+    long comptaPerUnitat(@Param("unitatId") UUID unitatId);
     List<Exam> findByCreatedById(UUID professorId);
 
     /** Exàmens que un professor pot gestionar: els que ha creat i els dels mòduls que imparteix. */

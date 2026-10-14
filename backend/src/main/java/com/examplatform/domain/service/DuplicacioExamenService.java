@@ -54,6 +54,7 @@ public class DuplicacioExamenService {
                 .aula(origen.getAula())
                 .penalitzacioChoice(origen.getPenalitzacioChoice())
                 .unaPreguntaPerPantalla(origen.isUnaPreguntaPerPantalla())
+                .unitats(new java.util.LinkedHashSet<>(origen.getUnitats()))
                 .build();
         for (Question q : origen.getQuestions()) {
             copia.getQuestions().add(Question.builder()
@@ -72,7 +73,7 @@ public class DuplicacioExamenService {
                     .correctChoice(q.getCorrectChoice())
                     .barrejarOpcions(q.isBarrejarOpcions())
                     .ambApunts(q.isAmbApunts())
-                    .ra(q.getRa())
+                    .competencia(q.getCompetencia())
                     .dificultat(q.getDificultat())
                     .formatsPermesos(q.getFormatsPermesos())
                     .build());

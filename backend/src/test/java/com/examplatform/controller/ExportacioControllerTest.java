@@ -104,7 +104,7 @@ class ExportacioControllerTest {
 
     @Test
     void notes_ra_i_clau_alumnes_son_csv() throws Exception {
-        assertThat(mvc.perform(get(url("notes-ra.csv"))).andExpect(status().isOk()).andReturn().getResponse().getContentType())
+        assertThat(mvc.perform(get(url("notes-competencies.csv"))).andExpect(status().isOk()).andReturn().getResponse().getContentType())
                 .startsWith("text/csv");
         MvcResult clau = mvc.perform(get(url("clau-alumnes.csv"))).andExpect(status().isOk()).andReturn();
         assertThat(cos(clau)).contains("codi;alumne;email;estat").contains("Maria Roca");
@@ -160,7 +160,7 @@ class ExportacioControllerTest {
         assertThat(r.getResponse().getHeader("Content-Disposition")).contains(".xlsx");
         byte[] bytes = r.getResponse().getContentAsByteArray();
         assertThat(bytes[0]).isEqualTo((byte) 'P');
-        assertThat(new XlsxLectorPublic(bytes).nomsDeFull()).containsExactly("Notes", "Notes per RA", "Respostes");
+        assertThat(new XlsxLectorPublic(bytes).nomsDeFull()).containsExactly("Notes", "Notes per competència", "Respostes");
     }
 
     // ── ZIP en flux ───────────────────────────────────────────────────────────
@@ -194,7 +194,7 @@ class ExportacioControllerTest {
     void qui_no_pot_gestionar_l_examen_no_exporta_res_ni_queda_cap_registre() throws Exception {
         when(service.dades(eq(examId), any())).thenThrow(new AccessDeniedException("No ets el propietari"));
 
-        for (String ruta : List.of("notes.csv", "notes-ra.csv", "respostes.md", "clau-alumnes.csv", "examen.xlsx")) {
+        for (String ruta : List.of("notes.csv", "notes-competencies.csv", "respostes.md", "clau-alumnes.csv", "examen.xlsx")) {
             mvc.perform(get(url(ruta))).andExpect(status().isForbidden());
         }
         verifyNoInteractions(audit);

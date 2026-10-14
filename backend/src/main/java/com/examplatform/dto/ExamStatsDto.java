@@ -33,7 +33,7 @@ public record ExamStatsDto(
             String enunciat,
             BigDecimal punts,
             boolean bonus,
-            String ra,
+            String competencia,
             /** Alumnes que han contestat (resposta no buida). */
             int respostes,
             int senseResposta,

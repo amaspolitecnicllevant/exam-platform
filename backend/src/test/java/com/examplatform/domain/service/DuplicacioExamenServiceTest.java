@@ -56,7 +56,7 @@ class DuplicacioExamenServiceTest {
                 .barrejarOpcions(false).anulada(true).build();
         q2 = Question.builder().id(UUID.randomUUID()).exam(origen).ordre(2).tipus(QuestionType.BASH_SCRIPT)
                 .enunciat("Script").punts(new BigDecimal("2.00")).outputContains("ok").testScript("test.sh")
-                .ambApunts(true).ra("RA2").build();
+                .ambApunts(true).competencia("CO2").build();
         origen.getQuestions().addAll(List.of(q1, q2));
 
         lenient().when(questionFileRepository.findByQuestionId(any())).thenReturn(List.of());
@@ -108,7 +108,7 @@ class DuplicacioExamenServiceTest {
         assertThat(c2.getOutputContains()).isEqualTo("ok");
         assertThat(c2.getTestScript()).isEqualTo("test.sh");
         assertThat(c2.isAmbApunts()).isTrue();
-        assertThat(c2.getRa()).isEqualTo("RA2");
+        assertThat(c2.getCompetencia()).isEqualTo("CO2");
     }
 
     @Test

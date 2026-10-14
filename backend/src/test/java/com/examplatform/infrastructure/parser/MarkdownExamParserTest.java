@@ -327,12 +327,36 @@ class MarkdownExamParserTest {
 
     @Test
     void ordre_fix_es_combina_amb_ra_i_dif_en_qualsevol_ordre() {
-        String md = "# Test\n---\n## 1. [CHOICE] [pts:10] [dif:alta] [ordre:FIX] [ra:RA2]\n" + CHOICE_BODY;
+        String md = "# Test\n---\n## 1. [CHOICE] [pts:10] [dif:alta] [ordre:FIX] [co:CO2]\n" + CHOICE_BODY;
         Question q = parser.parse(md, professor).getQuestions().get(0);
 
         assertThat(q.isBarrejarOpcions()).isFalse();
-        assertThat(q.getRa()).isEqualTo("RA2");
+        assertThat(q.getCompetencia()).isEqualTo("CO2");
         assertThat(q.getDificultat()).isEqualTo("alta");
+    }
+
+    @Test
+    void la_competencia_es_normalitza_a_majuscules() {
+        String md = "# Test\n---\n## 1. [CHOICE] [pts:10] [co:co3]\n" + CHOICE_BODY;
+
+        assertThat(parser.parse(md, professor).getQuestions().get(0).getCompetencia()).isEqualTo("CO3");
+    }
+
+    @Test
+    void sense_etiqueta_co_la_competencia_es_nul_la() {
+        String md = "# Test\n---\n## 1. [CHOICE] [pts:10]\n" + CHOICE_BODY;
+
+        assertThat(parser.parse(md, professor).getQuestions().get(0).getCompetencia()).isNull();
+    }
+
+    @Test
+    void l_etiqueta_antiga_ra_es_rebutja_amb_una_pista_cap_a_co() {
+        String md = "# Test\n---\n## 1. [CHOICE] [pts:10] [ra:RA1]\n" + CHOICE_BODY;
+
+        assertThatThrownBy(() -> parser.parse(md, professor))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("[co:CO1]")
+                .hasMessageContaining("Línia 3");
     }
 
     @Test
@@ -828,12 +852,12 @@ class MarkdownExamParserTest {
         Exam e = parser.parse(examen("""
                 ## 1. [short] [pts:5]
                 P1
-                ## 2. [long] [pts:5] [dif:alta] [apunts] [ra:RA2]
+                ## 2. [long] [pts:5] [dif:alta] [apunts] [co:CO2]
                 P2
                 """), professor);
 
         assertThat(e.getQuestions()).extracting(Question::isAmbApunts).containsExactly(false, true);
-        assertThat(e.getQuestions().get(1).getRa()).isEqualTo("RA2");
+        assertThat(e.getQuestions().get(1).getCompetencia()).isEqualTo("CO2");
     }
 
     @Test
@@ -895,13 +919,13 @@ class MarkdownExamParserTest {
         String md = """
                 # Pràctica
                 ---
-                ## 1. [fitxer] [pts:10] [ra:RA2] [dif:alta] [formats:docx] [apunts]
+                ## 1. [fitxer] [pts:10] [co:CO2] [dif:alta] [formats:docx] [apunts]
                 Entrega.
                 """;
 
         Question q = parser.parse(md, professor).getQuestions().get(0);
 
-        assertThat(q.getRa()).isEqualTo("RA2");
+        assertThat(q.getCompetencia()).isEqualTo("CO2");
         assertThat(q.getDificultat()).isEqualTo("alta");
         assertThat(q.isAmbApunts()).isTrue();
         assertThat(q.getFormatsPermesos()).isEqualTo("docx");

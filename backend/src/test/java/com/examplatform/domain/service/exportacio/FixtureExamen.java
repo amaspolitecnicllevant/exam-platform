@@ -17,7 +17,7 @@ public final class FixtureExamen {
 
     public Question pregunta(QuestionType tipus, String punts, String ra) {
         Question q = Question.builder().id(UUID.randomUUID()).exam(exam).ordre(++ordre).tipus(tipus)
-                .enunciat("Enunciat " + ordre).punts(new BigDecimal(punts)).ra(ra).build();
+                .enunciat("Enunciat " + ordre).punts(new BigDecimal(punts)).competencia(ra).build();
         exam.getQuestions().add(q);
         return q;
     }

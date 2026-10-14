@@ -125,6 +125,73 @@ class ExamServiceAssignModulTest {
                 .email(UUID.randomUUID() + "@test.cat").name("Test").build();
     }
 
+    @Test
+    void assignModul_rebutja_preguntes_amb_una_competencia_que_el_modul_no_te() {
+        Exam exam = exam(professor);
+        exam.getQuestions().add(Question.builder().id(UUID.randomUUID()).exam(exam).ordre(1)
+                .tipus(QuestionType.SHORT).competencia("CO9").build());
+        Modul modul = modul();
+        modul.setCompetencies(new java.util.ArrayList<>(java.util.List.of(
+                Competencia.builder().id(UUID.randomUUID()).modul(modul).codi("CO1").build())));
+        when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
+        when(modulRepository.findById(modul.getId())).thenReturn(Optional.of(modul));
+        when(imparticioRepository.professorImparteixModul(professor.getId(), modul.getId())).thenReturn(true);
+
+        assertThatThrownBy(() -> service.assignModul(exam.getId(), modul.getId(), professor))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("P1: CO9");
+        verify(examRepository, never()).save(any());
+    }
+
+    @Test
+    void assignModul_accepta_preguntes_amb_competencies_del_modul() {
+        Exam exam = exam(professor);
+        exam.getQuestions().add(Question.builder().id(UUID.randomUUID()).exam(exam).ordre(1)
+                .tipus(QuestionType.SHORT).competencia("CO1").build());
+        Modul modul = modul();
+        modul.setCompetencies(new java.util.ArrayList<>(java.util.List.of(
+                Competencia.builder().id(UUID.randomUUID()).modul(modul).codi("CO1").build())));
+        when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
+        when(modulRepository.findById(modul.getId())).thenReturn(Optional.of(modul));
+        when(imparticioRepository.professorImparteixModul(professor.getId(), modul.getId())).thenReturn(true);
+        when(examRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        assertThatNoException().isThrownBy(() -> service.assignModul(exam.getId(), modul.getId(), professor));
+    }
+
+    @Test
+    void assignModul_d_un_altre_modul_treu_les_unitats_del_modul_anterior() {
+        Modul anterior = modul();
+        Exam exam = exam(professor);
+        exam.setModul(anterior);
+        exam.getUnitats().add(UnitatTreball.builder().id(UUID.randomUUID()).modul(anterior).codi("UT01").build());
+        Modul nou = modul();
+        when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
+        when(modulRepository.findById(nou.getId())).thenReturn(Optional.of(nou));
+        when(imparticioRepository.professorImparteixModul(professor.getId(), nou.getId())).thenReturn(true);
+        when(examRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        ExamDto dto = service.assignModul(exam.getId(), nou.getId(), professor);
+
+        assertThat(dto.unitats()).isEmpty();
+    }
+
+    @Test
+    void assignModul_al_mateix_modul_conserva_les_unitats() {
+        Modul modul = modul();
+        Exam exam = exam(professor);
+        exam.setModul(modul);
+        exam.getUnitats().add(UnitatTreball.builder().id(UUID.randomUUID()).modul(modul).codi("UT01").build());
+        when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
+        when(modulRepository.findById(modul.getId())).thenReturn(Optional.of(modul));
+        when(imparticioRepository.professorImparteixModul(professor.getId(), modul.getId())).thenReturn(true);
+        when(examRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        ExamDto dto = service.assignModul(exam.getId(), modul.getId(), professor);
+
+        assertThat(dto.unitats()).extracting(u -> u.codi()).containsExactly("UT01");
+    }
+
     private Exam exam(User owner) {
         return Exam.builder().id(UUID.randomUUID()).title("Examen test")
                 .durada(60).status(ExamStatus.PUBLISHED).createdBy(owner)

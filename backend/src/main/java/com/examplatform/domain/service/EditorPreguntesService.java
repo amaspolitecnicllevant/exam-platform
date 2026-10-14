@@ -97,6 +97,7 @@ public class EditorPreguntesService {
         Exam exam = examEditable(examId, user);
         Question q = pregunta(exam, questionId);
         Question nova = construeix(q.getOrdre(), req);
+        CompetenciesExamen.valida(exam, nova.getCompetencia());
         copia(nova, q);
         return questionRepository.save(q);
     }
@@ -107,6 +108,7 @@ public class EditorPreguntesService {
         int n = exam.getQuestions().size();
         int pos = req.posicio() == null ? n + 1 : Math.max(1, Math.min(req.posicio(), n + 1));
         Question nova = construeix(pos, req);
+        CompetenciesExamen.valida(exam, nova.getCompetencia());
         nova.setExam(exam);
         nova.setOrdre(ORDRE_PROVISIONAL * 10);
         Question desada = questionRepository.saveAndFlush(nova);
@@ -240,7 +242,7 @@ public class EditorPreguntesService {
         }
         StringBuilder md = new StringBuilder("## ").append(ordre).append(". [").append(r.tipus().name())
                 .append("] [pts:").append(punts.stripTrailingZeros().toPlainString()).append(']');
-        etiqueta(md, "ra", r.ra());
+        etiqueta(md, "co", r.competencia());
         etiqueta(md, "dif", r.dificultat());
         if (r.tipus() == QuestionType.CHOICE && Boolean.FALSE.equals(r.barrejarOpcions())) md.append(" [ordre:fix]");
         if (r.tipus() == QuestionType.FILE_UPLOAD && r.formatsPermesos() != null && !r.formatsPermesos().isEmpty()) {
@@ -295,7 +297,7 @@ public class EditorPreguntesService {
         a.setCorrectChoice(de.getCorrectChoice());
         a.setBarrejarOpcions(de.isBarrejarOpcions());
         a.setAmbApunts(de.isAmbApunts());
-        a.setRa(de.getRa());
+        a.setCompetencia(de.getCompetencia());
         a.setDificultat(de.getDificultat());
         a.setFormatsPermesos(de.getFormatsPermesos());
     }

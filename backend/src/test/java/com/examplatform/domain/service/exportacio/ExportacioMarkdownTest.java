@@ -133,10 +133,10 @@ class ExportacioMarkdownTest {
 
     private FixtureExamen amb_model() {
         FixtureExamen f = new FixtureExamen();
-        Question curta = f.pregunta(QuestionType.SHORT, "4", "RA1");
+        Question curta = f.pregunta(QuestionType.SHORT, "4", "CO1");
         curta.setModelResposta("DHCP assigna adreces");
         curta.setClaus("DHCP, adreces");
-        Question test = f.test("6", "RA1");
+        Question test = f.test("6", "CO1");
         f.resposta(f.entregat("Anna", "a@x.cat"), curta, "x", null);
         return f;
     }
@@ -236,7 +236,7 @@ class ExportacioMarkdownTest {
 
     private static ExamStatsDto.Pregunta pregunta(int ordre, QuestionType t, String enunciat, String rendiment, boolean bonus,
                                                   Map<String, Integer> opcions) {
-        return new ExamStatsDto.Pregunta(UUID.randomUUID(), ordre, t, enunciat, new BigDecimal("2"), bonus, "RA1", 8, 2,
+        return new ExamStatsDto.Pregunta(UUID.randomUUID(), ordre, t, enunciat, new BigDecimal("2"), bonus, "CO1", 8, 2,
                 new BigDecimal("1.5"), rendiment == null ? null : new BigDecimal(rendiment),
                 t == QuestionType.CHOICE ? new BigDecimal("60") : null, t == QuestionType.CHOICE ? "b" : null, opcions);
     }

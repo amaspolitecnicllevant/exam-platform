@@ -174,7 +174,7 @@ public final class ExportacioMarkdown {
             sb.append("\n");
         }
 
-        sb.append("## Preguntes\n\n| P | Tipus | Punts | Rendiment | Punts mitjans | Sense resposta | Encerts | RA | Enunciat |\n")
+        sb.append("## Preguntes\n\n| P | Tipus | Punts | Rendiment | Punts mitjans | Sense resposta | Encerts | Competència | Enunciat |\n")
                 .append("|--:|:--|--:|--:|--:|--:|--:|:--|:--|\n");
         for (ExamStatsDto.Pregunta p : s.preguntes()) {
             sb.append("| ").append(p.ordre()).append(" | ").append(etiquetaTipus(p.tipus()))
@@ -183,7 +183,7 @@ public final class ExportacioMarkdown {
                     .append(" | ").append(CsvSegur.num(p.mitjanaPunts()))
                     .append(" | ").append(p.senseResposta())
                     .append(" | ").append(pct(p.percentCorrectes()))
-                    .append(" | ").append(p.ra() == null ? "" : cela(p.ra()))
+                    .append(" | ").append(p.competencia() == null ? "" : cela(p.competencia()))
                     .append(" | ").append(cela(abreuja(p.enunciat(), 90))).append(" |\n");
         }
         sb.append("\n");

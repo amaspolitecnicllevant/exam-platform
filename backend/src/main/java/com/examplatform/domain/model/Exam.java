@@ -5,7 +5,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -77,6 +79,14 @@ public class Exam {
     @Column(name = "restringit", nullable = false)
     @Builder.Default
     private boolean restringit = false;
+
+    /** Unitats de treball que avalua l'examen (del mòdul de l'examen): les seves competències són les que es poden assignar a les preguntes. */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "exam_unitats",
+            joinColumns = @JoinColumn(name = "exam_id"),
+            inverseJoinColumns = @JoinColumn(name = "unitat_id"))
+    @Builder.Default
+    private Set<UnitatTreball> unitats = new LinkedHashSet<>();
 
     /** Si és cert, l'alumne veu una sola pregunta per pantalla (navegació lliure). */
     @Column(name = "una_pregunta_per_pantalla", nullable = false)

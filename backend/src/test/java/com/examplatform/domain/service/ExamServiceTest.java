@@ -890,7 +890,7 @@ class ExamServiceTest {
         q.setCorrectChoice("b");
         q.setModelResposta("model");
         q.setClaus("DHCP");
-        q.setRa("RA1");
+        q.setCompetencia("CO1");
         when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
         return exam;
     }
@@ -911,7 +911,7 @@ class ExamServiceTest {
             assertThat(q.claus()).isNull();
             assertThat(q.outputContains()).isNull();
             assertThat(q.testScript()).isNull();
-            assertThat(q.ra()).isNull();
+            assertThat(q.competencia()).isNull();
         });
     }
 

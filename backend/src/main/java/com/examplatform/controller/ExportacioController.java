@@ -20,7 +20,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * Exportacions d'un examen: notes (CSV i Excel), notes per RA, respostes en Markdown per a una IA
+ * Exportacions d'un examen: notes (CSV i Excel), notes per competència, respostes en Markdown per a una IA
  * (anònimes per defecte, amb el fitxer de claus a part), informe i ZIP amb els fitxers lliurats.
  * Qui exporta ha de poder gestionar l'examen, i cada exportació queda al registre d'activitat.
  */
@@ -45,11 +45,11 @@ public class ExportacioController {
         return fitxer(ExportacioNotes.notesCsv(d), d, "notes.csv", CSV);
     }
 
-    @GetMapping("/notes-ra.csv")
-    public ResponseEntity<byte[]> notesRa(@PathVariable UUID examId, @AuthenticationPrincipal User user) {
+    @GetMapping("/notes-competencies.csv")
+    public ResponseEntity<byte[]> notesCompetencies(@PathVariable UUID examId, @AuthenticationPrincipal User user) {
         DadesExamen d = exportacio.dades(examId, user);
-        auditar(user, "notes per RA", examId);
-        return fitxer(ExportacioNotes.raCsv(d), d, "notes-ra.csv", CSV);
+        auditar(user, "notes per competència", examId);
+        return fitxer(ExportacioNotes.competenciesCsv(d), d, "notes-competencies.csv", CSV);
     }
 
     /** Respostes en Markdown per passar a una IA. Anònimes per defecte: només amb {@code anonim=false} porten nom i correu. */

@@ -23,8 +23,8 @@ class ExportacioNotesTest {
     @Test
     void notes_porta_BOM_separador_punt_i_coma_i_capcalera_de_preguntes() {
         FixtureExamen f = new FixtureExamen();
-        f.test("4", "RA1");
-        f.pregunta(QuestionType.SHORT, "6", "RA2");
+        f.test("4", "CO1");
+        f.pregunta(QuestionType.SHORT, "6", "CO2");
         f.resposta(f.entregat("Anna", "anna@x.cat"), f.exam.getQuestions().get(0), "b", "4");
 
         String csv = ExportacioNotes.notesCsv(f.dades());
@@ -128,55 +128,55 @@ class ExportacioNotesTest {
         assertThat(linies(ExportacioNotes.notesCsv(f.dades()))).hasSize(1);
     }
 
-    // ── notes per RA ──────────────────────────────────────────────────────────
+    // ── Notes per competència ──────────────────────────────────────────────────────────
 
     @Test
     void ra_en_ordre_natural_i_sense_ra_al_final() {
         FixtureExamen f = new FixtureExamen();
-        f.pregunta(QuestionType.SHORT, "2", "RA10");
-        f.pregunta(QuestionType.SHORT, "2", "RA2");
-        f.pregunta(QuestionType.SHORT, "2", "RA1");
+        f.pregunta(QuestionType.SHORT, "2", "CO10");
+        f.pregunta(QuestionType.SHORT, "2", "CO2");
+        f.pregunta(QuestionType.SHORT, "2", "CO1");
         f.pregunta(QuestionType.SHORT, "2", null);
         f.pregunta(QuestionType.SHORT, "2", "  ");
 
-        assertThat(ExportacioNotes.resultatsAprenentatge(f.dades()))
-                .containsExactly("RA1", "RA2", "RA10", ExportacioNotes.SENSE_RA);
+        assertThat(ExportacioNotes.competencies(f.dades()))
+                .containsExactly("CO1", "CO2", "CO10", ExportacioNotes.SENSE_COMPETENCIA);
     }
 
     @Test
     void la_nota_per_ra_es_sobre_10_amb_els_punts_d_aquell_ra() {
         FixtureExamen f = new FixtureExamen();
-        Question a1 = f.pregunta(QuestionType.SHORT, "2", "RA1");
-        Question a2 = f.pregunta(QuestionType.SHORT, "2", "RA1");
-        Question b1 = f.pregunta(QuestionType.SHORT, "6", "RA2");
+        Question a1 = f.pregunta(QuestionType.SHORT, "2", "CO1");
+        Question a2 = f.pregunta(QuestionType.SHORT, "2", "CO1");
+        Question b1 = f.pregunta(QuestionType.SHORT, "6", "CO2");
         var s = f.entregat("Anna", "anna@x.cat");
         f.resposta(s, a1, "x", "2");
-        f.resposta(s, a2, "x", "1");     // RA1: 3 de 4 → 7,5
-        f.resposta(s, b1, "x", "6");     // RA2: 6 de 6 → 10
+        f.resposta(s, a2, "x", "1");     // CO1: 3 de 4 → 7,5
+        f.resposta(s, b1, "x", "6");     // CO2: 6 de 6 → 10
 
-        List<String> l = linies(ExportacioNotes.raCsv(f.dades()));
+        List<String> l = linies(ExportacioNotes.competenciesCsv(f.dades()));
 
-        assertThat(l.get(0)).isEqualTo("alumne;email;RA1;RA2;nota_global");
+        assertThat(l.get(0)).isEqualTo("alumne;email;CO1;CO2;nota_global");
         assertThat(l.get(1)).isEqualTo("Anna;anna@x.cat;7,50;10,00;9,00");
     }
 
     @Test
     void les_notes_per_ra_nomes_inclouen_alumnes_entregats() {
         FixtureExamen f = new FixtureExamen();
-        Question p = f.pregunta(QuestionType.SHORT, "10", "RA1");
+        Question p = f.pregunta(QuestionType.SHORT, "10", "CO1");
         f.resposta(f.entregat("Anna", "anna@x.cat"), p, "x", "10");
         f.alumne("Absent", "b@x.cat", SessionStatus.IN_PROGRESS, false);
         f.alumne("EnCurs", "c@x.cat", SessionStatus.IN_PROGRESS, true);
 
-        assertThat(linies(ExportacioNotes.raCsv(f.dades()))).hasSize(2);
+        assertThat(linies(ExportacioNotes.competenciesCsv(f.dades()))).hasSize(2);
     }
 
     @Test
     void una_resposta_sense_qualificar_compta_zero_al_seu_ra() {
         FixtureExamen f = new FixtureExamen();
-        Question p = f.pregunta(QuestionType.FILE_UPLOAD, "10", "RA1");
+        Question p = f.pregunta(QuestionType.FILE_UPLOAD, "10", "CO1");
         f.resposta(f.entregat("Anna", "anna@x.cat"), p, "x.docx", null);
 
-        assertThat(linies(ExportacioNotes.raCsv(f.dades())).get(1)).isEqualTo("Anna;anna@x.cat;0,00;0,00");
+        assertThat(linies(ExportacioNotes.competenciesCsv(f.dades())).get(1)).isEqualTo("Anna;anna@x.cat;0,00;0,00");
     }
 }

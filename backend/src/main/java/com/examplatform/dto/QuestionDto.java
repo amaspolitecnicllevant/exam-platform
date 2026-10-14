@@ -28,7 +28,7 @@ public record QuestionDto(
         boolean barrejarOpcions,
         boolean anulada,
         boolean ambApunts,
-        String ra,
+        String competencia,
         String dificultat,
         List<QuestionFileDto> files,
         /** Només FILE_UPLOAD: extensions que l'alumne pot pujar. */
@@ -43,7 +43,7 @@ public record QuestionDto(
                 q.getPunts(), q.getModelResposta(), q.getOutputContains(),
                 q.getOutputExact(), q.getOutputRegex(), q.getTestScript(), q.getClaus(),
                 parseChoices(q.getChoices()), q.getCorrectChoice(), q.isBarrejarOpcions(), q.isAnulada(), q.isAmbApunts(),
-                q.getRa(), q.getDificultat(), files, formats(q));
+                q.getCompetencia(), q.getDificultat(), files, formats(q));
     }
 
     public static QuestionDto from(Question q) {

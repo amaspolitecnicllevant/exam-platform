@@ -18,7 +18,7 @@ import java.util.*;
 public final class ExportacioNotes {
 
     /** Nom de la columna per a les preguntes sense resultat d'aprenentatge. */
-    public static final String SENSE_RA = "(sense RA)";
+    public static final String SENSE_COMPETENCIA = "(sense competència)";
 
     private static final CSVFormat FORMAT = CSVFormat.DEFAULT.builder().setDelimiter(';').build();
 
@@ -76,40 +76,40 @@ public final class ExportacioNotes {
         return sw.toString();
     }
 
-    /** Resultats d'aprenentatge presents a l'examen, en ordre natural (RA1, RA2, RA10…), i «(sense RA)» al final. */
-    public static List<String> resultatsAprenentatge(DadesExamen d) {
-        TreeSet<String> ras = new TreeSet<>(NATURAL);
-        boolean senseRa = false;
+    /** Competències presents a l'examen, en ordre natural (CO1, CO2, CO10…), i «(sense competència)» al final. */
+    public static List<String> competencies(DadesExamen d) {
+        TreeSet<String> cos = new TreeSet<>(NATURAL);
+        boolean senseCompetencia = false;
         for (Question q : d.preguntes()) {
-            if (q.getRa() == null || q.getRa().isBlank()) senseRa = true;
-            else ras.add(q.getRa().strip());
+            if (q.getCompetencia() == null || q.getCompetencia().isBlank()) senseCompetencia = true;
+            else cos.add(q.getCompetencia().strip());
         }
-        List<String> res = new ArrayList<>(ras);
-        if (senseRa) res.add(SENSE_RA);
+        List<String> res = new ArrayList<>(cos);
+        if (senseCompetencia) res.add(SENSE_COMPETENCIA);
         return res;
     }
 
-    /** Nota sobre 10 d'un alumne en un RA (null si el RA no té punts). Les respostes sense nota compten 0. */
-    public static BigDecimal notaRa(DadesExamen d, DadesExamen.Alumne a, String ra) {
-        List<Question> delRa = d.preguntes().stream()
-                .filter(q -> ra.equals(SENSE_RA) ? (q.getRa() == null || q.getRa().isBlank()) : ra.equals(q.getRa() == null ? null : q.getRa().strip()))
+    /** Nota sobre 10 d'un alumne en una competència (null si no té punts). Les respostes sense nota compten 0. */
+    public static BigDecimal notaCompetencia(DadesExamen d, DadesExamen.Alumne a, String competencia) {
+        List<Question> delaCompetencia = d.preguntes().stream()
+                .filter(q -> competencia.equals(SENSE_COMPETENCIA) ? (q.getCompetencia() == null || q.getCompetencia().isBlank()) : competencia.equals(q.getCompetencia() == null ? null : q.getCompetencia().strip()))
                 .toList();
-        return Puntuacio.notaSobreDeu(delRa, a.respostes());
+        return Puntuacio.notaSobreDeu(delaCompetencia, a.respostes());
     }
 
-    /** Una fila per alumne entregat: nota sobre 10 de cada resultat d'aprenentatge i la global. */
-    public static String raCsv(DadesExamen d) {
-        List<String> ras = resultatsAprenentatge(d);
+    /** Una fila per alumne entregat: nota sobre 10 de cada competència i la global. */
+    public static String competenciesCsv(DadesExamen d) {
+        List<String> cos = competencies(d);
         StringWriter sw = new StringWriter();
         sw.write(CsvSegur.BOM);
         try (CSVPrinter csv = new CSVPrinter(sw, FORMAT)) {
             List<String> cap = new ArrayList<>(List.of("alumne", "email"));
-            cap.addAll(ras);
+            cap.addAll(cos);
             cap.add("nota_global");
             csv.printRecord(cap);
             for (DadesExamen.Alumne a : d.entregats()) {
                 List<String> fila = new ArrayList<>(List.of(CsvSegur.cel(a.nom()), CsvSegur.cel(a.email())));
-                for (String ra : ras) fila.add(CsvSegur.num(notaRa(d, a, ra)));
+                for (String co : cos) fila.add(CsvSegur.num(notaCompetencia(d, a, co)));
                 fila.add(CsvSegur.num(Puntuacio.notaSobreDeu(d.preguntes(), a.respostes())));
                 csv.printRecord(fila);
             }
@@ -119,7 +119,7 @@ public final class ExportacioNotes {
         return sw.toString();
     }
 
-    /** Ordre natural: RA2 abans que RA10. */
+    /** Ordre natural: CO2 abans que CO10. */
     private static final Comparator<String> NATURAL = (x, y) -> {
         int i = 0, j = 0;
         while (i < x.length() && j < y.length()) {

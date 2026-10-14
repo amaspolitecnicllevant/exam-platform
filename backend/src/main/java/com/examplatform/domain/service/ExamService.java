@@ -81,7 +81,14 @@ public class ExamService {
             throw new AccessDeniedException(
                     "No tens cap impartició per al mòdul " + modul.getCodi());
         }
+        boolean canviaDeModul = exam.getModul() == null || !exam.getModul().getId().equals(modulId);
         exam.setModul(modul);
+        if (canviaDeModul) exam.getUnitats().clear();   // les UT són del mòdul anterior
+        List<String> problemes = CompetenciesExamen.problemes(exam);
+        if (!problemes.isEmpty()) {
+            throw new IllegalArgumentException("Hi ha preguntes amb una competència que el mòdul " + modul.getCodi()
+                    + " no té (" + String.join(", ", problemes) + "). Corregeix-les a la previsualització abans d'assignar el mòdul");
+        }
         return ExamDto.from(examRepository.save(exam), true);
     }
 
@@ -303,7 +310,7 @@ public class ExamService {
         List<String> canvis = new ArrayList<>();
         String correctaAbans = q.getCorrectChoice();
         boolean bonusAbans = q.isAnulada();
-        String raAbans = q.getRa();
+        String competenciaAbans = q.getCompetencia();
         String difAbans = q.getDificultat();
         boolean barrejaAbans = q.isBarrejarOpcions();
         boolean apuntsAbans = q.isAmbApunts();
@@ -326,8 +333,9 @@ public class ExamService {
         if (req.anulada() != null) {
             q.setAnulada(req.anulada());
         }
-        if (req.ra() != null) {
-            q.setRa(req.ra().isBlank() ? null : req.ra().strip());
+        if (req.competencia() != null) {
+            q.setCompetencia(req.competencia().isBlank() ? null : req.competencia().strip().toUpperCase());
+            CompetenciesExamen.valida(q.getExam(), q.getCompetencia());
         }
         if (req.dificultat() != null) {
             String dif = req.dificultat().strip().toLowerCase();
@@ -348,7 +356,8 @@ public class ExamService {
             canvis.add("resposta correcta: " + correctaAbans + " → " + q.getCorrectChoice());
         if (bonusAbans != q.isAnulada())
             canvis.add("bonus: " + siNo(bonusAbans) + " → " + siNo(q.isAnulada()));
-        if (!Objects.equals(raAbans, q.getRa())) canvis.add("RA: " + raAbans + " → " + q.getRa());
+        if (!Objects.equals(competenciaAbans, q.getCompetencia()))
+            canvis.add("competència: " + competenciaAbans + " → " + q.getCompetencia());
         if (!Objects.equals(difAbans, q.getDificultat()))
             canvis.add("dificultat: " + difAbans + " → " + q.getDificultat());
         if (barrejaAbans != q.isBarrejarOpcions())

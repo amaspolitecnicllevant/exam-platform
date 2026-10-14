@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -24,6 +26,12 @@ public class Modul {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cicle_id", nullable = false)
     private Cicle cicle;
+
+    /** Competències del mòdul (programació); només lectura: s'editen amb ProgramacioService. */
+    @OneToMany(mappedBy = "modul", fetch = FetchType.LAZY)
+    @OrderBy("ordre ASC")
+    @Builder.Default
+    private List<Competencia> competencies = new ArrayList<>();
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

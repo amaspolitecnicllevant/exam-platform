@@ -30,13 +30,17 @@ public record ExamDto(
         boolean unaPreguntaPerPantalla,
         boolean restringit,
         boolean teSessions,
+        /** UT que avalua l'examen (buit = sense restricció de competències). */
+        List<ProgramacioDto.Unitat> unitats,
+        /** Totes les competències del mòdul de l'examen, amb la descripció. */
+        List<ProgramacioDto.Competencia> competencies,
         List<QuestionDto> questions
 ) {
     /** Còpia amb la marca «ja té sessions d'alumnes» (només la calcula el llistat del professor). */
     public ExamDto ambSessions(boolean teSessions) {
         return new ExamDto(id, title, durada, instruccions, status, createdByName, createdAt, scheduledAt,
                 scheduledGrupId, scheduledGrupName, penalitzacioChoice, modulId, modulNom, cicleNom, aulaId,
-                aulaNom, aulaCidr, notesVisibles, unaPreguntaPerPantalla, restringit, teSessions, questions);
+                aulaNom, aulaCidr, notesVisibles, unaPreguntaPerPantalla, restringit, teSessions, unitats, competencies, questions);
     }
 
     public static ExamDto from(Exam e, boolean includeAnswers) {
@@ -69,6 +73,10 @@ public record ExamDto(
                 e.isUnaPreguntaPerPantalla(),
                 e.isRestringit(),
                 false,
+                e.getUnitats().stream().sorted(java.util.Comparator.comparingInt(u -> u.getOrdre()))
+                        .map(ProgramacioDto.Unitat::de).toList(),
+                e.getModul() == null ? List.of()
+                        : e.getModul().getCompetencies().stream().map(ProgramacioDto.Competencia::de).toList(),
                 qs);
     }
 }

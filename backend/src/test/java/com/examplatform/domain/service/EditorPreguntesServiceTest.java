@@ -48,7 +48,7 @@ class EditorPreguntesServiceTest {
 
     private static QuestionEditRequest curta(String enunciat, String punts) {
         return new QuestionEditRequest(QuestionType.SHORT, enunciat, new BigDecimal(punts), null, null,
-                "model", null, null, null, null, null, "RA1", "alta", null, null, null, null);
+                "model", null, null, null, null, null, "CO1", "alta", null, null, null, null);
     }
 
     private static QuestionEditRequest test(String correcta, String... opcions) {
@@ -65,7 +65,7 @@ class EditorPreguntesServiceTest {
         assertThat(r.getEnunciat()).isEqualTo("nova");
         assertThat(r.getPunts()).isEqualByComparingTo("4.5");
         assertThat(r.getModelResposta()).isEqualTo("model");
-        assertThat(r.getRa()).isEqualTo("RA1");
+        assertThat(r.getCompetencia()).isEqualTo("CO1");
         assertThat(r.getDificultat()).isEqualTo("alta");
     }
 
@@ -118,9 +118,9 @@ class EditorPreguntesServiceTest {
     @Test
     void actualitza_etiquetes_amb_claudators_es_rebutgen() {
         var req = new QuestionEditRequest(QuestionType.SHORT, "x", new BigDecimal("2"), null, null, null,
-                null, null, null, null, null, "RA1] [dif:alta", null, null, null, null, null);
+                null, null, null, null, null, "CO1] [dif:alta", null, null, null, null, null);
         assertThatThrownBy(() -> service.actualitza(exam.getId(), q1.getId(), req, prof))
-                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("ra");
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("co");
     }
 
     @Test

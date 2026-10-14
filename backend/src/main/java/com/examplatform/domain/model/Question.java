@@ -73,7 +73,8 @@ public class Question {
     private boolean ambApunts = false;
 
     @Column(length = 100)
-    private String ra;
+    /** Codi de la competència que treballa la pregunta (p. ex. «CO1»); es valida contra les de les UT de l'examen. */
+    private String competencia;
 
     @Column(length = 10)
     private String dificultat;

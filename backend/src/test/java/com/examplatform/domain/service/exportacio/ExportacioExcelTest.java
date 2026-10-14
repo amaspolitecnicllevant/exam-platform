@@ -9,9 +9,9 @@ class ExportacioExcelTest {
 
     private static FixtureExamen examen() {
         FixtureExamen f = new FixtureExamen();
-        Question test = f.test("4", "RA1");
-        Question curta = f.pregunta(QuestionType.SHORT, "3", "RA2");
-        Question fitxer = f.pregunta(QuestionType.FILE_UPLOAD, "3", "RA2");
+        Question test = f.test("4", "CO1");
+        Question curta = f.pregunta(QuestionType.SHORT, "3", "CO2");
+        Question fitxer = f.pregunta(QuestionType.FILE_UPLOAD, "3", "CO2");
         var anna = f.entregat("Anna Soler", "anna@x.cat");
         f.resposta(anna, test, "b", "4");
         f.resposta(anna, curta, "=1+1\nsegona línia", "2.5");
@@ -26,7 +26,7 @@ class ExportacioExcelTest {
     void te_tres_fulls_notes_notes_per_ra_i_respostes() throws Exception {
         XlsxLector x = new XlsxLector(ExportacioExcel.excel(examen().dades()));
 
-        assertThat(x.nomsDeFull()).containsExactly("Notes", "Notes per RA", "Respostes");
+        assertThat(x.nomsDeFull()).containsExactly("Notes", "Notes per competència", "Respostes");
     }
 
     @Test
@@ -63,11 +63,11 @@ class ExportacioExcelTest {
         var c = x.cel_les(2);
 
         assertThat(x.files(2)).isEqualTo(2);
-        assertThat(c.get("C1").valor()).isEqualTo("RA1");
-        assertThat(c.get("D1").valor()).isEqualTo("RA2");
+        assertThat(c.get("C1").valor()).isEqualTo("CO1");
+        assertThat(c.get("D1").valor()).isEqualTo("CO2");
         assertThat(c.get("E1").valor()).isEqualTo("Nota global");
-        assertThat(c.get("C2").valor()).isEqualTo("10.00");   // RA1: 4 de 4
-        assertThat(c.get("D2").valor()).isEqualTo("4.17");    // RA2: 2,5 de 6 → 4,17
+        assertThat(c.get("C2").valor()).isEqualTo("10.00");   // CO1: 4 de 4
+        assertThat(c.get("D2").valor()).isEqualTo("4.17");    // CO2: 2,5 de 6 → 4,17
     }
 
     @Test
