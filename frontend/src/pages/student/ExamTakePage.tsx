@@ -547,12 +547,17 @@ function ExamTake() {
                   <input type="radio" name={q.id} value={letter}
                     checked={isSelected}
                     onChange={() => !submitted && handleChange(q.id, letter)}
+                    // Un radio ja marcat no dispara onChange: tornar-hi a prémer el desmarca (resposta en blanc)
+                    onClick={() => { if (!submitted && isSelected) handleChange(q.id, '') }}
                     disabled={submitted}
                     className="accent-brand-600 w-4 h-4 flex-shrink-0" />
                   <span className="text-sm text-gray-800">{String.fromCharCode(97 + i)}) {text}</span>
                 </label>
               )
             })}
+            {!submitted && answers[q.id] && (
+              <p className="text-xs text-gray-400">Torna a prémer l'opció marcada per desmarcar-la.</p>
+            )}
           </div>
         )}
 
