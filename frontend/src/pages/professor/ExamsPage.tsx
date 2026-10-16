@@ -74,8 +74,16 @@ export default function ExamsPage() {
       return v === 'departament' || v === 'cicle' || v === 'modul' ? v : 'cap'
     } catch { return 'cap' }
   })
+  // Grups desplegats (per defecte tots plegats); la clau és la del grup dins l'agrupació actual
+  const [desplegats, setDesplegats] = useState<Set<string>>(new Set())
+  const alternaGrup = (clau: string) => setDesplegats(prev => {
+    const n = new Set(prev)
+    if (n.has(clau)) n.delete(clau); else n.add(clau)
+    return n
+  })
   const canviaAgrupacio = (v: AgrupacioExamens) => {
     setAgrupacio(v)
+    setDesplegats(new Set())
     try { localStorage.setItem('examens.agrupacio', v) } catch { /* sense emmagatzematge: no es recorda */ }
   }
   const canviaFiltre = (canvis: Partial<FiltreExamens>) => setFiltre(prev => ({ ...prev, ...canvis }))
@@ -242,6 +250,12 @@ export default function ExamsPage() {
                 <option value="cicle">Agrupa per cicle</option>
                 <option value="modul">Agrupa per mòdul</option>
               </select>
+              {agrupacio !== 'cap' && filtrats.length > 0 && (
+                <button type="button" className="text-xs text-brand-600 hover:underline"
+                  onClick={() => setDesplegats(desplegats.size > 0 ? new Set() : new Set(agrupats.map(g => g.clau)))}>
+                  {desplegats.size > 0 ? 'Plega-ho tot' : 'Desplega-ho tot'}
+                </button>
+              )}
               {opcions.autors.length > 1 && (
                 <select value={filtre.autor} onChange={e => canviaFiltre({ autor: e.target.value })} aria-label="Professor"
                   className="border rounded-lg px-2 py-1.5 text-sm max-w-[14rem]">
@@ -300,12 +314,17 @@ export default function ExamsPage() {
           {agrupats.map(grup => (
           <section key={grup.clau} className="space-y-3">
             {grup.titol && (
-              <h2 className="flex items-baseline gap-2 flex-wrap border-b border-gray-200 pb-1">
-                <span className="font-semibold text-gray-800">{grup.titol}</span>
-                {grup.context && <span className="text-xs text-gray-500">{grup.context}</span>}
-                <span className="text-xs text-gray-400">{grup.exams.length} {grup.exams.length === 1 ? 'examen' : 'exàmens'}</span>
+              <h2 className="border-b border-gray-200">
+                <button type="button" onClick={() => alternaGrup(grup.clau)} aria-expanded={desplegats.has(grup.clau)}
+                  className="w-full flex items-baseline gap-2 flex-wrap text-left pb-1 hover:text-brand-700">
+                  <span className="text-xs text-gray-400 w-3" aria-hidden>{desplegats.has(grup.clau) ? '▾' : '▸'}</span>
+                  <span className="font-semibold text-gray-800">{grup.titol}</span>
+                  {grup.context && <span className="text-xs text-gray-500">{grup.context}</span>}
+                  <span className="text-xs text-gray-400">{grup.exams.length} {grup.exams.length === 1 ? 'examen' : 'exàmens'}</span>
+                </button>
               </h2>
             )}
+          {(!grup.titol || desplegats.has(grup.clau)) && (
           <div className="grid gap-4">
           {grup.exams.map(exam => {
             const isConfigOpen = expandedConfig.has(exam.id)
@@ -523,6 +542,7 @@ export default function ExamsPage() {
             )
           })}
           </div>
+          )}
           </section>
           ))}
           {exams.length === 0 && <p className="text-gray-400 text-sm">Cap examen. Crea'n un des d'un fitxer .md</p>}
