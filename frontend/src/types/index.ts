@@ -157,6 +157,8 @@ export interface Exam {
   restringit: boolean
   /** Ja té sessions d'alumnes (només ve informat al llistat del professor) */
   teSessions?: boolean
+  /** Quan un alumne el va començar per primera vegada (ISO; només al llistat del professor) */
+  primeraSessio?: string
   /** UT que avalua l'examen (buit = sense restricció de competències) */
   unitats: UnitatProg[]
   /** Totes les competències del mòdul de l'examen */

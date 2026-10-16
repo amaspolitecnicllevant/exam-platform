@@ -60,8 +60,14 @@ public class ExamService {
         // Un examen desactivat o tancat amb sessions continua tenint dades per veure i exportar
         Set<UUID> ambSessions = exams.isEmpty() ? Set.of()
                 : new HashSet<>(sessionRepository.findExamIdsAmbSessions(exams.stream().map(Exam::getId).toList()));
+        Map<UUID, java.time.LocalDateTime> primeres = new HashMap<>();
+        if (!exams.isEmpty()) {
+            for (Object[] fila : sessionRepository.findPrimeresDates(exams.stream().map(Exam::getId).toList())) {
+                primeres.put((UUID) fila[0], (java.time.LocalDateTime) fila[1]);
+            }
+        }
         return exams.stream()
-                .map(e -> ExamDto.from(e, true).ambSessions(ambSessions.contains(e.getId()))).toList();
+                .map(e -> ExamDto.from(e, true).ambSessions(ambSessions.contains(e.getId()), primeres.get(e.getId()))).toList();
     }
 
     @Transactional(readOnly = true)

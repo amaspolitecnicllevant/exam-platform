@@ -151,7 +151,7 @@ export default function ExamsPage() {
   const handlePublicarNotes = async (exam: Exam) => {
     try {
       const updated = await publicarNotes(exam.id)
-      setExams(prev => prev.map(x => x.id === updated.id ? { ...updated, teSessions: x.teSessions } : x))
+      setExams(prev => prev.map(x => x.id === updated.id ? { ...updated, teSessions: x.teSessions, primeraSessio: x.primeraSessio } : x))
     } catch (err: any) {
       // p. ex. 409 si hi ha respostes pendents de revisar
       setFeedback(err.response?.data?.error || 'Error publicant les notes')
@@ -178,7 +178,7 @@ export default function ExamsPage() {
     if (!assigningModul || !selectedModul) return
     try {
       const updated = await assignModul(assigningModul.id, selectedModul)
-      setExams(prev => prev.map(e => e.id === updated.id ? { ...updated, teSessions: e.teSessions } : e))
+      setExams(prev => prev.map(e => e.id === updated.id ? { ...updated, teSessions: e.teSessions, primeraSessio: e.primeraSessio } : e))
       setAssigningModul(null)
     } catch (err: any) {
       setAssigningModul(null)
@@ -192,7 +192,7 @@ export default function ExamsPage() {
       const updated = selectedAula
         ? await assignAulaExamen(assigningAula.id, selectedAula)
         : await removeAulaExamen(assigningAula.id)
-      setExams(prev => prev.map(e => e.id === updated.id ? { ...updated, teSessions: e.teSessions } : e))
+      setExams(prev => prev.map(e => e.id === updated.id ? { ...updated, teSessions: e.teSessions, primeraSessio: e.primeraSessio } : e))
       setAssigningAula(null)
     } catch {
       setFeedback('Error assignant l\'aula')
@@ -356,6 +356,11 @@ export default function ExamsPage() {
                     </div>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <p className="text-sm text-gray-500">{exam.questions.length} preguntes · {exam.durada} min</p>
+                      {exam.primeraSessio && (
+                        <span className="text-xs text-gray-500" title="Quan un alumne el va començar per primera vegada">
+                          Fet per primera vegada: {new Date(exam.primeraSessio).toLocaleString('ca-ES', { dateStyle: 'short', timeStyle: 'short' })}
+                        </span>
+                      )}
                       {exam.modulNom && (
                         <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-mono">
                           {exam.modulNom}
@@ -517,7 +522,7 @@ export default function ExamsPage() {
                     {/* Publicar / ocultar notes (exàmens actius, tancats o desactivats amb sessions) */}
                     {(exam.status === 'PUBLISHED' || exam.status === 'CLOSED' || exam.teSessions) && (
                       exam.notesVisibles ? (
-                        <button onClick={() => ocultarNotes(exam.id).then(e => setExams(prev => prev.map(x => x.id === e.id ? { ...e, teSessions: x.teSessions } : x)))}
+                        <button onClick={() => ocultarNotes(exam.id).then(e => setExams(prev => prev.map(x => x.id === e.id ? { ...e, teSessions: x.teSessions, primeraSessio: x.primeraSessio } : x)))}
                           className="text-xs border border-amber-300 text-amber-700 px-3 py-1 rounded hover:bg-amber-50">
                           Ocultar notes als alumnes
                         </button>

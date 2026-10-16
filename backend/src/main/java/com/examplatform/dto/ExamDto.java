@@ -32,6 +32,8 @@ public record ExamDto(
         boolean unaPreguntaPerPantalla,
         boolean restringit,
         boolean teSessions,
+        /** Quan un alumne va començar l'examen per primera vegada (null si encara no l'ha començat ningú). */
+        LocalDateTime primeraSessio,
         /** UT que avalua l'examen (buit = sense restricció de competències). */
         List<ProgramacioDto.Unitat> unitats,
         /** Totes les competències del mòdul de l'examen, amb la descripció. */
@@ -42,11 +44,11 @@ public record ExamDto(
         List<String> avisos,
         List<QuestionDto> questions
 ) {
-    /** Còpia amb la marca «ja té sessions d'alumnes» (només la calcula el llistat del professor). */
-    public ExamDto ambSessions(boolean teSessions) {
+    /** Còpia amb la marca «ja té sessions d'alumnes» i la data de la primera (només les calcula el llistat del professor). */
+    public ExamDto ambSessions(boolean teSessions, LocalDateTime primeraSessio) {
         return new ExamDto(id, title, durada, instruccions, status, createdByName, createdAt, scheduledAt,
                 scheduledGrupId, scheduledGrupName, penalitzacioChoice, modulId, modulNom, cicleNom, departamentNom, aulaId,
-                aulaNom, aulaCidr, notesVisibles, unaPreguntaPerPantalla, restringit, teSessions, unitats, competencies, competenciesExamen, avisos, questions);
+                aulaNom, aulaCidr, notesVisibles, unaPreguntaPerPantalla, restringit, teSessions, primeraSessio, unitats, competencies, competenciesExamen, avisos, questions);
     }
 
     public static ExamDto from(Exam e, boolean includeAnswers) {
@@ -81,6 +83,7 @@ public record ExamDto(
                 e.isUnaPreguntaPerPantalla(),
                 e.isRestringit(),
                 false,
+                null,
                 e.getUnitats().stream().sorted(java.util.Comparator.comparingInt(u -> u.getOrdre()))
                         .map(ProgramacioDto.Unitat::de).toList(),
                 e.getModul() == null ? List.of()

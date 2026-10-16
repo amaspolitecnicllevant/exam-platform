@@ -65,6 +65,24 @@ class SessionRepositoryIntegrationTest {
                 .questions(new ArrayList<>()).build());
     }
 
+    // ── findPrimeresDates ─────────────────────────────────────────────────────
+
+    @Test
+    void findPrimeresDates_dona_la_primera_hora_d_inici_i_ignora_les_sessions_no_comencades() {
+        User altre = userRepository.save(User.builder().name("Altre").email("altre@test.cat").role(Role.STUDENT).build());
+        User tercer = userRepository.save(User.builder().name("Tercer").email("tercer@test.cat").role(Role.STUDENT).build());
+        LocalDateTime primera = LocalDateTime.of(2026, 10, 15, 7, 55);
+        sessionRepository.save(ExamSession.builder().exam(exam).student(student).startedAt(primera.plusMinutes(10)).build());
+        sessionRepository.save(ExamSession.builder().exam(exam).student(altre).startedAt(primera).build());
+        sessionRepository.save(ExamSession.builder().exam(exam).student(tercer).build());   // assignada, sense començar
+
+        List<Object[]> files = sessionRepository.findPrimeresDates(List.of(exam.getId()));
+
+        assertThat(files).hasSize(1);
+        assertThat(files.get(0)[0]).isEqualTo(exam.getId());
+        assertThat(files.get(0)[1]).isEqualTo(primera);
+    }
+
     // ── findByExamIdWithDetails ───────────────────────────────────────────────
 
     @Test

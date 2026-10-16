@@ -73,6 +73,20 @@ class ExamServiceTest {
     }
 
     @Test
+    void findByProfessor_informa_de_la_primera_vegada_que_un_alumne_va_comencar_l_examen() {
+        Exam fet = exam(ExamStatus.CLOSED, professor);
+        Exam senseComencar = exam(ExamStatus.DRAFT, professor);
+        java.time.LocalDateTime primera = java.time.LocalDateTime.of(2026, 10, 15, 7, 55);
+        when(examRepository.findGestionablesPer(professor.getId())).thenReturn(List.of(fet, senseComencar));
+        when(sessionRepository.findPrimeresDates(any()))
+                .thenReturn(java.util.Collections.singletonList(new Object[]{fet.getId(), primera}));
+
+        List<ExamDto> llista = service.findByProfessor(professor.getId());
+
+        assertThat(llista).extracting(ExamDto::primeraSessio).containsExactly(primera, null);
+    }
+
+    @Test
     void findByProfessor_sense_examens_no_consulta_les_sessions() {
         when(examRepository.findGestionablesPer(professor.getId())).thenReturn(List.of());
 

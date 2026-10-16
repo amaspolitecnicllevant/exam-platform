@@ -26,6 +26,10 @@ public interface ExamSessionRepository extends JpaRepository<ExamSession, UUID> 
     boolean existsByStudentId(UUID studentId);
     boolean existsByExamId(UUID examId);
 
+    /** Per cada examen indicat, quan un alumne el va començar per primera vegada: files {examId, data}. */
+    @Query("SELECT s.exam.id, MIN(s.startedAt) FROM ExamSession s WHERE s.exam.id IN :examIds AND s.startedAt IS NOT NULL GROUP BY s.exam.id")
+    List<Object[]> findPrimeresDates(@Param("examIds") java.util.Collection<UUID> examIds);
+
     /** Dels exàmens indicats, els ids dels que tenen alguna sessió d'alumne. */
     @Query("SELECT DISTINCT s.exam.id FROM ExamSession s WHERE s.exam.id IN :examIds")
     List<UUID> findExamIdsAmbSessions(@Param("examIds") java.util.Collection<UUID> examIds);
