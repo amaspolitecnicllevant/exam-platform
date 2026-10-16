@@ -52,6 +52,7 @@ if (( DESFES )); then
   if (( ! PROVA )); then
     for p in "$HTTP_PORT" "$HTTPS_PORT"; do
       while iptables -D DOCKER-USER -i "$IFACE" -p tcp -m conntrack --ctorigdstport "$p" -j EXAM-WEB 2>/dev/null; do :; done
+      while iptables -D DOCKER-USER -i "$IFACE" -p tcp -m conntrack --ctorigdstport "$p" --ctdir ORIGINAL -j EXAM-WEB 2>/dev/null; do :; done
     done
     iptables -F EXAM-WEB 2>/dev/null || true
     iptables -X EXAM-WEB 2>/dev/null || true
@@ -104,8 +105,11 @@ iptables -F EXAM-WEB
 iptables -A EXAM-WEB -s $RANG -j RETURN
 iptables -A EXAM-WEB -j DROP
 for p in $HTTP_PORT $HTTPS_PORT; do
-  iptables -C DOCKER-USER -i $IFACE -p tcp -m conntrack --ctorigdstport \$p -j EXAM-WEB 2>/dev/null \\
-    || iptables -I DOCKER-USER 1 -i $IFACE -p tcp -m conntrack --ctorigdstport \$p -j EXAM-WEB
+  # Regla antiga (sense --ctdir): també agafava les respostes d'HTTPS cap als contenidors i els tallava la sortida a internet
+  while iptables -D DOCKER-USER -i $IFACE -p tcp -m conntrack --ctorigdstport \$p -j EXAM-WEB 2>/dev/null; do :; done
+  # --ctdir ORIGINAL: només els paquets dels clients que arriben; no les respostes a connexions iniciades des de la VM
+  iptables -C DOCKER-USER -i $IFACE -p tcp -m conntrack --ctorigdstport \$p --ctdir ORIGINAL -j EXAM-WEB 2>/dev/null \\
+    || iptables -I DOCKER-USER 1 -i $IFACE -p tcp -m conntrack --ctorigdstport \$p --ctdir ORIGINAL -j EXAM-WEB
 done
 EOF
 )
