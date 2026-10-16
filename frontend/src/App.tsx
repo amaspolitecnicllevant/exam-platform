@@ -19,6 +19,7 @@ import ExamCreatePage from './pages/professor/ExamCreatePage'
 import ExamSintaxiPage from './pages/professor/ExamSintaxiPage'
 import CorrectionPage from './pages/professor/CorrectionPage'
 import StatsPage from './pages/professor/StatsPage'
+import NotesPage from './pages/professor/NotesPage'
 import CopiesPage from './pages/professor/CopiesPage'
 import MonitorPage from './pages/professor/MonitorPage'
 import ExamPreviewPage from './pages/professor/ExamPreviewPage'
@@ -80,6 +81,8 @@ export default function App() {
             <ProtectedRoute roles={['PROFESSOR','ADMIN']}><CopiesPage /></ProtectedRoute>} />
           <Route path="/professor/exams/:examId/stats" element={
             <ProtectedRoute roles={['PROFESSOR','ADMIN']}><StatsPage /></ProtectedRoute>} />
+          <Route path="/professor/exams/:examId/notes" element={
+            <ProtectedRoute roles={['PROFESSOR','ADMIN']}><NotesPage /></ProtectedRoute>} />
           <Route path="/professor/exams/:examId/corrections" element={
             <ProtectedRoute roles={['PROFESSOR','ADMIN']}><CorrectionPage /></ProtectedRoute>} />
           <Route path="/professor/exams/:examId/monitor" element={

@@ -401,6 +401,10 @@ export default function ExamsPage() {
                           className="text-xs bg-brand-600 text-white px-3 py-1 rounded hover:bg-brand-700">
                           Correccions
                         </Link>
+                        <Link to={`/professor/exams/${exam.id}/notes`}
+                          className="text-xs border border-brand-600 text-brand-600 px-3 py-1 rounded hover:bg-brand-50">
+                          Notes
+                        </Link>
                         <Link to={`/professor/exams/${exam.id}/stats`}
                           className="text-xs border border-brand-600 text-brand-600 px-3 py-1 rounded hover:bg-brand-50">
                           Estadístiques
@@ -439,6 +443,10 @@ export default function ExamsPage() {
                         <Link to={`/professor/exams/${exam.id}/corrections`}
                           className="text-xs bg-brand-600 text-white px-3 py-1 rounded hover:bg-brand-700">
                           Correccions
+                        </Link>
+                        <Link to={`/professor/exams/${exam.id}/notes`}
+                          className="text-xs border border-brand-600 text-brand-600 px-3 py-1 rounded hover:bg-brand-50">
+                          Notes
                         </Link>
                         <Link to={`/professor/exams/${exam.id}/stats`}
                           className="text-xs border border-brand-600 text-brand-600 px-3 py-1 rounded hover:bg-brand-50">
