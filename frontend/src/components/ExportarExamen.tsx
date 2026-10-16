@@ -110,6 +110,8 @@ export default function ExportarExamen({ examId, titol, teFitxers = false }: {
 
           <p className="px-3 pt-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-t border-gray-100">Altres</p>
           <Opcio tipus="informe" sufix="informe.md" text="Informe de l'examen (.md)" detall="Estadístiques per pregunta i distribució de notes" />
+          <Opcio tipus="dificultat" sufix="dificultat.md" text="Informe de dificultat (.md)"
+            detall="Dificultat segons els resultats, millores per al futur i aprovats a revisar (porta noms)" />
           {teFitxers && <Opcio tipus="fitxers" sufix="lliuraments.zip" text="Fitxers lliurats (ZIP)" detall="Un directori per alumne" />}
           <Opcio tipus="csv-detallat" sufix="detall.csv" text="CSV detallat (una fila per resposta)" detall="Amb la competència de cada pregunta" />
 

@@ -80,6 +80,14 @@ public class ExportacioController {
                 d, "informe.md", MARKDOWN);
     }
 
+    /** Informe de dificultat segons els resultats, amb possibles millores i alumnes aprovats a revisar (porta noms). */
+    @GetMapping("/dificultat.md")
+    public ResponseEntity<byte[]> dificultat(@PathVariable UUID examId, @AuthenticationPrincipal User user) {
+        DadesExamen d = exportacio.dades(examId, user);
+        auditar(user, "informe de dificultat", examId);
+        return fitxer(InformeDificultat.informe(d, LocalDate.now()), d, "dificultat.md", MARKDOWN);
+    }
+
     @GetMapping("/examen.xlsx")
     public ResponseEntity<byte[]> excel(@PathVariable UUID examId, @AuthenticationPrincipal User user) throws IOException {
         DadesExamen d = exportacio.dades(examId, user);
