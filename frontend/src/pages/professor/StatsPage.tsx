@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import { getExam, getExamStats, getRecuperacio, crearGrupRecuperacio } from '../../api/exams'
 import type { Exam, ExamStats, Grup, PreguntaStats, Recuperacio } from '../../types'
+import { extremsRendiment } from '../../utils/facilsDificils'
 
 const fmt = (n: number | null | undefined, dec = 2) =>
   n == null ? '—' : Number(n.toFixed(dec)).toString().replace('.', ',')
@@ -83,6 +84,48 @@ export default function StatsPage() {
               <Tile label="Aprovats" valor={`${fmt(stats.percentAprovats, 1)} %`} detall="nota ≥ 5" />
             </div>
 
+            {/* Preguntes més fàcils i més difícils */}
+            <ExtremsPreguntes preguntes={stats.preguntes} />
+
+            {/* Nota per competència */}
+            {stats.competencies.length > 0 && (
+              <section className="bg-white border rounded-xl p-5 space-y-3 break-inside-avoid">
+                <h2 className="text-sm font-semibold text-gray-800">Nota per competència</h2>
+                <p className="text-xs text-gray-500">
+                  Nota mitjana sobre 10 dels alumnes entregats; en vermell si és inferior a 5.
+                </p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="text-left text-xs text-gray-500">
+                        <th className="py-2 pr-3 font-medium">Competència</th>
+                        <th className="py-2 pr-3 font-medium text-right">Preguntes</th>
+                        <th className="py-2 pr-3 font-medium text-right">Punts</th>
+                        <th className="py-2 pr-3 font-medium text-right">Nota mitjana</th>
+                        <th className="py-2 font-medium text-right">Aproven</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stats.competencies.map(c => (
+                        <tr key={c.codi} className="border-t">
+                          <td className="py-1.5 pr-3">
+                            <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded font-medium"
+                              title={exam.competencies?.find(x => x.codi === c.codi)?.descripcio || undefined}>{c.codi}</span>
+                          </td>
+                          <td className="py-1.5 pr-3 text-right tabular-nums">{c.preguntes}</td>
+                          <td className="py-1.5 pr-3 text-right tabular-nums">{fmt(c.punts)}</td>
+                          <td className={`py-1.5 pr-3 text-right tabular-nums font-semibold ${c.mitjana != null && c.mitjana < 5 ? 'text-red-600' : 'text-gray-800'}`}>
+                            {fmt(c.mitjana)}
+                          </td>
+                          <td className="py-1.5 text-right tabular-nums">{c.percentAprovats != null ? `${fmt(c.percentAprovats, 1)} %` : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
+
             {/* Histograma */}
             <section className="bg-white border rounded-xl p-5 space-y-3 break-inside-avoid">
               <h2 className="text-sm font-semibold text-gray-800">Distribució de notes</h2>
@@ -145,6 +188,43 @@ export default function StatsPage() {
         </p>
       </div>
     </Layout>
+  )
+}
+
+/** Les preguntes que han anat millor i pitjor: on més i menys punts han aconseguit els alumnes. */
+function ExtremsPreguntes({ preguntes }: { preguntes: PreguntaStats[] }) {
+  const { facils, dificils } = extremsRendiment(preguntes)
+  if (facils.length === 0) return null
+  const Llista = ({ titol, nota, llista, to }: { titol: string; nota: string; llista: PreguntaStats[]; to: 'bo' | 'dolent' }) => (
+    <div className="space-y-2">
+      <div>
+        <h3 className="text-sm font-semibold text-gray-800">{titol}</h3>
+        <p className="text-xs text-gray-500">{nota}</p>
+      </div>
+      <ol className="space-y-2">
+        {llista.map(p => (
+          <li key={p.id} className="flex items-start gap-2 text-sm">
+            <span className="bg-brand-100 text-brand-700 text-xs px-2 py-0.5 rounded shrink-0">{p.ordre}</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-gray-800 line-clamp-2" title={p.enunciat}>{p.enunciat}</p>
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <span className={`font-semibold tabular-nums ${to === 'dolent' ? 'text-red-600' : 'text-green-700'}`}>
+                  {fmt(p.percentRendiment, 1)} % de rendiment
+                </span>
+                {p.percentCorrectes != null && <span>· {fmt(p.percentCorrectes, 1)} % d'encerts</span>}
+                {p.competencia && <span className="bg-indigo-100 text-indigo-700 px-1.5 rounded">{p.competencia}</span>}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  )
+  return (
+    <section className="bg-white border rounded-xl p-5 grid gap-6 md:grid-cols-2 break-inside-avoid">
+      <Llista titol="Les més fàcils" nota="Més punts aconseguits sobre el màxim" llista={facils} to="bo" />
+      <Llista titol="Les més difícils" nota="Menys punts aconseguits sobre el màxim" llista={dificils} to="dolent" />
+    </section>
   )
 }
 

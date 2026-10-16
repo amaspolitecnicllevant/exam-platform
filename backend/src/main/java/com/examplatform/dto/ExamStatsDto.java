@@ -24,8 +24,30 @@ public record ExamStatsDto(
         BigDecimal percentAprovats,
         /** Nombre d'alumnes per franja de nota: [0,1), [1,2), … , [9,10]. */
         List<Integer> histograma,
+        /** Nota per competència entre els alumnes entregats (buit si cap pregunta no en té). */
+        List<Competencia> competencies,
         List<Pregunta> preguntes
 ) {
+    /** Sense estadístiques per competència (p. ex. en els tests que no les necessiten). */
+    public ExamStatsDto(int entregats, int sessions, int respostesPendents, BigDecimal mitjana, BigDecimal mediana,
+                        BigDecimal minima, BigDecimal maxima, BigDecimal percentAprovats, List<Integer> histograma,
+                        List<Pregunta> preguntes) {
+        this(entregats, sessions, respostesPendents, mitjana, mediana, minima, maxima, percentAprovats, histograma,
+                List.of(), preguntes);
+    }
+
+    /** Nota d'una competència (sobre 10) entre els alumnes entregats que hi tenen punts. */
+    public record Competencia(
+            String codi,
+            /** Preguntes de l'examen d'aquesta competència. */
+            int preguntes,
+            BigDecimal punts,
+            /** Nota mitjana sobre 10; null si cap alumne n'ha entregat. */
+            BigDecimal mitjana,
+            /** % d'alumnes amb nota >= 5 en aquesta competència (0–100). */
+            BigDecimal percentAprovats
+    ) {}
+
     public record Pregunta(
             UUID id,
             int ordre,

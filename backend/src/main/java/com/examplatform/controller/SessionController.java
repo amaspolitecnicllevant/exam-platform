@@ -59,6 +59,15 @@ public class SessionController {
         return ResponseEntity.ok(result);
     }
 
+    /** Elimina la sessió d'un alumne amb totes les dades (respostes i fitxers). El registre d'activitat només en guarda els identificadors. */
+    @DeleteMapping("/{sessionId}")
+    @PreAuthorize("hasAnyRole('PROFESSOR','ADMIN')")
+    public ResponseEntity<Void> delete(@PathVariable UUID sessionId, @AuthenticationPrincipal User professor) {
+        sessionService.deleteSession(sessionId, professor);
+        auditLog.log(professor.getId(), "SESSION_DELETED", "sessió " + sessionId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{sessionId}/reset")
     @PreAuthorize("hasAnyRole('PROFESSOR','ADMIN')")
     public ResponseEntity<SessionDto> reset(@PathVariable UUID sessionId,

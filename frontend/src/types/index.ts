@@ -236,7 +236,19 @@ export interface ExamStats {
   percentAprovats: number | null
   /** Alumnes per franja: [0,1), [1,2), … , [9,10] */
   histograma: number[]
+  /** Nota per competència entre els alumnes entregats (buit si cap pregunta en té) */
+  competencies: CompetenciaStats[]
   preguntes: PreguntaStats[]
+}
+
+export interface CompetenciaStats {
+  codi: string
+  preguntes: number
+  punts: number
+  /** Nota mitjana sobre 10 */
+  mitjana: number | null
+  /** % d'alumnes amb nota >= 5 en aquesta competència */
+  percentAprovats: number | null
 }
 
 export interface HistorialItem {

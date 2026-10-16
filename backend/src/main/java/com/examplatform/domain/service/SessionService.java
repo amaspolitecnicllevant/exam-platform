@@ -453,6 +453,25 @@ public class SessionService {
         return toDto(sessionRepository.save(session));
     }
 
+    /**
+     * Elimina la sessió d'un alumne amb totes les seves dades: respostes, fitxers lliurats i la sessió mateixa.
+     * Només si l'alumne ja ha entregat o mai no l'ha començada; una sessió en curs s'ha d'entregar abans.
+     * Qui n'és responsable (creador, professors del mòdul o admin) la pot esborrar; no es pot desfer.
+     */
+    @Transactional
+    public void deleteSession(UUID sessionId, User professor) {
+        ExamSession session = getSession(sessionId);
+        examService.assertOwnership(session.getExam(), professor);
+        if (session.getStatus() != SessionStatus.SUBMITTED && session.getStartedAt() != null) {
+            throw new IllegalStateException("L'alumne té l'examen en curs: entrega'l primer (Tancar entrega) i després l'esborres");
+        }
+        answerRepository.deleteBySessionId(session.getId());
+        fitxersStorage.esborraSessio(session.getId());
+        session.getAnswers().clear();
+        sessionRepository.delete(session);
+        sessionRepository.flush();
+    }
+
     private ExamSession getSessionOwned(UUID sessionId, User student) {
         ExamSession s = getSession(sessionId);
         if (!s.getStudent().getId().equals(student.getId())) {

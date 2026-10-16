@@ -25,6 +25,10 @@ export const resetSession = (sessionId: string) =>
 export const restartSession = (examId: string) =>
   client.post<Session>(`/sessions/restart/${examId}`).then(r => r.data)
 
+/** Elimina la sessió d'un alumne amb totes les seves dades (respostes i fitxers). No es pot desfer. */
+export const deleteSession = (sessionId: string) =>
+  client.delete(`/sessions/${sessionId}`).then(r => r.data)
+
 export const getSessionsByExam = (examId: string) =>
   client.get<Session[]>(`/sessions/exam/${examId}`).then(r => r.data)
 

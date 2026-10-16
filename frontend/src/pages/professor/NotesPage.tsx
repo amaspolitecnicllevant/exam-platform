@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import { getExam } from '../../api/exams'
-import { getSessionsByExam } from '../../api/sessions'
+import { getSessionsByExam, deleteSession } from '../../api/sessions'
 import type { Exam, Session } from '../../types'
 import { taulaNotes, ordenaFiles, csvTaulaNotes, NOTA_APROVAT, type ColumnaOrdre } from '../../utils/taulaNotes'
 import { nomExportacio } from '../../utils/fitxers'
@@ -26,6 +26,8 @@ export default function NotesPage() {
   const [sessions, setSessions] = useState<Session[] | null>(null)
   const [error, setError] = useState('')
   const [nomesEntregats, setNomesEntregats] = useState(false)
+  const [avis, setAvis] = useState('')
+  const [eliminant, setEliminant] = useState<string | null>(null)
   const [ordre, setOrdre] = useState<{ per: ColumnaOrdre; descendent: boolean }>({ per: 'alumne', descendent: false })
 
   useEffect(() => {
@@ -44,6 +46,20 @@ export default function NotesPage() {
 
   if (error) return <Layout><p className="text-red-600 text-sm">{error}</p></Layout>
   if (!exam || !taula) return <Layout><p className="text-gray-400 text-sm">Carregant…</p></Layout>
+
+  const elimina = async (s: Session) => {
+    if (!confirm(`Eliminar ${s.studentName} d'aquest examen?\n\nS'esborraran totes les seves respostes, notes i fitxers lliurats. No es pot desfer.`)) return
+    setEliminant(s.id)
+    setAvis('')
+    try {
+      await deleteSession(s.id)
+      setSessions(prev => prev ? prev.filter(x => x.id !== s.id) : prev)
+    } catch (err: any) {
+      setAvis(err?.response?.data?.error || 'No s\'ha pogut eliminar l\'alumne')
+    } finally {
+      setEliminant(null)
+    }
+  }
 
   const ordena = (per: ColumnaOrdre) =>
     setOrdre(o => o.per === per ? { per, descendent: !o.descendent } : { per, descendent: false })
@@ -97,6 +113,8 @@ export default function NotesPage() {
           Mostra només els alumnes que han entregat
         </label>
 
+        {avis && <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">{avis}</p>}
+
         {taula.competencies.length === 0 && (
           <p className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded px-3 py-2">
             Cap pregunta d'aquest examen té competència, així que només es mostra la nota de l'examen.
@@ -119,6 +137,7 @@ export default function NotesPage() {
                     </Cap>
                   ))}
                   <Cap per="pendents" className="text-right border-l border-gray-200">Pendents</Cap>
+                  <th scope="col" className="px-3 py-2"><span className="sr-only">Accions</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -132,6 +151,13 @@ export default function NotesPage() {
                     ))}
                     <td className="px-3 py-1.5 text-right border-l border-gray-100 tabular-nums text-xs">
                       {f.estat === 'No presentat' ? '' : f.pendents > 0 ? <span className="text-amber-700">{f.pendents}</span> : '0'}
+                    </td>
+                    <td className="px-3 py-1.5 text-right whitespace-nowrap">
+                      <button type="button" onClick={() => elimina(f.sessio)} disabled={eliminant !== null}
+                        title="Elimina l'alumne d'aquest examen amb totes les seves dades"
+                        className="text-xs text-red-600 border border-red-200 px-2 py-0.5 rounded hover:bg-red-50 disabled:opacity-40">
+                        {eliminant === f.sessio.id ? 'Eliminant…' : 'Eliminar'}
+                      </button>
                     </td>
                   </tr>
                 ))}

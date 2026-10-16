@@ -69,6 +69,33 @@ class StatsServiceTest {
     }
 
     @Test
+    void nota_per_competencia_sobre_10_amb_la_mitjana_i_el_percentatge_d_aprovats() {
+        test.setCompetencia("CO1");     // 4 punts
+        curta.setCompetencia("CO2");    // 6 punts
+        alumne("b", "6");    // CO1 10, CO2 10
+        alumne("a", "3");    // CO1 0,  CO2 5
+        alumne("a", "1");    // CO1 0,  CO2 1,67
+
+        ExamStatsDto st = service.stats(exam.getId(), professor);
+
+        assertThat(st.competencies()).extracting(ExamStatsDto.Competencia::codi).containsExactly("CO1", "CO2");
+        ExamStatsDto.Competencia co1 = st.competencies().get(0), co2 = st.competencies().get(1);
+        assertThat(co1.preguntes()).isEqualTo(1);
+        assertThat(co1.punts()).isEqualByComparingTo("4");
+        assertThat(co1.mitjana()).isEqualByComparingTo("3.33");              // (10 + 0 + 0) / 3
+        assertThat(co1.percentAprovats()).isEqualByComparingTo("33.3");       // 1 de 3
+        assertThat(co2.mitjana()).isEqualByComparingTo("5.56");              // (10 + 5 + 1,67) / 3
+        assertThat(co2.percentAprovats()).isEqualByComparingTo("66.7");       // 2 de 3
+    }
+
+    @Test
+    void sense_competencies_a_les_preguntes_no_n_hi_ha_a_les_estadistiques() {
+        alumne("b", "6");
+
+        assertThat(service.stats(exam.getId(), professor).competencies()).isEmpty();
+    }
+
+    @Test
     void resum_de_notes_i_aprovats() {
         alumne("b", "6");    // 10
         alumne("b", "3");    // 7

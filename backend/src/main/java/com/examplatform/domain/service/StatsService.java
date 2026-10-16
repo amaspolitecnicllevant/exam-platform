@@ -73,7 +73,30 @@ public class StatsService {
                 notes.stream().max(Comparator.naturalOrder()).map(StatsService::dos).orElse(null),
                 notes.isEmpty() ? null : percent(notes.stream().filter(n -> n.compareTo(APROVAT) >= 0).count(), notes.size()),
                 histograma(notes),
+                perCompetencia(preguntes, entregades, respostes),
                 perPregunta);
+    }
+
+    /** Nota sobre 10 de cada competència (CO1, CO2, CO10…) entre els alumnes entregats. */
+    private static List<ExamStatsDto.Competencia> perCompetencia(List<Question> preguntes, List<ExamSession> entregades,
+                                                                 Map<UUID, Map<UUID, Answer>> respostes) {
+        Map<String, List<Question>> perCodi = new TreeMap<>(Comparator.comparingInt(String::length).thenComparing(Comparator.naturalOrder()));
+        for (Question q : preguntes) {
+            if (q.getCompetencia() != null && !q.getCompetencia().isBlank()) {
+                perCodi.computeIfAbsent(q.getCompetencia().strip(), k -> new ArrayList<>()).add(q);
+            }
+        }
+        List<ExamStatsDto.Competencia> res = new ArrayList<>();
+        perCodi.forEach((codi, qs) -> {
+            List<BigDecimal> notes = new ArrayList<>();
+            for (ExamSession s : entregades) {
+                BigDecimal nota = Puntuacio.notaSobreDeu(qs, respostes.getOrDefault(s.getId(), Map.of()));
+                if (nota != null) notes.add(nota);
+            }
+            res.add(new ExamStatsDto.Competencia(codi, qs.size(), Puntuacio.maxim(qs), mitjana(notes),
+                    notes.isEmpty() ? null : percent(notes.stream().filter(n -> n.compareTo(APROVAT) >= 0).count(), notes.size())));
+        });
+        return res;
     }
 
     private ExamStatsDto.Pregunta statsPregunta(Question q, List<ExamSession> entregades,

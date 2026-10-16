@@ -755,6 +755,70 @@ class SessionServiceTest {
         verify(answerRepository, never()).deleteBySessionId(any());
     }
 
+    // ── eliminar la sessió d'un alumne ────────────────────────────────────────
+
+    private ExamSession entregadaPerEliminar() {
+        ExamSession s = session(exam(ExamStatus.CLOSED), student);
+        s.setStartedAt(LocalDateTime.now().minusMinutes(90));
+        s.setSubmittedAt(LocalDateTime.now().minusMinutes(45));
+        s.setStatus(SessionStatus.SUBMITTED);
+        when(sessionRepository.findById(s.getId())).thenReturn(Optional.of(s));
+        return s;
+    }
+
+    @Test
+    void eliminar_una_sessio_entregada_esborra_respostes_fitxers_i_la_sessio() {
+        ExamSession s = entregadaPerEliminar();
+        User prof = user(Role.PROFESSOR);
+
+        service.deleteSession(s.getId(), prof);
+
+        verify(examService).assertOwnership(s.getExam(), prof);
+        verify(answerRepository).deleteBySessionId(s.getId());
+        verify(fitxersStorage).esborraSessio(s.getId());
+        verify(sessionRepository).delete(s);
+    }
+
+    @Test
+    void eliminar_una_sessio_assignada_que_l_alumne_mai_no_ha_comencat_es_permet() {
+        Exam exam = exam(ExamStatus.PUBLISHED);
+        ExamSession s = session(exam, student);
+        s.setStartedAt(null);
+        when(sessionRepository.findById(s.getId())).thenReturn(Optional.of(s));
+
+        service.deleteSession(s.getId(), user(Role.PROFESSOR));
+
+        verify(sessionRepository).delete(s);
+    }
+
+    @Test
+    void no_s_elimina_una_sessio_en_curs() {
+        Exam exam = exam(ExamStatus.PUBLISHED);
+        ExamSession s = session(exam, student);
+        s.setStartedAt(LocalDateTime.now().minusMinutes(5));
+        s.setStatus(SessionStatus.IN_PROGRESS);
+        when(sessionRepository.findById(s.getId())).thenReturn(Optional.of(s));
+
+        assertThatThrownBy(() -> service.deleteSession(s.getId(), user(Role.PROFESSOR)))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("en curs");
+        verify(sessionRepository, never()).delete(any());
+        verify(answerRepository, never()).deleteBySessionId(any());
+        verify(fitxersStorage, never()).esborraSessio(any());
+    }
+
+    @Test
+    void qui_no_pot_gestionar_l_examen_no_pot_eliminar_la_sessio_i_no_s_esborra_res() {
+        ExamSession s = entregadaPerEliminar();
+        User altre = user(Role.PROFESSOR);
+        doThrow(new org.springframework.security.access.AccessDeniedException("no"))
+                .when(examService).assertOwnership(s.getExam(), altre);
+
+        assertThatThrownBy(() -> service.deleteSession(s.getId(), altre))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        verify(sessionRepository, never()).delete(any());
+        verify(fitxersStorage, never()).esborraSessio(any());
+    }
+
     // ── reprendre sessió (professor) ──────────────────────────────────────────
 
     private ExamSession entregadaAmb(int minutsUsats, int minutsDesDeLEntrega) {
