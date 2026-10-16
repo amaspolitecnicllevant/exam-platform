@@ -22,6 +22,14 @@ public final class FixtureExamen {
         return q;
     }
 
+    /** Capçalera de secció: ocupa una posició interna (ordre) però no té número visible. */
+    public Question seccio(String titol) {
+        Question q = Question.builder().id(UUID.randomUUID()).exam(exam).ordre(++ordre).tipus(QuestionType.SECTION)
+                .enunciat(titol).punts(BigDecimal.ZERO).build();
+        exam.getQuestions().add(q);
+        return q;
+    }
+
     public Question test(String punts, String ra) {
         Question q = pregunta(QuestionType.CHOICE, punts, ra);
         q.setChoices("a) Primera\nb) Segona\nc) Tercera\nd) Quarta");

@@ -35,6 +35,18 @@ class ExportacioNotesTest {
     }
 
     @Test
+    void la_capcalera_numera_les_preguntes_sense_comptar_les_seccions() {
+        FixtureExamen f = new FixtureExamen();
+        f.seccio("Part 1");
+        f.test("4", "CO1");
+        f.seccio("Part 2");
+        f.pregunta(QuestionType.SHORT, "6", "CO2");
+        f.entregat("Anna", "anna@x.cat");
+
+        assertThat(linies(ExportacioNotes.notesCsv(f.dades())).get(0)).endsWith(";P1 (4 pts);P2 (6 pts)");
+    }
+
+    @Test
     void una_fila_per_alumne_ordenats_per_nom_amb_nota_sobre_10_amb_coma_decimal() {
         FixtureExamen f = new FixtureExamen();
         Question p1 = f.pregunta(QuestionType.SHORT, "4", null);

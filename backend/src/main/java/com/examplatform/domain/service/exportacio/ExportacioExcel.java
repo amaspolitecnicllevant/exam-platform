@@ -3,6 +3,7 @@ package com.examplatform.domain.service.exportacio;
 import com.examplatform.domain.model.Answer;
 import com.examplatform.domain.model.Question;
 import com.examplatform.domain.model.QuestionType;
+import com.examplatform.domain.service.Numeracio;
 import com.examplatform.domain.service.Puntuacio;
 
 import java.io.IOException;
@@ -71,7 +72,7 @@ public final class ExportacioExcel {
             for (Question q : d.preguntes()) {
                 Answer r = a.respostes().get(q.getId());
                 BigDecimal p = Puntuacio.punts(q, r);
-                files.add(new ArrayList<>(Arrays.asList(a.nom(), a.email(), "P" + q.getOrdre(),
+                files.add(new ArrayList<>(Arrays.asList(a.nom(), a.email(), "P" + Numeracio.numero(q),
                         ExportacioMarkdown.etiquetaTipus(q.getTipus()), dosDecimals(q.getPunts()), textResposta(q, r),
                         r != null && p == null ? "pendent" : dosDecimals(p), r == null ? null : r.getComentari())));
             }

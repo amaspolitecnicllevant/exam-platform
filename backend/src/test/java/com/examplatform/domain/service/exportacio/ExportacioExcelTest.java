@@ -71,6 +71,24 @@ class ExportacioExcelTest {
     }
 
     @Test
+    void els_fulls_de_notes_i_de_respostes_numeren_les_preguntes_sense_comptar_les_seccions() throws Exception {
+        FixtureExamen f = new FixtureExamen();
+        f.seccio("Part 1");
+        Question p1 = f.pregunta(QuestionType.SHORT, "4", "CO1");
+        f.seccio("Part 2");
+        Question p2 = f.pregunta(QuestionType.SHORT, "6", "CO2");
+        ExamSession a = f.entregat("Anna", "anna@x.cat");
+        f.resposta(a, p1, "x", "4");
+        f.resposta(a, p2, "y", "6");
+        XlsxLector x = new XlsxLector(ExportacioExcel.excel(f.dades()));
+
+        assertThat(x.cel_les(1).get("H1").valor()).isEqualTo("P1 (4 pts)");
+        assertThat(x.cel_les(1).get("I1").valor()).isEqualTo("P2 (6 pts)");
+        assertThat(x.cel_les(3).get("C2").valor()).isEqualTo("P1");
+        assertThat(x.cel_les(3).get("C3").valor()).isEqualTo("P2");
+    }
+
+    @Test
     void el_full_de_respostes_te_una_fila_per_alumne_entregat_i_pregunta() throws Exception {
         XlsxLector x = new XlsxLector(ExportacioExcel.excel(examen().dades()));
         var c = x.cel_les(3);

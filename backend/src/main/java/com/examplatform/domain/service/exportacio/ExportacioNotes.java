@@ -2,6 +2,7 @@ package com.examplatform.domain.service.exportacio;
 
 import com.examplatform.domain.model.Answer;
 import com.examplatform.domain.model.Question;
+import com.examplatform.domain.service.Numeracio;
 import com.examplatform.domain.service.Puntuacio;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -26,7 +27,7 @@ public final class ExportacioNotes {
 
     /** Capçalera d'una pregunta: «P3 (2 pts)». */
     public static String capcaleraPregunta(Question q) {
-        return "P" + q.getOrdre() + " (" + CsvSegur.curt(q.getPunts()) + " pts)";
+        return "P" + Numeracio.numero(q) + " (" + CsvSegur.curt(q.getPunts()) + " pts)";
     }
 
     /** Respostes d'una sessió que el professor encara no ha qualificat. */
