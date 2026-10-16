@@ -47,6 +47,19 @@ class ExportacioNotesTest {
     }
 
     @Test
+    void les_competencies_declarades_per_l_examen_surten_al_csv_encara_que_cap_pregunta_les_avaluï() {
+        FixtureExamen f = new FixtureExamen();
+        Question p1 = f.pregunta(QuestionType.SHORT, "4", "CO1");
+        f.exam.setCompetenciesExamen(new java.util.LinkedHashSet<>(List.of("CO3", "CO1", "CO10")));
+        f.resposta(f.entregat("Anna", "anna@x.cat"), p1, "x", "2");
+
+        List<String> l = linies(ExportacioNotes.competenciesCsv(f.dades()));
+
+        assertThat(l.get(0)).isEqualTo("alumne;email;CO1;CO3;CO10;nota_global");
+        assertThat(l.get(1)).isEqualTo("Anna;anna@x.cat;5,00;;;5,00");
+    }
+
+    @Test
     void una_fila_per_alumne_ordenats_per_nom_amb_nota_sobre_10_amb_coma_decimal() {
         FixtureExamen f = new FixtureExamen();
         Question p1 = f.pregunta(QuestionType.SHORT, "4", null);

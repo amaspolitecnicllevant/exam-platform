@@ -82,7 +82,7 @@ export default function ExportarExamen({ examId, titol, teFitxers = false }: {
           className="w-80 max-w-[calc(100vw-1rem)] overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg z-50 p-2 space-y-1 text-left">
           <p className="px-3 pt-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Notes</p>
           <Opcio tipus="notes" sufix="notes.csv" text="Notes per alumne (CSV)" detall="Nota sobre 10, punts i punts de cada pregunta" />
-          <Opcio tipus="notes-competencies" sufix="notes-competencies.csv" text="Notes per competència (CSV)" />
+          <Opcio tipus="notes-competencies" sufix="notes-competencies.csv" text="Notes per competència (CSV)" detall="Nota sobre 10 de cada competència; només alumnes que han entregat" />
           <Opcio tipus="excel" sufix="examen.xlsx" text="Excel (.xlsx)" detall="Full de notes, de competències i de respostes" />
 
           <p className="px-3 pt-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-t border-gray-100">Revisar amb una IA</p>
@@ -111,7 +111,7 @@ export default function ExportarExamen({ examId, titol, teFitxers = false }: {
           <p className="px-3 pt-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-t border-gray-100">Altres</p>
           <Opcio tipus="informe" sufix="informe.md" text="Informe de l'examen (.md)" detall="Estadístiques per pregunta i distribució de notes" />
           {teFitxers && <Opcio tipus="fitxers" sufix="lliuraments.zip" text="Fitxers lliurats (ZIP)" detall="Un directori per alumne" />}
-          <Opcio tipus="csv-detallat" sufix="detall.csv" text="CSV detallat (una fila per resposta)" />
+          <Opcio tipus="csv-detallat" sufix="detall.csv" text="CSV detallat (una fila per resposta)" detall="Amb la competència de cada pregunta" />
 
           {error && <p role="alert" className="mx-3 mt-1 text-xs text-red-700 bg-red-50 border border-red-200 rounded px-2 py-1">{error}</p>}
         </div>,

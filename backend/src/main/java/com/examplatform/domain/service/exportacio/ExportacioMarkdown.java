@@ -1,6 +1,7 @@
 package com.examplatform.domain.service.exportacio;
 
 import com.examplatform.domain.service.Numeracio;
+import com.examplatform.domain.service.Puntuacio;
 import com.examplatform.domain.model.Answer;
 import com.examplatform.domain.model.Question;
 import com.examplatform.domain.model.QuestionType;
@@ -92,6 +93,7 @@ public final class ExportacioMarkdown {
         StringBuilder sb = new StringBuilder();
         sb.append("### P").append(Numeracio.numero(q)).append(" · ").append(etiquetaTipus(q.getTipus()))
                 .append(" · ").append(CsvSegur.curt(q.getPunts())).append(" punts");
+        if (q.getCompetencia() != null && !q.getCompetencia().isBlank()) sb.append(" · competència ").append(unaLinia(q.getCompetencia()));
         if (q.isAmbApunts()) sb.append(" · es poden fer servir apunts");
         if (q.isAnulada()) sb.append(" · anul·lada (bonus)");
         sb.append("\n\n").append(citacio(q.getEnunciat())).append("\n\n");
@@ -174,6 +176,8 @@ public final class ExportacioMarkdown {
             sb.append("\n");
         }
 
+        informeCompetencies(sb, d);
+
         sb.append("## Preguntes\n\n| P | Tipus | Punts | Rendiment | Punts mitjans | Sense resposta | Encerts | Competència | Enunciat |\n")
                 .append("|--:|:--|--:|--:|--:|--:|--:|:--|:--|\n");
         for (ExamStatsDto.Pregunta p : s.preguntes()) {
@@ -214,6 +218,29 @@ public final class ExportacioMarkdown {
             sb.append("\n");
         }
         return sb.toString();
+    }
+
+    /** Taula de nota mitjana per competència entre els alumnes entregats (només si l'examen en té). */
+    private static void informeCompetencies(StringBuilder sb, DadesExamen d) {
+        List<String> cos = ExportacioNotes.competencies(d);
+        if (cos.stream().allMatch(c -> c.equals(ExportacioNotes.SENSE_COMPETENCIA))) return;
+        sb.append("## Nota per competència\n\n| Competència | Preguntes | Punts | Nota mitjana (sobre 10) |\n|:--|--:|--:|--:|\n");
+        for (String co : cos) {
+            List<Question> qs = d.preguntes().stream().filter(q -> co.equals(ExportacioNotes.SENSE_COMPETENCIA)
+                    ? q.getCompetencia() == null || q.getCompetencia().isBlank()
+                    : co.equals(q.getCompetencia() == null ? null : q.getCompetencia().strip())).toList();
+            BigDecimal suma = BigDecimal.ZERO;
+            int n = 0;
+            for (DadesExamen.Alumne a : d.entregats()) {
+                BigDecimal nota = ExportacioNotes.notaCompetencia(d, a, co);
+                if (nota != null) { suma = suma.add(nota); n++; }
+            }
+            sb.append("| ").append(cela(co)).append(" | ").append(qs.size())
+                    .append(" | ").append(CsvSegur.curt(Puntuacio.maxim(qs)))
+                    .append(" | ").append(n == 0 ? "—" : CsvSegur.num(suma.divide(BigDecimal.valueOf(n), 2, java.math.RoundingMode.HALF_UP)))
+                    .append(" |\n");
+        }
+        sb.append("\n");
     }
 
     // ── Ajudes ────────────────────────────────────────────────────────────────

@@ -234,6 +234,36 @@ class ExportacioMarkdownTest {
 
     // ── informe ───────────────────────────────────────────────────────────────
 
+    @Test
+    void l_informe_porta_la_nota_mitjana_per_competencia_i_la_pregunta_mostra_la_seva_competencia() {
+        FixtureExamen f = new FixtureExamen();
+        Question p1 = f.pregunta(QuestionType.SHORT, "4", "CO1");
+        Question p2 = f.pregunta(QuestionType.SHORT, "6", "CO2");
+        ExamSession a = f.entregat("Anna", "anna@x.cat");
+        f.resposta(a, p1, "x", "4");
+        f.resposta(a, p2, "y", "3");
+        ExamSession b = f.entregat("Biel", "biel@x.cat");
+        f.resposta(b, p1, "x", "2");
+        f.resposta(b, p2, "y", "6");
+
+        String informe = ExportacioMarkdown.informe(f.dades(), stats(0, List.of()), DATA);
+        String respostes = ExportacioMarkdown.respostes(f.dades(), new ExportacioMarkdown.Opcions(true, true), DATA);
+
+        assertThat(informe).contains("## Nota per competència")
+                .contains("| CO1 | 1 | 4 | 7,50 |")      // (10 + 5) / 2
+                .contains("| CO2 | 1 | 6 | 7,50 |");      // (5 + 10) / 2
+        assertThat(respostes).contains("### P1 · Resposta curta · 4 punts · competència CO1");
+    }
+
+    @Test
+    void l_informe_sense_competencies_no_porta_la_taula() {
+        FixtureExamen f = new FixtureExamen();
+        f.pregunta(QuestionType.SHORT, "4", null);
+        f.entregat("Anna", "anna@x.cat");
+
+        assertThat(ExportacioMarkdown.informe(f.dades(), stats(0, List.of()), DATA)).doesNotContain("Nota per competència");
+    }
+
     private static ExamStatsDto.Pregunta pregunta(int ordre, QuestionType t, String enunciat, String rendiment, boolean bonus,
                                                   Map<String, Integer> opcions) {
         return new ExamStatsDto.Pregunta(UUID.randomUUID(), ordre, t, enunciat, new BigDecimal("2"), bonus, "CO1", 8, 2,

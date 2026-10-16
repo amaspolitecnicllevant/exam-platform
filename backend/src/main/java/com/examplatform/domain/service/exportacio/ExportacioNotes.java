@@ -77,9 +77,11 @@ public final class ExportacioNotes {
         return sw.toString();
     }
 
-    /** Competències presents a l'examen, en ordre natural (CO1, CO2, CO10…), i «(sense competència)» al final. */
+    /** Competències declarades per l'examen o presents a les preguntes, en ordre natural (CO1, CO2, CO10…), i «(sense competència)» al final. */
     public static List<String> competencies(DadesExamen d) {
         TreeSet<String> cos = new TreeSet<>(NATURAL);
+        // Les que l'examen declara hi surten encara que cap pregunta no les avaluï (nota buida)
+        d.exam().getCompetenciesExamen().stream().filter(c -> !c.isBlank()).map(String::strip).forEach(cos::add);
         boolean senseCompetencia = false;
         for (Question q : d.preguntes()) {
             if (q.getCompetencia() == null || q.getCompetencia().isBlank()) senseCompetencia = true;
