@@ -146,6 +146,7 @@ export interface Exam {
   modulId?: string
   modulNom?: string
   cicleNom?: string
+  departamentNom?: string
   aulaId?: string
   aulaNom?: string
   aulaCidr?: string
@@ -160,6 +161,10 @@ export interface Exam {
   unitats: UnitatProg[]
   /** Totes les competències del mòdul de l'examen */
   competencies: CompetenciaProg[]
+  /** Competències que declara l'examen (codis lliures; poden no ser a la programació) */
+  competenciesExamen: string[]
+  /** Avisos sobre competències que no són a la programació (només el professorat; no bloquegen res) */
+  avisos?: string[]
   questions: Question[]
 }
 

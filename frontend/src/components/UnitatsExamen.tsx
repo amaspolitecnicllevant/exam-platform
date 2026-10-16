@@ -9,7 +9,7 @@ interface Props {
   onCanvi: (exam: Exam) => void
 }
 
-/** Unitats de treball que avalua l'examen: les preguntes només poden tenir competències d'aquestes UT. */
+/** Unitats de treball que avalua l'examen: si l'examen no declara competències, es proposen les d'aquestes UT. */
 export default function UnitatsExamen({ exam, onCanvi }: Props) {
   const [programacio, setProgramacio] = useState<Programacio | null>(null)
   const [triades, setTriades] = useState<Set<string>>(new Set(exam.unitats.map(u => u.id)))
@@ -71,15 +71,15 @@ export default function UnitatsExamen({ exam, onCanvi }: Props) {
       {programacio && programacio.unitats.length === 0 && (
         <p className="text-xs text-gray-500">
           El mòdul encara no té unitats ni competències. Defineix-les a la programació del mòdul; mentrestant,
-          les preguntes admeten qualsevol codi de competència.
+          pots declarar les competències directament a l'examen.
         </p>
       )}
 
       {programacio && programacio.unitats.length > 0 && (
         <>
           <p className="text-xs text-gray-500">
-            Marca les unitats que avalua aquest examen: les preguntes només podran tenir competències d'aquestes unitats.
-            Sense cap unitat marcada, es permeten totes les del mòdul.
+            Marca les unitats que avalua aquest examen. Si l'examen no declara competències pròpies, es proposen
+            a les preguntes les d'aquestes unitats (sense cap unitat marcada, totes les del mòdul).
           </p>
           <div className="space-y-1">
             {programacio.unitats.map(u => (

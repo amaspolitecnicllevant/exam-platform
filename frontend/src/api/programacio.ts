@@ -19,5 +19,8 @@ export const importaProgramacioCsv = (modulId: string, fitxer: File): Promise<Pr
   return client.post(`/moduls/${modulId}/programacio/csv`, form).then(r => r.data)
 }
 
+export const fixaCompetenciesExamen = (examId: string, codis: string[]): Promise<Exam> =>
+  client.put(`/exams/${examId}/competencies`, { codis }).then(r => r.data)
+
 export const assignaUnitatsExamen = (examId: string, unitatIds: string[]): Promise<Exam> =>
   client.put(`/exams/${examId}/unitats`, { unitatIds }).then(r => r.data)

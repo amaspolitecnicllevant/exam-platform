@@ -24,7 +24,7 @@ export default function SelectorCompetencia({ value, onChange, permeses, classNa
     <select value={value} onChange={e => onChange(e.target.value)} aria-label={ariaLabel} className={className}>
       <option value="">— cap —</option>
       {permeses.map(c => <option key={c.id} value={c.codi}>{etiquetaCompetencia(c)}</option>)}
-      {desconeguda && <option value={value}>{value} (no permesa)</option>}
+      {desconeguda && <option value={value}>{value} (fora de l'examen)</option>}
     </select>
   )
 }

@@ -97,7 +97,6 @@ public class EditorPreguntesService {
         Exam exam = examEditable(examId, user);
         Question q = pregunta(exam, questionId);
         Question nova = construeix(q.getOrdre(), req);
-        CompetenciesExamen.valida(exam, nova.getCompetencia());
         copia(nova, q);
         return questionRepository.save(q);
     }
@@ -108,7 +107,6 @@ public class EditorPreguntesService {
         int n = exam.getQuestions().size();
         int pos = req.posicio() == null ? n + 1 : Math.max(1, Math.min(req.posicio(), n + 1));
         Question nova = construeix(pos, req);
-        CompetenciesExamen.valida(exam, nova.getCompetencia());
         nova.setExam(exam);
         nova.setOrdre(ORDRE_PROVISIONAL * 10);
         Question desada = questionRepository.saveAndFlush(nova);

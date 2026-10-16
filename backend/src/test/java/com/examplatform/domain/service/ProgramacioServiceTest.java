@@ -241,18 +241,41 @@ class ProgramacioServiceTest {
     }
 
     @Test
-    void rebutja_unitats_que_deixarien_preguntes_amb_competencia_no_permesa_i_no_canvia_res() {
+    void unitats_que_deixen_preguntes_amb_competencia_fora_de_les_ut_nomes_donen_un_avis() {
         Exam e = examen();
         e.getQuestions().add(Question.builder().id(UUID.randomUUID()).exam(e).ordre(1)
                 .tipus(QuestionType.SHORT).competencia("CO3").build());
         UnitatTreball antiga = unitat(modul, "UT01", "CO3");
         e.getUnitats().add(antiga);
         UnitatTreball nova = unitat(modul, "UT02", "CO1");
+        modul.setCompetencies(new java.util.ArrayList<>(List.of(
+                Competencia.builder().id(UUID.randomUUID()).modul(modul).codi("CO1").build(),
+                Competencia.builder().id(UUID.randomUUID()).modul(modul).codi("CO3").build())));
+        when(examRepository.save(e)).thenReturn(e);
 
-        assertThatThrownBy(() -> service.assignaUnitats(e.getId(), List.of(nova.getId()), professor))
-                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("P1: CO3");
+        ExamDto dto = service.assignaUnitats(e.getId(), List.of(nova.getId()), professor);
 
-        assertThat(e.getUnitats()).containsExactly(antiga);
+        assertThat(e.getUnitats()).containsExactly(nova);
+        assertThat(dto.avisos()).anyMatch(a -> a.contains("P1: CO3"));
+    }
+
+    @Test
+    void fixa_les_competencies_de_l_examen_en_majuscules_sense_repetits_i_amb_codis_lliures() {
+        Exam e = examen();
+        when(examRepository.save(e)).thenReturn(e);
+
+        ExamDto dto = service.fixaCompetencies(e.getId(), java.util.Arrays.asList("co2", " CO1 ", "CO2", "", null, "CO99"), professor);
+
+        assertThat(dto.competenciesExamen()).containsExactly("CO1", "CO2", "CO99");
+        assertThat(dto.avisos()).anyMatch(a -> a.contains("CO1, CO2, CO99"));
+    }
+
+    @Test
+    void fixa_competencies_rebutja_un_codi_amb_format_invalid() {
+        Exam e = examen();
+
+        assertThatThrownBy(() -> service.fixaCompetencies(e.getId(), List.of("CO 1!"), professor))
+                .isInstanceOf(IllegalArgumentException.class);
         verify(examRepository, never()).save(any());
     }
 

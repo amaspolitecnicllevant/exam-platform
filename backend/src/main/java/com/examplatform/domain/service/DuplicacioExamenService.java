@@ -55,6 +55,7 @@ public class DuplicacioExamenService {
                 .penalitzacioChoice(origen.getPenalitzacioChoice())
                 .unaPreguntaPerPantalla(origen.isUnaPreguntaPerPantalla())
                 .unitats(new java.util.LinkedHashSet<>(origen.getUnitats()))
+                .competenciesExamen(new java.util.LinkedHashSet<>(origen.getCompetenciesExamen()))
                 .build();
         for (Question q : origen.getQuestions()) {
             copia.getQuestions().add(Question.builder()

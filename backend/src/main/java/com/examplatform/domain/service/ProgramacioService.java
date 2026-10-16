@@ -136,16 +136,22 @@ public class ProgramacioService {
             }
             triades.add(u);
         }
-        Set<UnitatTreball> abans = new LinkedHashSet<>(exam.getUnitats());
         exam.getUnitats().clear();
         exam.getUnitats().addAll(triades);
-        List<String> problemes = CompetenciesExamen.problemes(exam);
-        if (!problemes.isEmpty()) {
-            exam.getUnitats().clear();
-            exam.getUnitats().addAll(abans);
-            throw new IllegalArgumentException("Hi ha preguntes amb una competència que no és de les UT triades ("
-                    + String.join(", ", problemes) + "). Canvia-la a la previsualització o tria'n unes altres");
+        return ExamDto.from(examRepository.save(exam), true);
+    }
+
+    /** Fixa les competències que avalua l'examen (codis lliures; buit = les de les UT o del mòdul). */
+    @Transactional
+    public ExamDto fixaCompetencies(UUID examId, List<String> codis, User user) {
+        Exam exam = examService.getEntity(examId);
+        examService.assertOwnership(exam, user);
+        Set<String> nous = new LinkedHashSet<>();
+        for (String c : codis == null ? List.<String>of() : codis) {
+            if (c != null && !c.isBlank()) nous.add(codi(c, "competència"));
         }
+        exam.getCompetenciesExamen().clear();
+        exam.getCompetenciesExamen().addAll(nous);
         return ExamDto.from(examRepository.save(exam), true);
     }
 

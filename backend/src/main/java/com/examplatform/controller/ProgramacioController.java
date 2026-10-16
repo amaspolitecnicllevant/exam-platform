@@ -59,4 +59,13 @@ public class ProgramacioController {
         auditLog.log(user.getId(), "EXAM_UNITATS_SET", "examen " + examId + ": " + res.unitats().size() + " unitats");
         return res;
     }
+
+    @PutMapping("/api/exams/{examId}/competencies")
+    @PreAuthorize("hasAnyRole('PROFESSOR','ADMIN')")
+    public ExamDto fixaCompetencies(@PathVariable UUID examId, @RequestBody ProgramacioDto.CompetenciesDeLExamen req,
+                                    @AuthenticationPrincipal User user) {
+        ExamDto res = programacioService.fixaCompetencies(examId, req.codis(), user);
+        auditLog.log(user.getId(), "EXAM_COMPETENCIES_SET", "examen " + examId + ": " + res.competenciesExamen());
+        return res;
+    }
 }

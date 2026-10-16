@@ -33,4 +33,7 @@ public record ProgramacioDto(UUID modulId, List<Competencia> competencies, List<
 
     /** Unitats que avalua un examen. */
     public record UnitatsExamen(List<UUID> unitatIds) {}
+
+    /** Competències que declara un examen. */
+    public record CompetenciesDeLExamen(List<String> codis) {}
 }

@@ -88,6 +88,13 @@ public class Exam {
     @Builder.Default
     private Set<UnitatTreball> unitats = new LinkedHashSet<>();
 
+    /** Competències que avalua l'examen (codis lliures; si n'hi ha, són les que es proposen a cada pregunta). */
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "exam_competencies", joinColumns = @JoinColumn(name = "exam_id"))
+    @Column(name = "codi", length = 20)
+    @Builder.Default
+    private Set<String> competenciesExamen = new LinkedHashSet<>();
+
     /** Si és cert, l'alumne veu una sola pregunta per pantalla (navegació lliure). */
     @Column(name = "una_pregunta_per_pantalla", nullable = false)
     @Builder.Default

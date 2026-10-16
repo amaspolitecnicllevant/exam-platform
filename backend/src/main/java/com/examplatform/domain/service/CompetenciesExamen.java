@@ -13,15 +13,23 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Quines competències es poden assignar a les preguntes d'un examen: les de les UT que avalua; si no té UT, les del seu mòdul;
- * si no té mòdul (o el mòdul no té programació), qualsevol codi (encara no es pot validar).
+ * Quines competències es proposen per a les preguntes d'un examen: les que declara l'examen; si no n'ha declarat, les de les
+ * UT que avalua; si no té UT, les del seu mòdul; si no té mòdul (o el mòdul no té programació), cap restricció.
+ * Res no es rebutja: un codi que no és a la programació només genera un avís ({@link #avisos}).
  */
 public final class CompetenciesExamen {
 
+    /** CO2 abans que CO10. */
+    public static final Comparator<String> ORDRE_CODIS =
+            Comparator.comparingInt(String::length).thenComparing(Comparator.naturalOrder());
+
     private CompetenciesExamen() {}
 
-    /** Codis permesos, o {@code null} si no hi ha cap restricció. */
+    /** Codis proposats, o {@code null} si no hi ha cap restricció. */
     public static Set<String> permeses(Exam exam) {
+        if (exam.getCompetenciesExamen() != null && !exam.getCompetenciesExamen().isEmpty()) {
+            return new LinkedHashSet<>(exam.getCompetenciesExamen().stream().sorted(ORDRE_CODIS).toList());
+        }
         if (exam.getUnitats() != null && !exam.getUnitats().isEmpty()) {
             Set<String> codis = new LinkedHashSet<>();
             for (UnitatTreball u : exam.getUnitats()) {
@@ -38,17 +46,7 @@ public final class CompetenciesExamen {
         return null;
     }
 
-    /** Rebutja un codi que no és de cap competència permesa. Un codi buit (sense competència) sempre és vàlid. */
-    public static void valida(Exam exam, String codi) {
-        if (codi == null || codi.isBlank()) return;
-        Set<String> permeses = permeses(exam);
-        if (permeses != null && !permeses.contains(codi.strip())) {
-            throw new IllegalArgumentException("La competència «" + codi.strip() + "» no és una de les permeses en aquest examen ("
-                    + String.join(", ", permeses) + ")");
-        }
-    }
-
-    /** Preguntes de l'examen amb una competència no permesa, com a «P3: CO9». */
+    /** Preguntes de l'examen amb una competència fora de les proposades, com a «P3: CO9». */
     public static List<String> problemes(Exam exam) {
         Set<String> permeses = permeses(exam);
         List<String> res = new ArrayList<>();
@@ -61,5 +59,37 @@ public final class CompetenciesExamen {
             }
         }
         return res;
+    }
+
+    /** Avisos (no bloquejants) sobre les competències de l'examen i de les seves preguntes. */
+    public static List<String> avisos(Exam exam) {
+        List<String> avisos = new ArrayList<>();
+        if (exam.getModul() != null) {
+            Set<String> programades = new LinkedHashSet<>();
+            exam.getModul().getCompetencies().forEach(c -> programades.add(c.getCodi()));
+            Set<String> desconegudes = new LinkedHashSet<>();
+            exam.getCompetenciesExamen().stream().sorted(ORDRE_CODIS).forEach(desconegudes::add);
+            exam.getQuestions().stream().filter(q -> q.getTipus() != QuestionType.SECTION)
+                    .map(Question::getCompetencia).filter(c -> c != null && !c.isBlank()).map(String::strip)
+                    .sorted(ORDRE_CODIS).forEach(desconegudes::add);
+            desconegudes.removeAll(programades);
+            if (!desconegudes.isEmpty()) {
+                avisos.add("Aquestes competències no són a la programació del mòdul " + exam.getModul().getCodi() + ": "
+                        + String.join(", ", desconegudes) + (programades.isEmpty()
+                        ? ". El mòdul encara no té programació."
+                        : ". Afegeix-les a la programació o corregeix-les."));
+            }
+        }
+        // Les que no són a la programació ja s'han avisat; aquí només les que sí que hi són però l'examen no proposa
+        Set<String> programades = exam.getModul() == null ? Set.of()
+                : exam.getModul().getCompetencies().stream().map(Competencia::getCodi).collect(java.util.stream.Collectors.toSet());
+        List<String> fora = problemes(exam).stream()
+                .filter(p -> exam.getModul() == null || programades.contains(p.substring(p.indexOf(": ") + 2))).toList();
+        if (!fora.isEmpty()) {
+            avisos.add(exam.getCompetenciesExamen().isEmpty()
+                    ? "Preguntes amb una competència que no és de les unitats triades (" + String.join(", ", fora) + ")."
+                    : "Preguntes amb una competència que l'examen no declara (" + String.join(", ", fora) + ").");
+        }
+        return avisos;
     }
 }

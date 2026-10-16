@@ -1,4 +1,5 @@
 import { idsReferenciats } from '../../utils/imatges'
+import { textPenalitzacio } from '../../utils/penalitzacio'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Editor from '@monaco-editor/react'
@@ -713,6 +714,9 @@ function ExamTake() {
               <h1 className="text-xl font-bold">{exam.title}</h1>
               <p className="text-brand-100 text-sm mt-1">{exam.durada} min · {exam.questions.filter(q => q.tipus !== 'SECTION').length} preguntes</p>
               {exam.instruccions && <p className="text-white/80 text-sm mt-2">{exam.instruccions}</p>}
+              {exam.questions.some(q => q.tipus === 'CHOICE') && (
+                <p className="text-white text-sm mt-2 font-medium">{textPenalitzacio(exam.penalitzacioChoice ?? 0)}</p>
+              )}
               {authUser && (
                 <div className="mt-3 inline-flex items-center gap-2 bg-white/20 rounded-lg px-3 py-1.5">
                   <span className="text-white/70 text-xs">Alumne:</span>

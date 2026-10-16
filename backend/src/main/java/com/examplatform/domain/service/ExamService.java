@@ -84,11 +84,6 @@ public class ExamService {
         boolean canviaDeModul = exam.getModul() == null || !exam.getModul().getId().equals(modulId);
         exam.setModul(modul);
         if (canviaDeModul) exam.getUnitats().clear();   // les UT són del mòdul anterior
-        List<String> problemes = CompetenciesExamen.problemes(exam);
-        if (!problemes.isEmpty()) {
-            throw new IllegalArgumentException("Hi ha preguntes amb una competència que el mòdul " + modul.getCodi()
-                    + " no té (" + String.join(", ", problemes) + "). Corregeix-les a la previsualització abans d'assignar el mòdul");
-        }
         return ExamDto.from(examRepository.save(exam), true);
     }
 
@@ -335,7 +330,6 @@ public class ExamService {
         }
         if (req.competencia() != null) {
             q.setCompetencia(req.competencia().isBlank() ? null : req.competencia().strip().toUpperCase());
-            CompetenciesExamen.valida(q.getExam(), q.getCompetencia());
         }
         if (req.dificultat() != null) {
             String dif = req.dificultat().strip().toLowerCase();

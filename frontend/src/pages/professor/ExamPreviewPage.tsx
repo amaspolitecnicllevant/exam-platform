@@ -11,7 +11,9 @@ import { getEstatEdicio, eliminaPregunta, mouPregunta, type EstatEdicio } from '
 import { idsReferenciats } from '../../utils/imatges'
 import { competenciesPermeses, descripcioCompetencia } from '../../utils/competencies'
 import SelectorCompetencia from '../../components/SelectorCompetencia'
+import { fraccioPenalitzacio, instruccionsParlenDePenalitzacio } from '../../utils/penalitzacio'
 import UnitatsExamen from '../../components/UnitatsExamen'
+import CompetenciesDeLExamen from '../../components/CompetenciesDeLExamen'
 
 const DIF_COLORS: Record<string, string> = {
   baixa:   'bg-green-100 text-green-700',
@@ -185,6 +187,7 @@ export default function ExamPreviewPage() {
         }
       })
       setEditingCo(prev => ({ ...prev, [qId]: null }))
+      carrega()   // refresca els avisos de competències
     } catch (e: any) {
       setErrorEditor(e?.response?.data?.error || 'No s\'ha pogut desar la competència')
     } finally {
@@ -300,6 +303,13 @@ export default function ExamPreviewPage() {
             </>
           )}
         </div>
+        {instruccionsParlenDePenalitzacio(exam!.instruccions) && (
+          <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+            Les instruccions de l'examen parlen de penalització («{exam!.instruccions}»). L'alumne també veu una
+            línia automàtica amb la penalització real ({exam!.penalitzacioChoice > 0
+              ? `${fraccioPenalitzacio(exam!.penalitzacioChoice)}` : 'cap'}): comprova que no es contradiuen.
+          </p>
+        )}
 
         {/* Mode de presentació */}
         <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-4 text-sm">
@@ -345,6 +355,7 @@ export default function ExamPreviewPage() {
           )
         })()}
 
+        <CompetenciesDeLExamen exam={exam} onCanvi={setExam} />
         <UnitatsExamen exam={exam} onCanvi={setExam} />
 
         {/* Resum competència / dificultat */}

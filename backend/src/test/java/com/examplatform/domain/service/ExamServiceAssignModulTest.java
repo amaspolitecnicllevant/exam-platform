@@ -126,7 +126,7 @@ class ExamServiceAssignModulTest {
     }
 
     @Test
-    void assignModul_rebutja_preguntes_amb_una_competencia_que_el_modul_no_te() {
+    void assignModul_no_rebutja_preguntes_amb_una_competencia_que_el_modul_no_te() {
         Exam exam = exam(professor);
         exam.getQuestions().add(Question.builder().id(UUID.randomUUID()).exam(exam).ordre(1)
                 .tipus(QuestionType.SHORT).competencia("CO9").build());
@@ -137,10 +137,12 @@ class ExamServiceAssignModulTest {
         when(modulRepository.findById(modul.getId())).thenReturn(Optional.of(modul));
         when(imparticioRepository.professorImparteixModul(professor.getId(), modul.getId())).thenReturn(true);
 
-        assertThatThrownBy(() -> service.assignModul(exam.getId(), modul.getId(), professor))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("P1: CO9");
-        verify(examRepository, never()).save(any());
+        when(examRepository.save(exam)).thenReturn(exam);
+
+        ExamDto dto = service.assignModul(exam.getId(), modul.getId(), professor);
+
+        assertThat(dto.avisos()).singleElement().asString().contains("CO9").contains("no són a la programació");
+        verify(examRepository).save(exam);
     }
 
     @Test

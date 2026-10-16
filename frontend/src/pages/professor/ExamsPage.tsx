@@ -6,6 +6,7 @@ import { getGrups, assignExamToGrup } from '../../api/grups'
 import { getModuls } from '../../api/moduls'
 import { getAules, assignAulaExamen, removeAulaExamen } from '../../api/aules'
 import FiltreGrups from '../../components/FiltreGrups'
+import { agrupaExamens, type AgrupacioExamens } from '../../utils/agrupaExamens'
 import AlumnesExamen from '../../components/AlumnesExamen'
 import {
   FILTRE_GRUPS_BUIT, filtraGrupsAssignacio, filtreGrupsInicial, type FiltreGrupsAssig,
@@ -67,6 +68,16 @@ export default function ExamsPage() {
   const [selectedAula, setSelectedAula]     = useState('')
   const [expandedConfig, setExpandedConfig] = useState<Set<string>>(new Set())
   const [filtre, setFiltre]     = useState<FiltreExamens>(FILTRE_EXAMENS_BUIT)
+  const [agrupacio, setAgrupacio] = useState<AgrupacioExamens>(() => {
+    try {
+      const v = localStorage.getItem('examens.agrupacio')
+      return v === 'departament' || v === 'cicle' || v === 'modul' ? v : 'cap'
+    } catch { return 'cap' }
+  })
+  const canviaAgrupacio = (v: AgrupacioExamens) => {
+    setAgrupacio(v)
+    try { localStorage.setItem('examens.agrupacio', v) } catch { /* sense emmagatzematge: no es recorda */ }
+  }
   const canviaFiltre = (canvis: Partial<FiltreExamens>) => setFiltre(prev => ({ ...prev, ...canvis }))
   // Filtres per triar grup (assignar o programar un examen)
   const [filtreGrups, setFiltreGrups] = useState<FiltreGrupsAssig>(FILTRE_GRUPS_BUIT)
@@ -187,6 +198,7 @@ export default function ExamsPage() {
   const grupsSelect = grupTriat && !grupsVisibles.some(g => g.id === grupTriat.id) ? [...grupsVisibles, grupTriat] : grupsVisibles
   const filtresActius = hiHaFiltres(filtre)
   const filtrats = filtraExamens(exams, filtre, examVisualState)
+  const agrupats = agrupaExamens(filtrats, agrupacio)
 
   return (
     <Layout>
@@ -222,6 +234,13 @@ export default function ExamsPage() {
                 className="border rounded-lg px-2 py-1.5 text-sm">
                 <option value="">Tots els estats</option>
                 {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+              <select value={agrupacio} onChange={e => canviaAgrupacio(e.target.value as AgrupacioExamens)}
+                aria-label="Agrupa els exàmens per" className="border rounded-lg px-2 py-1.5 text-sm">
+                <option value="cap">Sense agrupar</option>
+                <option value="departament">Agrupa per departament</option>
+                <option value="cicle">Agrupa per cicle</option>
+                <option value="modul">Agrupa per mòdul</option>
               </select>
               {opcions.autors.length > 1 && (
                 <select value={filtre.autor} onChange={e => canviaFiltre({ autor: e.target.value })} aria-label="Professor"
@@ -277,8 +296,18 @@ export default function ExamsPage() {
           </div>
         )}
 
-        <div className="grid gap-4">
-          {filtrats.map(exam => {
+        <div className="space-y-6">
+          {agrupats.map(grup => (
+          <section key={grup.clau} className="space-y-3">
+            {grup.titol && (
+              <h2 className="flex items-baseline gap-2 flex-wrap border-b border-gray-200 pb-1">
+                <span className="font-semibold text-gray-800">{grup.titol}</span>
+                {grup.context && <span className="text-xs text-gray-500">{grup.context}</span>}
+                <span className="text-xs text-gray-400">{grup.exams.length} {grup.exams.length === 1 ? 'examen' : 'exàmens'}</span>
+              </h2>
+            )}
+          <div className="grid gap-4">
+          {grup.exams.map(exam => {
             const isConfigOpen = expandedConfig.has(exam.id)
             return (
               <div key={exam.id} className={`rounded-xl border overflow-hidden ${CARD_STYLES[examVisualState(exam)]}`}>
@@ -493,6 +522,9 @@ export default function ExamsPage() {
               </div>
             )
           })}
+          </div>
+          </section>
+          ))}
           {exams.length === 0 && <p className="text-gray-400 text-sm">Cap examen. Crea'n un des d'un fitxer .md</p>}
           {exams.length > 0 && filtrats.length === 0 && <p className="text-gray-400 text-sm">Cap examen coincideix amb els filtres.</p>}
         </div>

@@ -10,7 +10,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CompetenciesExamenTest {
 
@@ -49,7 +48,6 @@ class CompetenciesExamenTest {
         Exam e = examen(null, new LinkedHashSet<>(), "CO9");
 
         assertThat(CompetenciesExamen.permeses(e)).isNull();
-        CompetenciesExamen.valida(e, "QUALSEVOL");
         assertThat(CompetenciesExamen.problemes(e)).isEmpty();
     }
 
@@ -76,10 +74,6 @@ class CompetenciesExamenTest {
 
         assertThat(CompetenciesExamen.permeses(e)).containsExactly("CO1", "CO2");
         assertThat(CompetenciesExamen.problemes(e)).containsExactly("P2: CO3");
-        assertThatThrownBy(() -> CompetenciesExamen.valida(e, "CO3"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("CO3").hasMessageContaining("CO1, CO2");
-        CompetenciesExamen.valida(e, "CO2");
     }
 
     @Test
@@ -89,8 +83,6 @@ class CompetenciesExamenTest {
 
         assertThat(CompetenciesExamen.permeses(e)).containsExactlyInAnyOrder("CO1", "CO3");
         assertThat(CompetenciesExamen.problemes(e)).isEmpty();
-        CompetenciesExamen.valida(e, null);
-        CompetenciesExamen.valida(e, "");
     }
 
     @Test
@@ -100,5 +92,45 @@ class CompetenciesExamenTest {
         e.getQuestions().add(0, Question.builder().id(UUID.randomUUID()).exam(e).ordre(0).tipus(QuestionType.SECTION).build());
 
         assertThat(CompetenciesExamen.problemes(e)).containsExactly("P2: CO2");
+    }
+
+    @Test
+    void les_competencies_declarades_per_l_examen_manen_sobre_les_de_les_ut() {
+        prepara();
+        Exam e = examen(modul, new LinkedHashSet<>(List.of(ut(modul, "UT01", co1))), "CO2");
+        e.setCompetenciesExamen(new LinkedHashSet<>(List.of("CO10", "CO2")));
+
+        assertThat(CompetenciesExamen.permeses(e)).containsExactly("CO2", "CO10");
+        assertThat(CompetenciesExamen.problemes(e)).isEmpty();
+    }
+
+    @Test
+    void una_competencia_que_no_es_a_la_programacio_nomes_dona_un_avis() {
+        prepara();
+        Exam e = examen(modul, new LinkedHashSet<>(), "CO1", "CO2", "CO9");
+        e.setCompetenciesExamen(new LinkedHashSet<>(List.of("CO1", "CO7")));
+
+        List<String> avisos = CompetenciesExamen.avisos(e);
+
+        assertThat(avisos).hasSize(2);
+        assertThat(avisos.get(0)).contains("no són a la programació").contains("0485").contains("CO7, CO9");
+        assertThat(avisos.get(1)).contains("P2: CO2").doesNotContain("CO9");
+    }
+
+    @Test
+    void amb_modul_sense_programacio_totes_les_competencies_donen_avis() {
+        Modul buit = Modul.builder().id(UUID.randomUUID()).codi("0001").build();
+        Exam e = examen(buit, new LinkedHashSet<>(), "CO1");
+
+        assertThat(CompetenciesExamen.avisos(e)).singleElement().asString()
+                .contains("CO1").contains("encara no té programació");
+    }
+
+    @Test
+    void sense_modul_o_amb_tot_a_la_programacio_no_hi_ha_avisos() {
+        prepara();
+
+        assertThat(CompetenciesExamen.avisos(examen(null, new LinkedHashSet<>(), "CO9"))).isEmpty();
+        assertThat(CompetenciesExamen.avisos(examen(modul, new LinkedHashSet<>(), "CO1", "CO3", null))).isEmpty();
     }
 }
