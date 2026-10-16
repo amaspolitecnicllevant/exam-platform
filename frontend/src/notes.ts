@@ -37,6 +37,14 @@ export function sobreDeu(punts: number, maxim: number): number | null {
   return maxim > 0 ? Math.round(punts * 1000 / maxim) / 100 : null
 }
 
+/** Nota a partir de la qual s'aprova (sobre 10). */
+export const NOTA_APROVAT = 5
+
+/** Nota sobre 10 d'una competència a partir dels seus punts; null si no té punts. */
+export function notaCompetenciaSobreDeu(g: { pts: number; scored: number }): number | null {
+  return sobreDeu(g.scored, g.pts)
+}
+
 /** Nota per competència (inclou les preguntes amb bonus). */
 export function notaPerCompetencia(questions: Question[], answers: Answer[]): [string, { pts: number; scored: number }][] {
   const perPregunta = new Map(answers.map(a => [a.questionId, a]))

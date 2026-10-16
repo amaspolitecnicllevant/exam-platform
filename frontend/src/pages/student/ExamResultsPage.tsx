@@ -7,7 +7,7 @@ import { getExam } from '../../api/exams'
 import type { Session, Exam } from '../../types'
 import { descarregaFitxerResposta } from '../../api/respostaFitxer'
 import { formatMida } from '../../utils/fitxers'
-import { notaTotal, notaPerCompetencia, puntsPregunta, puntsMaxims, sobreDeu } from '../../notes'
+import { notaTotal, notaPerCompetencia, notaCompetenciaSobreDeu, NOTA_APROVAT, puntsPregunta, puntsMaxims, sobreDeu } from '../../notes'
 
 export default function ExamResultsPage() {
   const { sessionId } = useParams<{ sessionId: string }>()
@@ -81,17 +81,22 @@ export default function ExamResultsPage() {
             <div className="bg-white border border-indigo-100 rounded-xl px-5 py-4 space-y-3">
               <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">Nota per competència</p>
               <div className="flex flex-wrap gap-4">
-                {entries.map(([co, { pts, scored, hasScore }]) => (
-                  <div key={co} className="text-center min-w-[80px]" title={exam.competencies?.find(c => c.codi === co)?.descripcio || undefined}>
-                    <div className="text-xs font-semibold text-indigo-700 mb-1">{co}</div>
-                    {hasScore
-                      ? <div className={`text-lg font-bold tabular-nums ${scored / pts >= 0.5 ? 'text-green-600' : 'text-red-500'}`}>
-                          {scored.toFixed(2)}<span className="text-xs font-normal text-gray-400">/{pts}</span>
-                        </div>
-                      : <div className="text-xs text-gray-400">Pendent</div>
-                    }
-                  </div>
-                ))}
+                {entries.map(([co, g]) => {
+                  const nota = notaCompetenciaSobreDeu(g)
+                  const suspesa = nota != null && nota < NOTA_APROVAT
+                  return (
+                    <div key={co} className="text-center min-w-[80px]" title={exam.competencies?.find(c => c.codi === co)?.descripcio || undefined}>
+                      <div className="text-xs font-semibold text-indigo-700 mb-1">{co}</div>
+                      {nota != null
+                        ? <div className={`text-lg font-bold tabular-nums ${suspesa ? 'text-red-600' : 'text-green-600'}`}>
+                            {nota.toFixed(2)}<span className="text-xs font-normal text-gray-400"> / 10</span>
+                          </div>
+                        : <div className="text-xs text-gray-400">Pendent</div>
+                      }
+                      {nota != null && <div className="text-xs text-gray-400">{g.scored.toFixed(2)} de {g.pts} pts</div>}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )
