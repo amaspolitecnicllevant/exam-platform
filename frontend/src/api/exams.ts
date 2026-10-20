@@ -32,6 +32,7 @@ export interface ExamSettings {
   unaPreguntaPerPantalla?: boolean
   title?: string
   durada?: number
+  tipus?: 'EXAMEN' | 'PRACTICA'
 }
 
 /** Canvis parcials: els camps no indicats no es modifiquen */

@@ -385,6 +385,9 @@ public class ExamService {
             if (titol.length() > 255) throw new IllegalArgumentException("El títol pot tenir com a màxim 255 caràcters");
             exam.setTitle(titol);
         }
+        if (req.tipus() != null) {
+            exam.setTipus(req.tipus());
+        }
         if (req.durada() != null && req.durada() != exam.getDurada()) {
             // Amb l'examen actiu hi pot haver alumnes fent-lo: canviar-la mouria el seu rellotge
             if (exam.getStatus() != ExamStatus.DRAFT) {

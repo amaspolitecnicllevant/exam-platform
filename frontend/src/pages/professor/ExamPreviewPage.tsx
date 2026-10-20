@@ -274,6 +274,23 @@ export default function ExamPreviewPage() {
           )}
         </div>
 
+        {/* Examen o pràctica: cada part té un percentatge diferent a la nota de la unitat */}
+        <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-4 text-sm flex-wrap">
+          <span className="text-gray-500">Tipus:</span>
+          <select value={exam!.tipus ?? 'EXAMEN'} aria-label="Tipus d'examen"
+            onChange={async e => {
+              try { setExam(await updateExamSettings(examId!, { tipus: e.target.value as 'EXAMEN' | 'PRACTICA' })) }
+              catch (err: any) { setErrorEditor(err?.response?.data?.error || 'No s\'ha pogut canviar el tipus') }
+            }}
+            className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+            <option value="EXAMEN">Examen</option>
+            <option value="PRACTICA">Pràctica</option>
+          </select>
+          <span className="text-xs text-gray-400">
+            A la programació del mòdul pots indicar quin % de la nota de cada unitat és d'exàmens i quin de pràctiques.
+          </span>
+        </div>
+
         {/* Configuració penalització */}
         <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-4 text-sm">
           <span className="text-gray-500">Penalització respostes incorrectes (test):</span>

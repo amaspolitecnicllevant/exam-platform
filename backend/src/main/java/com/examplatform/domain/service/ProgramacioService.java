@@ -100,6 +100,10 @@ public class ProgramacioService {
             UnitatTreball ut = unitatsActuals.remove(codi);
             if (ut == null) ut = UnitatTreball.builder().modul(modul).codi(codi).build();
             ut.setNom(u.nom() == null ? "" : u.nom().strip());
+            if (u.pesExamens() != null && (u.pesExamens() < 0 || u.pesExamens() > 100)) {
+                throw new IllegalArgumentException("El percentatge d'exàmens de la unitat " + codi + " ha d'estar entre 0 i 100");
+            }
+            ut.setPesExamens(u.pesExamens());
             ut.setOrdre(ordreUt++);
             Set<Competencia> deLaUnitat = new LinkedHashSet<>();
             for (String c : u.competencies() == null ? List.<String>of() : u.competencies()) {
@@ -117,7 +121,15 @@ public class ProgramacioService {
 
     @Transactional
     public ProgramacioDto importaCsv(UUID modulId, String csv, User user) {
-        return substitueix(modulId, ProgramacioCsvParser.llegeix(csv), user);
+        ProgramacioDto.Peticio llegida = ProgramacioCsvParser.llegeix(csv);
+        // El CSV no porta percentatges: les unitats que ja hi eren els conserven
+        Map<String, Integer> pesos = new HashMap<>();
+        unitatRepository.findByModulIdOrderByOrdreAsc(modulId).forEach(u -> pesos.put(u.getCodi(), u.getPesExamens()));
+        List<ProgramacioDto.UnitatPeticio> uts = llegida.unitats().stream()
+                .map(u -> new ProgramacioDto.UnitatPeticio(u.codi(), u.nom(), u.competencies(),
+                        pesos.get(u.codi() == null ? "" : u.codi().strip().toUpperCase(Locale.ROOT))))
+                .toList();
+        return substitueix(modulId, new ProgramacioDto.Peticio(llegida.competencies(), uts), user);
     }
 
     /** Fixa les UT que avalua l'examen (totes del mòdul de l'examen); buit = sense restricció. */

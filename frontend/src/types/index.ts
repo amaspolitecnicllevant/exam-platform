@@ -165,10 +165,14 @@ export interface Exam {
   competencies: CompetenciaProg[]
   /** Competències que declara l'examen (codis lliures; poden no ser a la programació) */
   competenciesExamen: string[]
+  /** Examen o pràctica: cada part té un % diferent a la nota de la unitat */
+  tipus: TipusExamen
   /** Avisos sobre competències que no són a la programació (només el professorat; no bloquegen res) */
   avisos?: string[]
   questions: Question[]
 }
+
+export type TipusExamen = 'EXAMEN' | 'PRACTICA'
 
 export interface CompetenciaProg {
   id: string
@@ -182,6 +186,8 @@ export interface UnitatProg {
   nom: string
   /** Codis de les competències que treballa la unitat */
   competencies: string[]
+  /** % de la nota de la unitat que ve dels exàmens (la resta, de pràctiques); null = sense definir */
+  pesExamens?: number | null
 }
 
 /** Punts reals mitjans sobre un màxim, i l'equivalent sobre 10 */
@@ -198,8 +204,11 @@ export interface ResultatsModul {
   unitats: {
     codi: string
     nom: string
+    pesExamens: number | null
     nota: NotaAgrupada | null
-    examens: { examId: string; titol: string; entregats: number; nota: NotaAgrupada }[]
+    notaExamens: NotaAgrupada | null
+    notaPractiques: NotaAgrupada | null
+    examens: { examId: string; titol: string; tipus: TipusExamen; entregats: number; nota: NotaAgrupada; percentPes: number }[]
     competencies: { codi: string; nota: NotaAgrupada }[]
   }[]
   competencies: {
@@ -210,7 +219,7 @@ export interface ResultatsModul {
       codi: string | null
       nom: string
       examens: {
-        examId: string; titol: string; entregats: number; nota: NotaAgrupada
+        examId: string; titol: string; tipus: TipusExamen; entregats: number; nota: NotaAgrupada
         percentRendiment: number; percentPes: number
       }[]
     }[]

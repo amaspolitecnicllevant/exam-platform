@@ -343,6 +343,11 @@ export default function ExamsPage() {
                         )}
                         {STATUS_LABELS[examVisualState(exam)]}
                       </span>
+                      {exam.tipus === 'PRACTICA' && (
+                        <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full" title="Compta com a pràctica a la nota de la unitat">
+                          Pràctica
+                        </span>
+                      )}
                       {exam.restringit && exam.status !== 'CLOSED' && (
                         <span className="text-xs bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full" title="Només els alumnes assignats hi poden entrar">
                           Alumnes concrets

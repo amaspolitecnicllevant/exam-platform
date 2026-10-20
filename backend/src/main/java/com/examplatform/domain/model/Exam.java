@@ -67,6 +67,12 @@ public class Exam {
     @Builder.Default
     private java.math.BigDecimal penalitzacioChoice = java.math.BigDecimal.ZERO;
 
+    /** Si compta com a examen o com a pràctica (cada part té un percentatge diferent a la nota de la unitat). */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    @Builder.Default
+    private TipusExamen tipus = TipusExamen.EXAMEN;
+
     /** Quan és true, els alumnes poden veure les seves notes i correccions */
     @Column(nullable = false)
     @Builder.Default

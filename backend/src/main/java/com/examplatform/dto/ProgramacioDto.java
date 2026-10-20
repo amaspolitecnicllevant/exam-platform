@@ -15,12 +15,13 @@ public record ProgramacioDto(UUID modulId, List<Competencia> competencies, List<
     }
 
     /** {@code competencies} són els codis de les competències que treballa la unitat. */
-    public record Unitat(UUID id, String codi, String nom, List<String> competencies) {
+    public record Unitat(UUID id, String codi, String nom, List<String> competencies, Integer pesExamens) {
         public static Unitat de(UnitatTreball u) {
             return new Unitat(u.getId(), u.getCodi(), u.getNom(),
                     u.getCompetencies().stream()
                             .sorted(java.util.Comparator.comparingInt(c -> c.getOrdre()))
-                            .map(com.examplatform.domain.model.Competencia::getCodi).toList());
+                            .map(com.examplatform.domain.model.Competencia::getCodi).toList(),
+                    u.getPesExamens());
         }
     }
 
@@ -29,7 +30,12 @@ public record ProgramacioDto(UUID modulId, List<Competencia> competencies, List<
 
     public record CompetenciaPeticio(String codi, String descripcio) {}
 
-    public record UnitatPeticio(String codi, String nom, List<String> competencies) {}
+    /** {@code pesExamens}: % de la nota de la unitat que ve dels exàmens (0–100; la resta, de pràctiques); null = sense definir. */
+    public record UnitatPeticio(String codi, String nom, List<String> competencies, Integer pesExamens) {
+        public UnitatPeticio(String codi, String nom, List<String> competencies) {
+            this(codi, nom, competencies, null);
+        }
+    }
 
     /** Unitats que avalua un examen. */
     public record UnitatsExamen(List<UUID> unitatIds) {}

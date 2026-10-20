@@ -31,6 +31,10 @@ public class UnitatTreball {
     @Column(nullable = false)
     private int ordre;
 
+    /** % de la nota de la unitat que ve dels exàmens (la resta, de les pràctiques); null = sense definir, tot compta junt. */
+    @Column(name = "pes_examens")
+    private Integer pesExamens;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "unitat_competencies",
             joinColumns = @JoinColumn(name = "unitat_id"),

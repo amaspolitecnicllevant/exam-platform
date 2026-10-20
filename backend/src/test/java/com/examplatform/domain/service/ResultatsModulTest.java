@@ -137,4 +137,99 @@ class ResultatsModulTest {
         assertThat(r.respostesPendents()).isEqualTo(1);
         assertThat(r.unitats().get(0).nota().mitjanaPunts()).isEqualByComparingTo("3");   // (6 + 0) / 2
     }
+
+    // ── exàmens i pràctiques amb percentatge per unitat ──────────────────────
+
+    private Exam practica(String titol, UnitatTreball... uts) {
+        Exam e = examen(titol, uts);
+        e.setTipus(TipusExamen.PRACTICA);
+        return e;
+    }
+
+    @Test
+    void amb_percentatge_definit_la_unitat_pondera_els_examens_i_les_practiques() {
+        ut1.setPesExamens(70);
+        Exam a1 = examen("Examen 1", ut1);        // 10 punts, mitjana 6
+        Question q1 = pregunta(a1, "10", "CO1");
+        Exam a2 = examen("Examen 2", ut1);        // 20 punts, mitjana 18
+        Question q2 = pregunta(a2, "20", "CO1");
+        Exam p = practica("Pràctica 1", ut1);     // 10 punts, mitjana 9
+        Question q3 = pregunta(p, "10", "CO1");
+
+        ResultatsModulDto r = ResultatsModul.calcula(modul, List.of(ut1), List.of(
+                new ExamenEntregat(a1, List.of(alumne(Map.of(q1, "6")))),
+                new ExamenEntregat(a2, List.of(alumne(Map.of(q2, "18")))),
+                new ExamenEntregat(p, List.of(alumne(Map.of(q3, "9"))))));
+
+        ResultatsModulDto.Unitat u = r.unitats().get(0);
+        assertThat(u.pesExamens()).isEqualTo(70);
+        assertThat(u.notaExamens().sobreDeu()).isEqualByComparingTo("8");           // (6 + 18) / 30
+        assertThat(u.notaPractiques().sobreDeu()).isEqualByComparingTo("9");
+        assertThat(u.nota().sobreDeu()).isEqualByComparingTo("8.3");                // 0,7 · 8 + 0,3 · 9
+        assertThat(u.nota().maxim()).isEqualByComparingTo("10");
+        assertThat(u.examens()).extracting(ResultatsModulDto.Examen::tipus)
+                .containsExactly(TipusExamen.EXAMEN, TipusExamen.EXAMEN, TipusExamen.PRACTICA);
+        assertThat(u.examens().get(0).percentPes()).isEqualByComparingTo("23.3");   // 70 · 10/30
+        assertThat(u.examens().get(1).percentPes()).isEqualByComparingTo("46.7");   // 70 · 20/30
+        assertThat(u.examens().get(2).percentPes()).isEqualByComparingTo("30");
+        // La competència segueix els mateixos percentatges
+        ResultatsModulDto.Competencia co = r.competencies().get(0);
+        assertThat(co.nota().sobreDeu()).isEqualByComparingTo("8.3");
+        assertThat(co.perUnitat().get(0).examens().get(2).percentPes()).isEqualByComparingTo("30");
+        assertThat(u.competencies().get(0).nota().sobreDeu()).isEqualByComparingTo("8.3");
+    }
+
+    @Test
+    void si_nomes_hi_ha_una_part_aquesta_compta_el_cent_per_cent() {
+        ut1.setPesExamens(70);
+        Exam a = examen("Examen", ut1);
+        Question q = pregunta(a, "10", "CO1");
+
+        ResultatsModulDto r = ResultatsModul.calcula(modul, List.of(ut1),
+                List.of(new ExamenEntregat(a, List.of(alumne(Map.of(q, "6"))))));
+
+        assertThat(r.unitats().get(0).nota().sobreDeu()).isEqualByComparingTo("6");
+        assertThat(r.unitats().get(0).notaPractiques()).isNull();
+        assertThat(r.unitats().get(0).examens().get(0).percentPes()).isEqualByComparingTo("100");
+    }
+
+    @Test
+    void sense_percentatge_exàmens_i_practiques_compten_junts_pels_punts() {
+        Exam a = examen("Examen", ut1);
+        Question q = pregunta(a, "10", "CO1");
+        Exam p = practica("Pràctica", ut1);
+        Question q2 = pregunta(p, "10", "CO1");
+
+        ResultatsModulDto r = ResultatsModul.calcula(modul, List.of(ut1), List.of(
+                new ExamenEntregat(a, List.of(alumne(Map.of(q, "4")))),
+                new ExamenEntregat(p, List.of(alumne(Map.of(q2, "8"))))));
+
+        assertThat(r.unitats().get(0).pesExamens()).isNull();
+        assertThat(r.unitats().get(0).nota().sobreDeu()).isEqualByComparingTo("6");   // (4 + 8) / 20
+        assertThat(r.unitats().get(0).examens().get(0).percentPes()).isEqualByComparingTo("50");
+    }
+
+    @Test
+    void una_competencia_en_dues_unitats_amb_percentatges_diferents_es_pondera_pels_seus_punts() {
+        ut1.setPesExamens(100);                      // UT01: tot examen
+        ut2.setPesExamens(0);                        // UT02: tot pràctica
+        Exam a = examen("Examen UT01", ut1);
+        Question q1 = pregunta(a, "10", "CO2");
+        Exam p = practica("Pràctica UT01", ut1);
+        Question q2 = pregunta(p, "10", "CO2");      // no compta a la UT01 (pes 0 de pràctiques)
+        Exam p2 = practica("Pràctica UT02", ut2);
+        Question q3 = pregunta(p2, "30", "CO2");
+
+        ResultatsModulDto r = ResultatsModul.calcula(modul, List.of(ut1, ut2), List.of(
+                new ExamenEntregat(a, List.of(alumne(Map.of(q1, "5")))),               // 5/10
+                new ExamenEntregat(p, List.of(alumne(Map.of(q2, "10")))),              // 10/10 (pes 0)
+                new ExamenEntregat(p2, List.of(alumne(Map.of(q3, "21"))))));           // 7/10
+
+        ResultatsModulDto.Competencia co2 = r.competencies().get(1);
+        assertThat(r.unitats().get(0).nota().sobreDeu()).isEqualByComparingTo("5");     // només l'examen
+        assertThat(r.unitats().get(1).nota().sobreDeu()).isEqualByComparingTo("7");     // només la pràctica
+        // UT01 pesa 20 punts de CO2 i UT02 30: (5·20 + 7·30) / 50 = 6,2
+        assertThat(co2.nota().sobreDeu()).isEqualByComparingTo("6.2");
+        assertThat(co2.perUnitat().get(0).examens().get(1).percentPes()).isEqualByComparingTo("0");
+    }
 }

@@ -3,7 +3,7 @@ import type { Exam, Programacio, ResultatsModul } from '../types'
 
 export interface ProgramacioPeticio {
   competencies: { codi: string; descripcio: string }[]
-  unitats: { codi: string; nom: string; competencies: string[] }[]
+  unitats: { codi: string; nom: string; competencies: string[]; pesExamens?: number | null }[]
 }
 
 export const getProgramacio = (modulId: string): Promise<Programacio> =>

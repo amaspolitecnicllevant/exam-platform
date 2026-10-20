@@ -48,8 +48,8 @@ export function ResultatsUnitats({ resultats }: { resultats: ResultatsModul }) {
       <div>
         <h2 className="font-semibold text-gray-800">Notes dels exàmens per unitat</h2>
         <p className="text-xs text-gray-500">
-          Mitjana dels alumnes que han entregat, en punts reals. La nota de la unitat agrupa els seus exàmens i pràctiques
-          segons els punts que té cada un.
+          Mitjana dels alumnes que han entregat. Exàmens i pràctiques es calculen per separat (cada part, segons els punts que
+          té cada examen) i després s'apliquen els percentatges de la unitat; amb percentatges, la nota es mostra sobre 10 punts.
         </p>
       </div>
       <Avis resultats={resultats} />
@@ -60,13 +60,29 @@ export function ResultatsUnitats({ resultats }: { resultats: ResultatsModul }) {
               <p className="text-sm"><span className="font-mono font-semibold">{u.codi}</span>{u.nom ? ` · ${u.nom}` : ''}</p>
               <Nota nota={u.nota} />
             </div>
+            {u.pesExamens != null ? (
+              <p className="text-xs text-gray-500">
+                Nota = {u.pesExamens} % exàmens{u.notaExamens ? ` (${fmt(u.notaExamens.sobreDeu)})` : ' (cap entregat)'}
+                {' + '}{100 - u.pesExamens} % pràctiques{u.notaPractiques ? ` (${fmt(u.notaPractiques.sobreDeu)})` : ' (cap entregada)'}
+                {(!u.notaExamens || !u.notaPractiques) && u.nota && ' · falta una part: l\'altra compta el 100 %'}
+              </p>
+            ) : (u.notaExamens && u.notaPractiques) && (
+              <p className="text-xs text-amber-700">
+                Hi ha exàmens i pràctiques però no has indicat el percentatge de cada part: compten junts pels punts.
+                Defineix-lo a la taula de les unitats.
+              </p>
+            )}
             {u.examens.length === 0
               ? <p className="text-xs text-gray-400">Cap examen entregat d'aquesta unitat.</p>
               : (
                 <ul className="text-sm space-y-0.5">
                   {u.examens.map(e => (
                     <li key={e.examId} className="flex items-baseline justify-between gap-2 flex-wrap">
-                      <span className="text-gray-700">{e.titol} <span className="text-xs text-gray-400">({e.entregats} {e.entregats === 1 ? 'alumne' : 'alumnes'})</span></span>
+                      <span className="text-gray-700">
+                        {e.titol}
+                        {e.tipus === 'PRACTICA' && <span className="ml-1 text-xs bg-purple-100 text-purple-800 px-1.5 rounded">pràctica</span>}
+                        <span className="text-xs text-gray-400"> ({e.entregats} {e.entregats === 1 ? 'alumne' : 'alumnes'} · pesa {fmt(e.percentPes, 1)} %)</span>
+                      </span>
                       <Nota nota={e.nota} />
                     </li>
                   ))}
@@ -112,7 +128,8 @@ export function ResultatsCompetencies({ resultats }: { resultats: ResultatsModul
       <div>
         <h2 className="font-semibold text-gray-800">Nota mitjana per competència</h2>
         <p className="text-xs text-gray-500">
-          Agrupa les preguntes de cada competència de tots els exàmens i pràctiques del mòdul. En vermell si equival a menys de {NOTA_APROVAT} sobre 10.
+          Agrupa les preguntes de cada competència de tots els exàmens i pràctiques del mòdul, aplicant el percentatge de
+          cada part de la unitat. En vermell si equival a menys de {NOTA_APROVAT} sobre 10.
         </p>
       </div>
       <Avis resultats={resultats} />
@@ -145,7 +162,7 @@ export function ResultatsCompetencies({ resultats }: { resultats: ResultatsModul
                               <th className="font-medium pr-3">Examen o pràctica</th>
                               <th className="font-medium pr-3 text-right">Punts</th>
                               <th className="font-medium pr-3 text-right" title="% dels punts d'aquesta competència que han tret">Aconseguit</th>
-                              <th className="font-medium text-right" title="% que representa aquest examen dins la nota de la competència a la unitat">Pes</th>
+                              <th className="font-medium text-right" title="% de la nota de la competència a la unitat que representa aquest examen o pràctica, segons el percentatge de cada part">Pes a la nota</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -153,7 +170,11 @@ export function ResultatsCompetencies({ resultats }: { resultats: ResultatsModul
                               const suspes = e.nota.sobreDeu != null && e.nota.sobreDeu < NOTA_APROVAT
                               return (
                                 <tr key={e.examId} className="border-t border-gray-50">
-                                  <td className="pr-3 py-0.5 text-gray-700">{e.titol} <span className="text-xs text-gray-400">({e.entregats})</span></td>
+                                  <td className="pr-3 py-0.5 text-gray-700">
+                                    {e.titol}
+                                    {e.tipus === 'PRACTICA' && <span className="ml-1 text-xs bg-purple-100 text-purple-800 px-1.5 rounded">pràctica</span>}
+                                    <span className="text-xs text-gray-400"> ({e.entregats})</span>
+                                  </td>
                                   <td className={`pr-3 text-right tabular-nums ${suspes ? 'text-red-600 font-semibold' : ''}`}>
                                     {fmt(e.nota.mitjanaPunts)} <span className="text-xs font-normal text-gray-400">/ {fmt(e.nota.maxim)}</span>
                                   </td>

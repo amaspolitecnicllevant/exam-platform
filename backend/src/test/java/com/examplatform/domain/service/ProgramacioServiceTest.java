@@ -107,6 +107,35 @@ class ProgramacioServiceTest {
     }
 
     @Test
+    void desa_el_percentatge_d_examens_de_cada_unitat_i_rebutja_els_que_no_estan_entre_0_i_100() {
+        service.substitueix(modul.getId(), peticio(List.of(co("CO1")), List.of(
+                new ProgramacioDto.UnitatPeticio("UT01", "", List.of("CO1"), 70),
+                new ProgramacioDto.UnitatPeticio("UT02", "", List.of("CO1"), null))), professor);
+
+        ArgumentCaptor<List<UnitatTreball>> uts = ArgumentCaptor.forClass(List.class);
+        verify(unitatRepository).saveAll(uts.capture());
+        assertThat(uts.getValue()).extracting(UnitatTreball::getPesExamens).containsExactly(70, null);
+
+        assertThatThrownBy(() -> service.substitueix(modul.getId(), peticio(List.of(co("CO1")), List.of(
+                new ProgramacioDto.UnitatPeticio("UT01", "", List.of("CO1"), 120))), professor))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("entre 0 i 100");
+    }
+
+    @Test
+    void importar_un_csv_conserva_els_percentatges_de_les_unitats_que_ja_hi_eren() {
+        UnitatTreball existent = UnitatTreball.builder().id(UUID.randomUUID()).modul(modul).codi("UT01").nom("Antiga").ordre(0)
+                .pesExamens(60).build();
+        when(unitatRepository.findByModulIdOrderByOrdreAsc(modul.getId())).thenReturn(List.of(existent));
+
+        service.importaCsv(modul.getId(), "UT01;CO1;Instal·lar\nUT02;CO2;Xarxes", professor);
+
+        ArgumentCaptor<List<UnitatTreball>> uts = ArgumentCaptor.forClass(List.class);
+        verify(unitatRepository).saveAll(uts.capture());
+        assertThat(uts.getValue()).extracting(UnitatTreball::getCodi).containsExactly("UT01", "UT02");
+        assertThat(uts.getValue()).extracting(UnitatTreball::getPesExamens).containsExactly(60, null);
+    }
+
+    @Test
     void conserva_els_ids_de_les_competencies_i_unitats_que_ja_hi_eren() {
         Competencia antiga = Competencia.builder().id(UUID.randomUUID()).modul(modul).codi("CO1").descripcio("vella").build();
         UnitatTreball utAntiga = UnitatTreball.builder().id(UUID.randomUUID()).modul(modul).codi("UT01").build();

@@ -8,13 +8,13 @@ import { useAuth } from '../../context/AuthContext'
 import type { Modul, Programacio, ResultatsModul } from '../../types'
 
 interface FilaCo { codi: string; descripcio: string }
-interface FilaUt { codi: string; nom: string; competencies: string[] }
+interface FilaUt { codi: string; nom: string; competencies: string[]; pesExamens: number | null }
 
 const campCls = 'border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-brand-400'
 
 const desdeProgramacio = (p: Programacio): { cos: FilaCo[]; uts: FilaUt[] } => ({
   cos: p.competencies.map(c => ({ codi: c.codi, descripcio: c.descripcio })),
-  uts: p.unitats.map(u => ({ codi: u.codi, nom: u.nom, competencies: [...u.competencies] })),
+  uts: p.unitats.map(u => ({ codi: u.codi, nom: u.nom, competencies: [...u.competencies], pesExamens: u.pesExamens ?? null })),
 })
 
 /** Competències (CO) i unitats de treball (UT) d'un mòdul, i quines UT treballen cada competència. */
@@ -86,7 +86,19 @@ export default function ProgramacioPage() {
   }
   const treuUt = (i: number) => { setUts(uts.filter((_, j) => j !== i)); marca() }
   const afegeixUt = () => {
-    setUts([...uts, { codi: `UT${String(uts.length + 1).padStart(2, '0')}`, nom: '', competencies: [] }]); marca()
+    setUts([...uts, { codi: `UT${String(uts.length + 1).padStart(2, '0')}`, nom: '', competencies: [], pesExamens: null }]); marca()
+  }
+  /** Percentatge d'exàmens de la unitat (0–100); buit = sense definir. */
+  const canviaPes = (i: number, valor: string) => {
+    const n = valor.trim() === '' ? null : Math.max(0, Math.min(100, Math.round(Number(valor))))
+    setUts(uts.map((u, j) => j === i ? { ...u, pesExamens: n !== null && Number.isNaN(n) ? null : n } : u)); marca()
+  }
+  const [pesPerATotes, setPesPerATotes] = useState('')
+  /** Aplica el mateix percentatge d'exàmens a totes les unitats d'un cop (buit = treure'l a totes). */
+  const aplicaATotes = () => {
+    const n = pesPerATotes.trim() === '' ? null : Math.max(0, Math.min(100, Math.round(Number(pesPerATotes))))
+    if (n !== null && Number.isNaN(n)) return
+    setUts(uts.map(u => ({ ...u, pesExamens: n }))); marca()
   }
   const alterna = (i: number, codi: string) => {
     setUts(uts.map((u, j) => j !== i ? u : {
@@ -167,6 +179,22 @@ export default function ProgramacioPage() {
 
             <section className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
               <h2 className="font-semibold text-gray-800">Unitats de treball i competències que treballen</h2>
+              {uts.length > 0 && (
+                <div className="flex items-center gap-2 flex-wrap text-sm bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                  <span className="text-gray-600">Percentatge de la nota de cada unitat que ve dels exàmens (la resta, de les pràctiques):</span>
+                  <span className="inline-flex items-center gap-1">
+                    <input type="number" min={0} max={100} value={pesPerATotes} onChange={e => setPesPerATotes(e.target.value)}
+                      aria-label="Percentatge d'exàmens per a totes les unitats" placeholder="70"
+                      className={`${campCls} w-20 text-right`} />
+                    <span className="text-gray-500">%</span>
+                  </span>
+                  <button type="button" onClick={aplicaATotes}
+                    className="text-xs border border-brand-600 text-brand-600 px-3 py-1 rounded hover:bg-brand-50">
+                    Aplica a totes les unitats
+                  </button>
+                  <span className="text-xs text-gray-400">Després pots canviar-lo en una de sola. Buit = sense definir (tot compta junt).</span>
+                </div>
+              )}
               {uts.length === 0 && <p className="text-sm text-gray-400">Encara no n'hi ha cap.</p>}
               {uts.length > 0 && (
                 <div className="overflow-x-auto">
@@ -175,6 +203,7 @@ export default function ProgramacioPage() {
                       <tr>
                         <th className="text-left font-medium text-gray-500 px-2 pb-1">UT</th>
                         <th className="text-left font-medium text-gray-500 px-2 pb-1">Nom</th>
+                        <th className="text-left font-medium text-gray-500 px-2 pb-1 whitespace-nowrap">% exàmens / pràct.</th>
                         {cos.map(c => (
                           <th key={c.codi} title={c.descripcio || undefined}
                             className="font-medium text-indigo-700 px-2 pb-1 font-mono">{c.codi}</th>
@@ -192,6 +221,13 @@ export default function ProgramacioPage() {
                           <td className="px-2 py-1">
                             <input value={u.nom} onChange={e => canviaUt(i, 'nom', e.target.value)} aria-label="Nom de la unitat"
                               placeholder="Nom" className={`${campCls} w-64`} />
+                          </td>
+                          <td className="px-2 py-1 whitespace-nowrap">
+                            <input type="number" min={0} max={100} value={u.pesExamens ?? ''} onChange={e => canviaPes(i, e.target.value)}
+                              aria-label={`Percentatge d'exàmens de ${u.codi}`} placeholder="—" className={`${campCls} w-16 text-right`} />
+                            <span className="text-xs text-gray-400 ml-1">
+                              {u.pesExamens != null ? `/ ${100 - u.pesExamens} %` : 'sense definir'}
+                            </span>
                           </td>
                           {cos.map(c => (
                             <td key={c.codi} className="text-center px-2">

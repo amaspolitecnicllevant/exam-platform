@@ -1,5 +1,7 @@
 package com.examplatform.dto;
 
+import com.examplatform.domain.model.TipusExamen;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -20,22 +22,28 @@ public record ResultatsModulDto(
     /** Punts reals mitjans sobre un màxim, i l'equivalent sobre 10. */
     public record Nota(BigDecimal mitjanaPunts, BigDecimal maxim, BigDecimal sobreDeu) {}
 
-    public record Examen(UUID examId, String titol, int entregats, Nota nota) {}
+    /** Un examen o pràctica d'una unitat; {@code percentPes} és el % de la nota de la unitat que representa. */
+    public record Examen(UUID examId, String titol, TipusExamen tipus, int entregats, Nota nota, BigDecimal percentPes) {}
 
     /** Una competència dins d'una unitat: la seva nota agrupant els exàmens de la unitat. */
     public record CompetenciaDeUnitat(String codi, Nota nota) {}
 
     public record Unitat(String codi, String nom,
-                         /** Nota de la unitat agrupant tots els seus exàmens; null si cap no s'ha entregat. */
+                         /** % de la nota de la unitat que ve dels exàmens segons la programació (null = sense definir). */
+                         Integer pesExamens,
+                         /** Nota de la unitat; amb percentatges definits, ponderada i reescalada a 10 punts; null si cap no s'ha entregat. */
                          Nota nota,
+                         /** Nota només dels exàmens i només de les pràctiques de la unitat (null si no n'hi ha cap d'entregat). */
+                         Nota notaExamens,
+                         Nota notaPractiques,
                          List<Examen> examens,
                          List<CompetenciaDeUnitat> competencies) {}
 
     /** Un examen d'una unitat, per a una competència: rendiment i pes dins la nota d'aquella competència a la unitat. */
-    public record ExamenDeCompetencia(UUID examId, String titol, int entregats, Nota nota,
+    public record ExamenDeCompetencia(UUID examId, String titol, TipusExamen tipus, int entregats, Nota nota,
                                       /** % dels punts de la competència que han tret en aquest examen (0–100). */
                                       BigDecimal percentRendiment,
-                                      /** % que representen els punts d'aquest examen sobre els de la competència a la unitat (0–100). */
+                                      /** % de la nota de la competència a la unitat que representa aquest examen o pràctica (0–100). */
                                       BigDecimal percentPes) {}
 
     public record UnitatDeCompetencia(String codi, String nom, List<ExamenDeCompetencia> examens) {}

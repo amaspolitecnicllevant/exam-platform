@@ -40,6 +40,8 @@ public record ExamDto(
         List<ProgramacioDto.Competencia> competencies,
         /** Competències que declara l'examen (codis lliures, ordenats). */
         List<String> competenciesExamen,
+        /** Examen o pràctica. */
+        com.examplatform.domain.model.TipusExamen tipus,
         /** Avisos sobre competències que no són a la programació (només per al professorat; no bloquegen res). */
         List<String> avisos,
         List<QuestionDto> questions
@@ -48,7 +50,7 @@ public record ExamDto(
     public ExamDto ambSessions(boolean teSessions, LocalDateTime primeraSessio) {
         return new ExamDto(id, title, durada, instruccions, status, createdByName, createdAt, scheduledAt,
                 scheduledGrupId, scheduledGrupName, penalitzacioChoice, modulId, modulNom, cicleNom, departamentNom, aulaId,
-                aulaNom, aulaCidr, notesVisibles, unaPreguntaPerPantalla, restringit, teSessions, primeraSessio, unitats, competencies, competenciesExamen, avisos, questions);
+                aulaNom, aulaCidr, notesVisibles, unaPreguntaPerPantalla, restringit, teSessions, primeraSessio, unitats, competencies, competenciesExamen, tipus, avisos, questions);
     }
 
     public static ExamDto from(Exam e, boolean includeAnswers) {
@@ -89,6 +91,7 @@ public record ExamDto(
                 e.getModul() == null ? List.of()
                         : e.getModul().getCompetencies().stream().map(ProgramacioDto.Competencia::de).toList(),
                 e.getCompetenciesExamen().stream().sorted(CompetenciesExamen.ORDRE_CODIS).toList(),
+                e.getTipus(),
                 includeAnswers ? CompetenciesExamen.avisos(e) : List.of(),
                 qs);
     }
