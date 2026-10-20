@@ -19,6 +19,19 @@ function Nota({ nota }: { nota: NotaAgrupada | null }) {
   )
 }
 
+/** Una de les dues parts (exàmens o pràctiques) de la nota d'una unitat, amb el seu percentatge si està definit. */
+function PartNota({ etiqueta, pes, nota, buit }: { etiqueta: string; pes: number | null; nota: NotaAgrupada | null; buit: string }) {
+  const suspesa = nota?.sobreDeu != null && nota.sobreDeu < NOTA_APROVAT
+  return (
+    <div className="flex items-baseline justify-between gap-2 bg-gray-50 rounded px-3 py-1.5">
+      <span className="text-gray-700">{etiqueta}{pes != null ? <span className="text-xs text-gray-400"> · {pes} % de la nota</span> : null}</span>
+      {nota
+        ? <span className={`tabular-nums font-semibold ${suspesa ? 'text-red-600' : 'text-gray-900'}`}>{fmt(nota.sobreDeu)} <span className="text-xs font-normal text-gray-400">sobre 10</span></span>
+        : <span className="text-xs text-gray-400">{buit}</span>}
+    </div>
+  )
+}
+
 function Avis({ resultats }: { resultats: ResultatsModul }) {
   if (resultats.examens === 0) {
     return <p className="text-xs text-gray-400">Encara no hi ha cap examen entregat d'aquest mòdul.</p>
@@ -60,20 +73,26 @@ export function ResultatsUnitats({ resultats }: { resultats: ResultatsModul }) {
               <p className="text-sm"><span className="font-mono font-semibold">{u.codi}</span>{u.nom ? ` · ${u.nom}` : ''}</p>
               <Nota nota={u.nota} />
             </div>
-            {u.pesExamens != null ? (
-              <p className="text-xs text-gray-500">
-                Nota = {u.pesExamens} % exàmens{u.notaExamens ? ` (${fmt(u.notaExamens.sobreDeu)})` : ' (cap entregat)'}
-                {' + '}{100 - u.pesExamens} % pràctiques{u.notaPractiques ? ` (${fmt(u.notaPractiques.sobreDeu)})` : ' (cap entregada)'}
-                {(!u.notaExamens || !u.notaPractiques) && u.nota && ' · falta una part: l\'altra compta el 100 %'}
-              </p>
-            ) : (u.notaExamens && u.notaPractiques) && (
+            {/* Les dues parts de la nota de la unitat, sempre visibles */}
+            <div className="grid gap-1 sm:grid-cols-2 text-sm">
+              <PartNota etiqueta="Exàmens" pes={u.pesExamens} nota={u.notaExamens} buit="cap examen entregat" />
+              <PartNota etiqueta="Pràctiques" pes={u.pesExamens != null ? 100 - u.pesExamens : null} nota={u.notaPractiques} buit="cap pràctica entregada" />
+            </div>
+            {u.pesExamens == null && u.notaExamens && u.notaPractiques && (
               <p className="text-xs text-amber-700">
-                Hi ha exàmens i pràctiques però no has indicat el percentatge de cada part: compten junts pels punts.
-                Defineix-lo a la taula de les unitats.
+                No has indicat el percentatge de cada part: la nota de la unitat les compta juntes pels punts. Defineix-lo a la taula de les unitats.
               </p>
             )}
+            {u.pesExamens != null && u.nota && (!u.notaExamens || !u.notaPractiques) && (
+              <p className="text-xs text-gray-500">Falta una part: l'altra compta el 100 % de la nota de la unitat.</p>
+            )}
             {u.examens.length === 0
-              ? <p className="text-xs text-gray-400">Cap examen entregat d'aquesta unitat.</p>
+              ? (
+                <p className="text-xs text-gray-400">
+                  Cap examen ni pràctica entregat té aquesta unitat assignada. Assigna-la a l'examen (previsualització → «Competències i
+                  unitats de treball») i comprova que algun alumne l'ha entregat.
+                </p>
+              )
               : (
                 <ul className="text-sm space-y-0.5">
                   {u.examens.map(e => (
