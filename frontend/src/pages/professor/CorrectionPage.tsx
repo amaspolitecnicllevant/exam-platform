@@ -489,8 +489,7 @@ export default function CorrectionPage() {
                           const nota = notaCompetenciaSobreDeu(g)
                           const suspesa = nota != null && nota < NOTA_APROVAT
                           return (
-                            <div key={co} className={`flex items-center gap-1.5 rounded px-1.5 py-0.5 ${suspesa ? 'bg-red-50 ring-1 ring-red-200' : ''}`}
-                              title={exam?.competencies.find(c => c.codi === co)?.descripcio || undefined}>
+                            <div key={co} className={`flex items-center gap-1.5 rounded px-1.5 py-0.5 ${suspesa ? 'bg-red-50 ring-1 ring-red-200' : ''}`}>
                               <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded font-medium">{co}</span>
                               <span className={`text-sm font-semibold tabular-nums ${suspesa ? 'text-red-600' : 'text-gray-700'}`}>
                                 {nota != null ? nota.toFixed(2) : '—'}

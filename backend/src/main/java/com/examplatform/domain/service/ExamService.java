@@ -87,9 +87,7 @@ public class ExamService {
             throw new AccessDeniedException(
                     "No tens cap impartició per al mòdul " + modul.getCodi());
         }
-        boolean canviaDeModul = exam.getModul() == null || !exam.getModul().getId().equals(modulId);
         exam.setModul(modul);
-        if (canviaDeModul) exam.getUnitats().clear();   // les UT són del mòdul anterior
         return ExamDto.from(examRepository.save(exam), true);
     }
 
@@ -384,9 +382,6 @@ public class ExamService {
             if (titol.isEmpty()) throw new IllegalArgumentException("El títol no pot estar buit");
             if (titol.length() > 255) throw new IllegalArgumentException("El títol pot tenir com a màxim 255 caràcters");
             exam.setTitle(titol);
-        }
-        if (req.tipus() != null) {
-            exam.setTipus(req.tipus());
         }
         if (req.durada() != null && req.durada() != exam.getDurada()) {
             // Amb l'examen actiu hi pot haver alumnes fent-lo: canviar-la mouria el seu rellotge

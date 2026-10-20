@@ -67,12 +67,6 @@ public class Exam {
     @Builder.Default
     private java.math.BigDecimal penalitzacioChoice = java.math.BigDecimal.ZERO;
 
-    /** Si compta com a examen o com a pràctica (cada part té un percentatge diferent a la nota de la unitat). */
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
-    @Builder.Default
-    private TipusExamen tipus = TipusExamen.EXAMEN;
-
     /** Quan és true, els alumnes poden veure les seves notes i correccions */
     @Column(nullable = false)
     @Builder.Default
@@ -85,14 +79,6 @@ public class Exam {
     @Column(name = "restringit", nullable = false)
     @Builder.Default
     private boolean restringit = false;
-
-    /** Unitats de treball que avalua l'examen (del mòdul de l'examen): les seves competències són les que es poden assignar a les preguntes. */
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "exam_unitats",
-            joinColumns = @JoinColumn(name = "exam_id"),
-            inverseJoinColumns = @JoinColumn(name = "unitat_id"))
-    @Builder.Default
-    private Set<UnitatTreball> unitats = new LinkedHashSet<>();
 
     /** Competències que avalua l'examen (codis lliures; si n'hi ha, són les que es proposen a cada pregunta). */
     @ElementCollection(fetch = FetchType.LAZY)

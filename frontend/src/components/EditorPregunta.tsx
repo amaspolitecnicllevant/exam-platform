@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import Md from './Md'
 import { afegeixPregunta, actualitzaPregunta, pujaImatge, type PreguntaEdicio } from '../api/editor'
 import { deleteQuestionFile } from '../api/questionFiles'
-import type { CompetenciaProg, Question, QuestionFile, QuestionType } from '../types'
+import type { Question, QuestionFile, QuestionType } from '../types'
 import SelectorCompetencia from './SelectorCompetencia'
 import { esImatge, extensioPermesa, idsReferenciats, insereix, markdownImatge, substitueix, treuReferencies } from '../utils/imatges'
 
@@ -39,8 +39,8 @@ interface Props {
   posicio?: number
   /** Fitxers actuals de la pregunta (per mostrar-ne les imatges). */
   fitxers?: QuestionFile[]
-  /** Competències que es poden triar (null = sense programació: text lliure). */
-  competenciesPermeses?: CompetenciaProg[] | null
+  /** Competències que es poden triar (null = l'examen no n'ha declarat cap: text lliure). */
+  competenciesPermeses?: string[] | null
   onClose: () => void
   /** Cridada quan s'ha desat: el pare recarrega l'examen. */
   onDesat: () => void

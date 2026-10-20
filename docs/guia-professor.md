@@ -94,7 +94,7 @@ A *Previsualitzar* i a la llista d'exàmens:
 | **Una pregunta per pantalla** | L'alumne veu les preguntes d'una en una, amb un índex per saltar a qualsevol (navegació lliure) |
 | **Mòdul** | Només el veuen els alumnes **matriculats** en aquest mòdul. Sense mòdul, el veu tothom |
 | **Aula** | Només es pot fer des de les màquines de l'aula (per adreça de xarxa) |
-| **Competència i dificultat** | Per pregunta; la competència es tria entre les de les unitats de treball de l'examen i permet veure la nota per competència |
+| **Competència i dificultat** | Per pregunta; la competència és un codi lliure (CO1, CO2…) que l'examen pot declarar i permet veure la nota per competència |
 | **Apunts** (`[apunts]`) | L'alumne veu que pot fer servir apunts en paper; l'informe de còpies hi és menys estricte |
 
 ---

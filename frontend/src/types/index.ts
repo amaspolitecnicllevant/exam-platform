@@ -159,77 +159,11 @@ export interface Exam {
   teSessions?: boolean
   /** Quan un alumne el va començar per primera vegada (ISO; només al llistat del professor) */
   primeraSessio?: string
-  /** UT que avalua l'examen (buit = sense restricció de competències) */
-  unitats: UnitatProg[]
-  /** Totes les competències del mòdul de l'examen */
-  competencies: CompetenciaProg[]
-  /** Competències que declara l'examen (codis lliures; poden no ser a la programació) */
+  /** Competències que declara l'examen (codis lliures) */
   competenciesExamen: string[]
-  /** Examen o pràctica: cada part té un % diferent a la nota de la unitat */
-  tipus: TipusExamen
-  /** Avisos sobre competències que no són a la programació (només el professorat; no bloquegen res) */
+  /** Avisos sobre les competències de les preguntes (només el professorat; no bloquegen res) */
   avisos?: string[]
   questions: Question[]
-}
-
-export type TipusExamen = 'EXAMEN' | 'PRACTICA'
-
-export interface CompetenciaProg {
-  id: string
-  codi: string
-  descripcio: string
-}
-
-export interface UnitatProg {
-  id: string
-  codi: string
-  nom: string
-  /** Codis de les competències que treballa la unitat */
-  competencies: string[]
-  /** % de la nota de la unitat que ve dels exàmens (la resta, de pràctiques); null = sense definir */
-  pesExamens?: number | null
-}
-
-/** Punts reals mitjans sobre un màxim, i l'equivalent sobre 10 */
-export interface NotaAgrupada {
-  mitjanaPunts: number
-  maxim: number
-  sobreDeu: number | null
-}
-
-export interface ResultatsModul {
-  modulId: string
-  examens: number
-  respostesPendents: number
-  unitats: {
-    codi: string
-    nom: string
-    pesExamens: number | null
-    nota: NotaAgrupada | null
-    notaExamens: NotaAgrupada | null
-    notaPractiques: NotaAgrupada | null
-    examens: { examId: string; titol: string; tipus: TipusExamen; entregats: number; nota: NotaAgrupada; percentPes: number }[]
-    competencies: { codi: string; nota: NotaAgrupada }[]
-  }[]
-  competencies: {
-    codi: string
-    descripcio: string
-    nota: NotaAgrupada | null
-    perUnitat: {
-      codi: string | null
-      nom: string
-      examens: {
-        examId: string; titol: string; tipus: TipusExamen; entregats: number; nota: NotaAgrupada
-        percentRendiment: number; percentPes: number
-      }[]
-    }[]
-  }[]
-}
-
-export interface Programacio {
-  modulId: string
-  competencies: CompetenciaProg[]
-  unitats: UnitatProg[]
 }
 
 export interface Answer {

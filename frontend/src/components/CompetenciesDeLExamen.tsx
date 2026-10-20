@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Exam } from '../types'
-import { fixaCompetenciesExamen } from '../api/programacio'
+import { fixaCompetenciesExamen } from '../api/exams'
 
 interface Props {
   exam: Exam
@@ -12,7 +12,7 @@ const separa = (text: string): string[] =>
   [...new Set(text.split(/[\s,;]+/).map(c => c.trim().toUpperCase()).filter(Boolean))]
 
 /**
- * Competències que avalua l'examen. Els codis són lliures: si no són a la programació del mòdul no es rebutgen,
+ * Competències que avalua l'examen. Els codis són lliures (CO1, CO2…): cap no es rebutja,
  * només surt un avís. Les preguntes trien la seva competència entre les d'aquí.
  */
 export default function CompetenciesDeLExamen({ exam, onCanvi }: Props) {
@@ -44,7 +44,7 @@ export default function CompetenciesDeLExamen({ exam, onCanvi }: Props) {
       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Competències de l'examen</p>
       <p className="text-xs text-gray-500">
         Codis separats per comes (p. ex. CO1, CO3). Cada pregunta triarà la seva competència entre aquestes.
-        Si en deixes la llista buida, es proposen les de les unitats triades o les del mòdul.
+        Si en deixes la llista buida, cada pregunta admet qualsevol codi.
       </p>
       <div className="flex items-center gap-2 flex-wrap">
         <input value={text} onChange={e => setText(e.target.value)} placeholder="CO1, CO2"

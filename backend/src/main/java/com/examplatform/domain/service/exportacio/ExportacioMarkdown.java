@@ -36,7 +36,6 @@ public final class ExportacioMarkdown {
         Map<UUID, String> codis = d.codisAnonims();
 
         sb.append("# ").append(unaLinia(d.exam().getTitle())).append(" — respostes dels alumnes\n\n");
-        sb.append("Tipus: **").append(d.tipusText()).append("**\n\n");
         sb.append("Exportat el ").append(data).append(" · ").append(entregats.size())
                 .append(entregats.size() == 1 ? " alumne entregat" : " alumnes entregats")
                 .append(o.anonim() ? " · alumnes anonimitzats" : " · amb nom i correu").append("\n\n");
@@ -155,7 +154,7 @@ public final class ExportacioMarkdown {
     public static String informe(DadesExamen d, ExamStatsDto s, LocalDate data) {
         StringBuilder sb = new StringBuilder();
         sb.append("# Informe de l'examen: ").append(unaLinia(d.exam().getTitle())).append("\n\n");
-        sb.append("Tipus: **").append(d.tipusText()).append("** · generat el ").append(data).append(".\n\n## Resum\n\n");
+        sb.append("Generat el ").append(data).append(".\n\n## Resum\n\n");
         sb.append("| | |\n|:--|--:|\n");
         sb.append("| Alumnes que han entregat | ").append(s.entregats()).append(" de ").append(s.sessions()).append(" |\n");
         sb.append("| Nota mitjana (sobre 10) | ").append(nota(s.mitjana())).append(" |\n");

@@ -109,8 +109,7 @@ export default function StatsPage() {
                       {stats.competencies.map(c => (
                         <tr key={c.codi} className="border-t">
                           <td className="py-1.5 pr-3">
-                            <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded font-medium"
-                              title={exam.competencies?.find(x => x.codi === c.codi)?.descripcio || undefined}>{c.codi}</span>
+                            <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded font-medium">{c.codi}</span>
                           </td>
                           <td className="py-1.5 pr-3 text-right tabular-nums">{c.preguntes}</td>
                           <td className={`py-1.5 pr-3 text-right tabular-nums font-semibold ${c.mitjana != null && c.mitjana < 5 ? 'text-red-600' : 'text-gray-800'}`}>

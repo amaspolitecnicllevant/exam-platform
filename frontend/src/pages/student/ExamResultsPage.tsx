@@ -85,7 +85,7 @@ export default function ExamResultsPage() {
                   const nota = notaCompetenciaSobreDeu(g)
                   const suspesa = nota != null && nota < NOTA_APROVAT
                   return (
-                    <div key={co} className="text-center min-w-[80px]" title={exam.competencies?.find(c => c.codi === co)?.descripcio || undefined}>
+                    <div key={co} className="text-center min-w-[80px]">
                       <div className="text-xs font-semibold text-indigo-700 mb-1">{co}</div>
                       {nota != null
                         ? <div className={`text-lg font-bold tabular-nums ${suspesa ? 'text-red-600' : 'text-green-600'}`}>

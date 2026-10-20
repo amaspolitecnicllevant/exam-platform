@@ -92,7 +92,7 @@ Si en una secció es poden fer servir apunts (per exemple, la part pràctica), a
 | `N.` | Sí | Número de la pregunta. És orientatiu: la plataforma numera les preguntes segons l'ordre del fitxer |
 | `[tipus]` | Sí | Tipus de pregunta (vegeu §6). Majúscules o minúscules, amb guió o guió baix: `bash-cmd` = `BASH_CMD` |
 | `[pts:X]` | Sí | Punts de la pregunta. Decimals amb **punt**: `[pts:0.5]`, no `[pts:0,5]` |
-| `[co:CODI]` | No | Competència que treballa la pregunta (p. ex. `[co:CO1]`). Permet veure la nota per competència. No és obligatòria: es pot posar després des de la previsualització. A la importació no es comprova; quan l'examen té mòdul, ha de ser una de les competències del mòdul (o de les UT de l'examen). **`[ra:…]` ja no s'admet** |
+| `[co:CODI]` | No | Competència que treballa la pregunta (p. ex. `[co:CO1]`). Permet veure la nota per competència. No és obligatòria: es pot posar després des de la previsualització. És un codi lliure i a la importació no es comprova; si l'examen declara una llista de competències, la previsualització avisa quan una pregunta en porta una que no hi és. **`[ra:…]` ja no s'admet** |
 | `[dif:NIVELL]` | No | Dificultat: només `baixa`, `mitjana` o `alta` |
 | `[ordre:fix]` | No | Només per a `choice`: les opcions surten en l'ordre del fitxer (vegeu §6.1) |
 | `[apunts]` | No | En aquesta pregunta es poden fer servir apunts (en paper). Vegeu §3 per marcar-ho a tota una secció |

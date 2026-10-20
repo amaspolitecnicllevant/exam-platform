@@ -1,16 +1,13 @@
-import type { CompetenciaProg } from '../types'
-import { etiquetaCompetencia } from '../utils/competencies'
-
 interface Props {
   value: string
   onChange: (codi: string) => void
   /** Competències triables; null = encara no es poden validar (text lliure). */
-  permeses: CompetenciaProg[] | null
+  permeses: string[] | null
   className?: string
   ariaLabel?: string
 }
 
-/** Tria la competència d'una pregunta entre les permeses; sense programació, text lliure. */
+/** Tria la competència d'una pregunta entre les permeses; si l'examen no n'ha declarat cap, text lliure. */
 export default function SelectorCompetencia({ value, onChange, permeses, className = '', ariaLabel = 'Competència' }: Props) {
   if (permeses === null) {
     return (
@@ -19,11 +16,11 @@ export default function SelectorCompetencia({ value, onChange, permeses, classNa
     )
   }
   // Un valor antic que ja no és permès es mostra igualment (marcat) perquè no desaparegui en silenci
-  const desconeguda = value !== '' && !permeses.some(c => c.codi === value)
+  const desconeguda = value !== '' && !permeses.includes(value)
   return (
     <select value={value} onChange={e => onChange(e.target.value)} aria-label={ariaLabel} className={className}>
       <option value="">— cap —</option>
-      {permeses.map(c => <option key={c.id} value={c.codi}>{etiquetaCompetencia(c)}</option>)}
+      {permeses.map(c => <option key={c} value={c}>{c}</option>)}
       {desconeguda && <option value={value}>{value} (fora de l'examen)</option>}
     </select>
   )

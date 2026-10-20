@@ -57,7 +57,7 @@ public final class InformeDificultat {
     public static String informe(DadesExamen d, LocalDate data) {
         StringBuilder sb = new StringBuilder();
         sb.append("# Informe de dificultat: ").append(unaLinia(d.exam().getTitle())).append("\n\n");
-        sb.append("Tipus: **").append(d.tipusText()).append("** · generat el ").append(data).append(". Aquest informe conté noms d'alumnes: no el comparteixis fora del professorat.\n\n");
+        sb.append("Generat el ").append(data).append(". Aquest informe conté noms d'alumnes: no el comparteixis fora del professorat.\n\n");
 
         List<DadesExamen.Alumne> entregats = d.entregats();
         if (entregats.isEmpty()) {

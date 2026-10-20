@@ -31,7 +31,7 @@ class ExportacioNotesTest {
 
         assertThat(csv).startsWith("\uFEFF");
         assertThat(linies(csv).get(0))
-                .isEqualTo("alumne;email;estat;nota_sobre_10;punts;punts_maxims;pendents_de_revisar;P1 (4 pts);P2 (6 pts);tipus");
+                .isEqualTo("alumne;email;estat;nota_sobre_10;punts;punts_maxims;pendents_de_revisar;P1 (4 pts);P2 (6 pts)");
     }
 
     @Test
@@ -43,7 +43,7 @@ class ExportacioNotesTest {
         f.pregunta(QuestionType.SHORT, "6", "CO2");
         f.entregat("Anna", "anna@x.cat");
 
-        assertThat(linies(ExportacioNotes.notesCsv(f.dades())).get(0)).endsWith(";P1 (4 pts);P2 (6 pts);tipus");
+        assertThat(linies(ExportacioNotes.notesCsv(f.dades())).get(0)).endsWith(";P1 (4 pts);P2 (6 pts)");
     }
 
     @Test
@@ -55,19 +55,8 @@ class ExportacioNotesTest {
 
         List<String> l = linies(ExportacioNotes.competenciesCsv(f.dades()));
 
-        assertThat(l.get(0)).isEqualTo("alumne;email;CO1;CO3;CO10;nota_global;tipus");
-        assertThat(l.get(1)).isEqualTo("Anna;anna@x.cat;5,00;;;5,00;Examen");
-    }
-
-    @Test
-    void una_practica_ho_indica_a_les_notes_i_a_les_notes_per_competencia() {
-        FixtureExamen f = new FixtureExamen();
-        f.exam.setTipus(TipusExamen.PRACTICA);
-        Question p1 = f.pregunta(QuestionType.SHORT, "4", "CO1");
-        f.resposta(f.entregat("Anna", "anna@x.cat"), p1, "x", "4");
-
-        assertThat(linies(ExportacioNotes.notesCsv(f.dades())).get(1)).endsWith(";Pràctica");
-        assertThat(linies(ExportacioNotes.competenciesCsv(f.dades())).get(1)).endsWith(";Pràctica");
+        assertThat(l.get(0)).isEqualTo("alumne;email;CO1;CO3;CO10;nota_global");
+        assertThat(l.get(1)).isEqualTo("Anna;anna@x.cat;5,00;;;5,00");
     }
 
     @Test
@@ -192,8 +181,8 @@ class ExportacioNotesTest {
 
         List<String> l = linies(ExportacioNotes.competenciesCsv(f.dades()));
 
-        assertThat(l.get(0)).isEqualTo("alumne;email;CO1;CO2;nota_global;tipus");
-        assertThat(l.get(1)).isEqualTo("Anna;anna@x.cat;7,50;10,00;9,00;Examen");
+        assertThat(l.get(0)).isEqualTo("alumne;email;CO1;CO2;nota_global");
+        assertThat(l.get(1)).isEqualTo("Anna;anna@x.cat;7,50;10,00;9,00");
     }
 
     @Test
@@ -213,6 +202,6 @@ class ExportacioNotesTest {
         Question p = f.pregunta(QuestionType.FILE_UPLOAD, "10", "CO1");
         f.resposta(f.entregat("Anna", "anna@x.cat"), p, "x.docx", null);
 
-        assertThat(linies(ExportacioNotes.competenciesCsv(f.dades())).get(1)).isEqualTo("Anna;anna@x.cat;0,00;0,00;Examen");
+        assertThat(linies(ExportacioNotes.competenciesCsv(f.dades())).get(1)).isEqualTo("Anna;anna@x.cat;0,00;0,00");
     }
 }

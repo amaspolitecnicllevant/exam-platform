@@ -145,7 +145,7 @@ export default function NotesPage() {
                   <Cap per="nota" className="text-right border-l border-gray-200">Nota de l'examen</Cap>
                   {taula.competencies.map(co => (
                     <Cap key={co} per={co} className="text-right">
-                      <span title={exam.competencies?.find(c => c.codi === co)?.descripcio || undefined}>{co}</span>
+                      <span>{co}</span>
                     </Cap>
                   ))}
                   <Cap per="pendents" className="text-right border-l border-gray-200">Pendents</Cap>

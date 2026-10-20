@@ -530,23 +530,6 @@ class ExamServiceTest {
     }
 
     @Test
-    void updateSettings_canvia_el_tipus_entre_examen_i_practica_i_per_defecte_es_examen() {
-        Exam exam = exam(ExamStatus.DRAFT, professor);
-        when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
-        when(examRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        assertThat(exam.getTipus()).isEqualTo(TipusExamen.EXAMEN);
-
-        ExamDto dto = service.updateSettings(exam.getId(),
-                new ExamSettingsRequest(null, null, null, null, TipusExamen.PRACTICA), professor);
-
-        assertThat(exam.getTipus()).isEqualTo(TipusExamen.PRACTICA);
-        assertThat(dto.tipus()).isEqualTo(TipusExamen.PRACTICA);
-        // Un canvi d'altres camps no el toca
-        service.updateSettings(exam.getId(), new ExamSettingsRequest(new BigDecimal("0.25")), professor);
-        assertThat(exam.getTipus()).isEqualTo(TipusExamen.PRACTICA);
-    }
-
-    @Test
     void updateSettings_activa_i_desactiva_una_pregunta_per_pantalla() {
         Exam exam = exam(ExamStatus.DRAFT, professor);
         when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));

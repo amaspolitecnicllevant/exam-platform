@@ -34,15 +34,9 @@ public record ExamDto(
         boolean teSessions,
         /** Quan un alumne va començar l'examen per primera vegada (null si encara no l'ha començat ningú). */
         LocalDateTime primeraSessio,
-        /** UT que avalua l'examen (buit = sense restricció de competències). */
-        List<ProgramacioDto.Unitat> unitats,
-        /** Totes les competències del mòdul de l'examen, amb la descripció. */
-        List<ProgramacioDto.Competencia> competencies,
         /** Competències que declara l'examen (codis lliures, ordenats). */
         List<String> competenciesExamen,
-        /** Examen o pràctica. */
-        com.examplatform.domain.model.TipusExamen tipus,
-        /** Avisos sobre competències que no són a la programació (només per al professorat; no bloquegen res). */
+        /** Avisos sobre les competències de les preguntes (només per al professorat; no bloquegen res). */
         List<String> avisos,
         List<QuestionDto> questions
 ) {
@@ -50,7 +44,7 @@ public record ExamDto(
     public ExamDto ambSessions(boolean teSessions, LocalDateTime primeraSessio) {
         return new ExamDto(id, title, durada, instruccions, status, createdByName, createdAt, scheduledAt,
                 scheduledGrupId, scheduledGrupName, penalitzacioChoice, modulId, modulNom, cicleNom, departamentNom, aulaId,
-                aulaNom, aulaCidr, notesVisibles, unaPreguntaPerPantalla, restringit, teSessions, primeraSessio, unitats, competencies, competenciesExamen, tipus, avisos, questions);
+                aulaNom, aulaCidr, notesVisibles, unaPreguntaPerPantalla, restringit, teSessions, primeraSessio, competenciesExamen, avisos, questions);
     }
 
     public static ExamDto from(Exam e, boolean includeAnswers) {
@@ -86,12 +80,7 @@ public record ExamDto(
                 e.isRestringit(),
                 false,
                 null,
-                e.getUnitats().stream().sorted(java.util.Comparator.comparingInt(u -> u.getOrdre()))
-                        .map(ProgramacioDto.Unitat::de).toList(),
-                e.getModul() == null ? List.of()
-                        : e.getModul().getCompetencies().stream().map(ProgramacioDto.Competencia::de).toList(),
                 e.getCompetenciesExamen().stream().sorted(CompetenciesExamen.ORDRE_CODIS).toList(),
-                e.getTipus(),
                 includeAnswers ? CompetenciesExamen.avisos(e) : List.of(),
                 qs);
     }

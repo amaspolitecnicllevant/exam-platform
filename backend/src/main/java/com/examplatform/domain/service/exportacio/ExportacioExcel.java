@@ -27,7 +27,6 @@ public final class ExportacioExcel {
         List<String> cap = new ArrayList<>(List.of("Alumne", "Correu", "Estat", "Nota sobre 10", "Punts", "Punts màxims",
                 "Pendents de revisar"));
         d.preguntes().forEach(q -> cap.add(ExportacioNotes.capcaleraPregunta(q)));
-        cap.add("Tipus");
         List<List<Object>> files = new ArrayList<>();
         BigDecimal maxim = Puntuacio.maxim(d.preguntes());
         for (DadesExamen.Alumne a : d.alumnes()) {
@@ -41,12 +40,10 @@ public final class ExportacioExcel {
                 BigDecimal p = ExportacioNotes.punts(a, q);
                 fila.add(!comencat ? null : a.respostes().get(q.getId()) != null && p == null ? "pendent" : dosDecimals(p));
             }
-            fila.add(d.tipusText());
             files.add(fila);
         }
         List<Integer> amples = new ArrayList<>(List.of(32, 32, 14, 14, 9, 13, 18));
         d.preguntes().forEach(q -> amples.add(14));
-        amples.add(11);
         return new XlsxWriter.Full("Notes", cap, files, amples, Set.of());
     }
 
@@ -55,24 +52,21 @@ public final class ExportacioExcel {
         List<String> cap = new ArrayList<>(List.of("Alumne", "Correu"));
         cap.addAll(cos);
         cap.add("Nota global");
-        cap.add("Tipus");
         List<List<Object>> files = new ArrayList<>();
         for (DadesExamen.Alumne a : d.entregats()) {
             List<Object> fila = new ArrayList<>(List.of(a.nom(), a.email()));
             for (String co : cos) fila.add(dosDecimals(ExportacioNotes.notaCompetencia(d, a, co)));
             fila.add(dosDecimals(Puntuacio.notaSobreDeu(d.preguntes(), a.respostes())));
-            fila.add(d.tipusText());
             files.add(fila);
         }
         List<Integer> amples = new ArrayList<>(List.of(32, 32));
         cos.forEach(r -> amples.add(14));
         amples.add(14);
-        amples.add(11);
         return new XlsxWriter.Full("Notes per competència", cap, files, amples, Set.of());
     }
 
     static XlsxWriter.Full respostes(DadesExamen d) {
-        List<String> cap = List.of("Alumne", "Correu", "Pregunta", "Tipus", "Punts màxims", "Resposta", "Nota", "Comentari", "Tipus");
+        List<String> cap = List.of("Alumne", "Correu", "Pregunta", "Tipus", "Punts màxims", "Resposta", "Nota", "Comentari");
         List<List<Object>> files = new ArrayList<>();
         for (DadesExamen.Alumne a : d.entregats()) {
             for (Question q : d.preguntes()) {
@@ -80,10 +74,10 @@ public final class ExportacioExcel {
                 BigDecimal p = Puntuacio.punts(q, r);
                 files.add(new ArrayList<>(Arrays.asList(a.nom(), a.email(), "P" + Numeracio.numero(q),
                         ExportacioMarkdown.etiquetaTipus(q.getTipus()), dosDecimals(q.getPunts()), textResposta(q, r),
-                        r != null && p == null ? "pendent" : dosDecimals(p), r == null ? null : r.getComentari(), d.tipusText())));
+                        r != null && p == null ? "pendent" : dosDecimals(p), r == null ? null : r.getComentari())));
             }
         }
-        return new XlsxWriter.Full("Respostes", cap, files, List.of(32, 32, 10, 20, 12, 70, 10, 40, 11), Set.of(5, 7));
+        return new XlsxWriter.Full("Respostes", cap, files, List.of(32, 32, 10, 20, 12, 70, 10, 40), Set.of(5, 7));
     }
 
     private static String textResposta(Question q, Answer r) {

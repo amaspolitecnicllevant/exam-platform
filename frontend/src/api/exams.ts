@@ -32,7 +32,6 @@ export interface ExamSettings {
   unaPreguntaPerPantalla?: boolean
   title?: string
   durada?: number
-  tipus?: 'EXAMEN' | 'PRACTICA'
 }
 
 /** Canvis parcials: els camps no indicats no es modifiquen */
@@ -73,3 +72,7 @@ export const publicarNotes = (examId: string): Promise<Exam> =>
 
 export const ocultarNotes = (examId: string): Promise<Exam> =>
   client.post<Exam>(`/exams/${examId}/ocultar-notes`).then(r => r.data)
+
+/** Fixa les competències que avalua l'examen (codis lliures; buit = sense llista). */
+export const fixaCompetenciesExamen = (examId: string, codis: string[]) =>
+  client.put<import('../types').Exam>(`/exams/${examId}/competencies`, { codis }).then(r => r.data)

@@ -9,10 +9,9 @@ import { llistaFormats } from '../../utils/fitxers'
 import EditorPregunta from '../../components/EditorPregunta'
 import { getEstatEdicio, eliminaPregunta, mouPregunta, type EstatEdicio } from '../../api/editor'
 import { idsReferenciats } from '../../utils/imatges'
-import { competenciesPermeses, descripcioCompetencia } from '../../utils/competencies'
+import { competenciesPermeses } from '../../utils/competencies'
 import SelectorCompetencia from '../../components/SelectorCompetencia'
 import { fraccioPenalitzacio, instruccionsParlenDePenalitzacio } from '../../utils/penalitzacio'
-import UnitatsExamen from '../../components/UnitatsExamen'
 import CompetenciesDeLExamen from '../../components/CompetenciesDeLExamen'
 
 const DIF_COLORS: Record<string, string> = {
@@ -274,23 +273,6 @@ export default function ExamPreviewPage() {
           )}
         </div>
 
-        {/* Examen o pràctica: cada part té un percentatge diferent a la nota de la unitat */}
-        <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-4 text-sm flex-wrap">
-          <span className="text-gray-500">Tipus:</span>
-          <select value={exam!.tipus ?? 'EXAMEN'} aria-label="Tipus d'examen"
-            onChange={async e => {
-              try { setExam(await updateExamSettings(examId!, { tipus: e.target.value as 'EXAMEN' | 'PRACTICA' })) }
-              catch (err: any) { setErrorEditor(err?.response?.data?.error || 'No s\'ha pogut canviar el tipus') }
-            }}
-            className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
-            <option value="EXAMEN">Examen</option>
-            <option value="PRACTICA">Pràctica</option>
-          </select>
-          <span className="text-xs text-gray-400">
-            A la programació del mòdul pots indicar quin % de la nota de cada unitat és d'exàmens i quin de pràctiques.
-          </span>
-        </div>
-
         {/* Configuració penalització */}
         <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-4 text-sm">
           <span className="text-gray-500">Penalització respostes incorrectes (test):</span>
@@ -373,7 +355,6 @@ export default function ExamPreviewPage() {
         })()}
 
         <CompetenciesDeLExamen exam={exam} onCanvi={setExam} />
-        <UnitatsExamen exam={exam} onCanvi={setExam} />
 
         {/* Resum competència / dificultat */}
         {(() => {
@@ -397,7 +378,7 @@ export default function ExamPreviewPage() {
                   <span className="text-xs text-gray-400 self-center">Competència:</span>
                   {Object.entries(coMap).sort(([a],[b]) => a.localeCompare(b)).map(([co, count]) => (
                     <span key={co} className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded font-medium"
-                      title={descripcioCompetencia(exam, co)}>
+                      >
                       {co} · {count}
                     </span>
                   ))}
@@ -495,7 +476,7 @@ export default function ExamPreviewPage() {
                       className="flex items-center gap-1.5 group">
                       {q.competencia
                         ? <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded font-medium"
-                            title={descripcioCompetencia(exam, q.competencia)}>{q.competencia}</span>
+                            >{q.competencia}</span>
                         : <span className="text-xs text-gray-300 group-hover:text-gray-400">+ competència</span>}
                       {q.dificultat
                         ? <span className={`text-xs px-2 py-0.5 rounded font-medium ${DIF_COLORS[q.dificultat]}`}>{q.dificultat}</span>

@@ -7,8 +7,7 @@ Aquest document explica **com ha de ser el fitxer `.md` que s'importa a l'aplica
 1. A **Els meus exàmens**, prem **«+ Nou examen (MD)»**.
 2. Tria el fitxer `.md` i envia'l. L'aplicació el revisa **sencer**: si hi ha un error el rebutja i diu **la línia i el motiu**; no s'importa res a mitges.
 3. Si és vàlid, es crea un **esborrany** i s'obre la previsualització. Allà falta encara completar-ho (el fitxer només porta les preguntes):
-   - **Tipus:** examen o pràctica (desplegable «Tipus»).
-   - **Mòdul** (des del llistat d'exàmens) i **unitats de treball** que avalua.
+   - **Mòdul** (des del llistat d'exàmens).
    - **Competències** de l'examen, si no les has posat a cada pregunta amb `[co:…]`.
    - **Penalització** dels tests, **destinataris** (tots o alumnes concrets) i **imatges**, que s'afegeixen des de l'editor.
 4. Revisa les preguntes (es poden editar mentre cap alumne no ha començat) i **activa** l'examen.
@@ -33,7 +32,7 @@ Enunciat…
 - El fitxer comença amb el títol (`# `), la durada en minuts (`durada:`, per defecte 90) i les instruccions (opcionals). Una línia `---` tanca la capçalera.
 - `### Títol` obre una **secció**: les preguntes es barregen per a cada alumne dins de cada secció, però les seccions no es barregen entre elles. Afegeix `[apunts]` al títol si en aquella part es poden fer servir apunts.
 - **La suma de tots els `[pts:X]` ha de ser exactament 10.**
-- **Examen o pràctica** no canvia el format del fitxer: el mateix `.md` serveix per als dos. Es tria a la previsualització, al desplegable «Tipus», i cada part té el seu percentatge a la nota de la unitat (es defineix a la programació del mòdul).
+- **Examen o pràctica** no canvia el format del fitxer: el mateix `.md` serveix per als dos.
 
 ## 2. Capçalera de pregunta
 
@@ -325,8 +324,6 @@ echo "Hola, $1!"
 :::
 ````
 
-Després d'importar-la, marca-la com a «Pràctica» a la previsualització.
-
 ## 7. Quan l'aplicació rebutja el fitxer
 
 Mostra la **línia** i el motiu. Els més habituals:
@@ -350,7 +347,7 @@ Copia aquest text a la IA (Claude, ChatGPT…) i adjunta aquest document. Substi
 ```text
 Genera una prova per a l'aplicació d'exàmens seguint exactament la sintaxi del document adjunt.
 
-Tipus: [examen o pràctica]  ·  Mòdul i unitat: [p. ex. 0485 · UT02 Xarxes]
+Mòdul i unitat: [p. ex. 0485 · UT02 Xarxes]
 Temes: [llista de continguts a avaluar]
 Preguntes: [p. ex. 6 de test, 2 de resposta curta, 1 de bash-script]
 Competències (codi i descripció), si en vols a cada pregunta:
@@ -368,8 +365,6 @@ Regles:
 - No facis servir ### dins dels enunciats ni imatges amb una URL inventada.
 - Escriu-ho tot en català i sense incloure la solució a l'enunciat.
 ```
-
-L'examen o la pràctica no es distingeixen al fitxer: el tipus es tria després, a la previsualització.
 
 ## 9. Errors freqüents
 

@@ -10,8 +10,4 @@ import java.util.UUID;
 
 public interface QuestionRepository extends JpaRepository<Question, UUID> {
     List<Question> findByExamIdOrderByOrdreAsc(UUID examId);
-
-    /** Preguntes dels exàmens d'un mòdul que treballen una competència. */
-    @Query("SELECT COUNT(q) FROM Question q WHERE q.exam.modul.id = :modulId AND q.competencia = :codi")
-    long comptaCompetencia(@Param("modulId") UUID modulId, @Param("codi") String codi);
 }

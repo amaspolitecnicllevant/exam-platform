@@ -27,12 +27,6 @@ public class Modul {
     @JoinColumn(name = "cicle_id", nullable = false)
     private Cicle cicle;
 
-    /** Competències del mòdul (programació); només lectura: s'editen amb ProgramacioService. */
-    @OneToMany(mappedBy = "modul", fetch = FetchType.LAZY)
-    @OrderBy("ordre ASC")
-    @Builder.Default
-    private List<Competencia> competencies = new ArrayList<>();
-
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

@@ -256,18 +256,6 @@ class ExportacioMarkdownTest {
     }
 
     @Test
-    void les_respostes_i_els_informes_d_una_practica_diuen_que_ho_son() {
-        FixtureExamen f = new FixtureExamen();
-        f.exam.setTipus(TipusExamen.PRACTICA);
-        Question p1 = f.pregunta(QuestionType.SHORT, "4", "CO1");
-        f.resposta(f.entregat("Anna", "anna@x.cat"), p1, "x", "4");
-
-        assertThat(ExportacioMarkdown.respostes(f.dades(), new ExportacioMarkdown.Opcions(true, true), DATA)).contains("Tipus: **Pràctica**");
-        assertThat(ExportacioMarkdown.informe(f.dades(), stats(0, List.of()), DATA)).contains("Tipus: **Pràctica**");
-        assertThat(InformeDificultat.informe(f.dades(), DATA)).contains("Tipus: **Pràctica**");
-    }
-
-    @Test
     void l_informe_sense_competencies_no_porta_la_taula() {
         FixtureExamen f = new FixtureExamen();
         f.pregunta(QuestionType.SHORT, "4", null);
@@ -296,7 +284,7 @@ class ExportacioMarkdownTest {
 
         String md = ExportacioMarkdown.informe(f.dades(), s, DATA);
 
-        assertThat(md).contains("# Informe de l'examen: Parcial UT1").contains("Tipus: **Examen** · generat el 2026-10-06")
+        assertThat(md).contains("# Informe de l'examen: Parcial UT1").contains("Generat el 2026-10-06")
                 .contains("| Alumnes que han entregat | 8 de 10 |").contains("| Nota mitjana (sobre 10) | 6,50 |")
                 .contains("| Aprovats (≥ 5) | 75 % |").contains("## Distribució de notes").contains("| 9–10 (inclòs el 10) | 1 |")
                 .contains("| 1 | Resposta curta | 2 | 40 % |");
