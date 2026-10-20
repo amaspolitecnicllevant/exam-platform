@@ -71,6 +71,20 @@ class ExportacioExcelTest {
     }
 
     @Test
+    void l_excel_d_una_practica_ho_indica_a_l_ultima_columna_de_cada_full() throws Exception {
+        FixtureExamen f = new FixtureExamen();
+        f.exam.setTipus(TipusExamen.PRACTICA);
+        Question p1 = f.pregunta(QuestionType.SHORT, "4", "CO1");
+        f.resposta(f.entregat("Anna", "anna@x.cat"), p1, "x", "4");
+        XlsxLector x = new XlsxLector(ExportacioExcel.excel(f.dades()));
+
+        assertThat(x.cel_les(1).get("I1").valor()).isEqualTo("Tipus");
+        assertThat(x.cel_les(1).get("I2").valor()).isEqualTo("Pràctica");
+        assertThat(x.cel_les(2).get("E2").valor()).isEqualTo("Pràctica");      // alumne, correu, CO1, nota global, tipus
+        assertThat(x.cel_les(3).get("I2").valor()).isEqualTo("Pràctica");
+    }
+
+    @Test
     void els_fulls_de_notes_i_de_respostes_numeren_les_preguntes_sense_comptar_les_seccions() throws Exception {
         FixtureExamen f = new FixtureExamen();
         f.seccio("Part 1");

@@ -38,10 +38,11 @@ public class ExportController {
                 .sorted(java.util.Comparator.comparingInt(Question::getOrdre))
                 .toList();
 
+        String tipus = exam.getTipus() == TipusExamen.PRACTICA ? "Pràctica" : "Examen";
         StringWriter sw = new StringWriter();
         try (CSVPrinter csv = new CSVPrinter(sw, CSVFormat.EXCEL.builder()
                 .setHeader("alumne", "email", "pregunta", "tipus", "punts_max",
-                           "resposta", "output_exec", "auto_score", "manual_score", "bonus", "punts", "comentari", "competencia")
+                           "resposta", "output_exec", "auto_score", "manual_score", "bonus", "punts", "comentari", "competencia", "tipus")
                 .build())) {
 
             for (ExamSession session : sessions) {
@@ -65,11 +66,12 @@ public class ExportController {
                             q.isAnulada() ? "sí" : "",
                             Puntuacio.punts(q, answer),
                             answer != null ? sanitizeCsvCell(answer.getComentari()) : "",
-                            sanitizeCsvCell(q.getCompetencia())
+                            sanitizeCsvCell(q.getCompetencia()),
+                            tipus
                     );
                 }
                 csv.printRecord(studentName, studentEmail, "TOTAL", "", Puntuacio.maxim(preguntes), "", "", "", "", "",
-                        Puntuacio.total(preguntes, perPregunta), "", "");
+                        Puntuacio.total(preguntes, perPregunta), "", "", tipus);
             }
         }
 

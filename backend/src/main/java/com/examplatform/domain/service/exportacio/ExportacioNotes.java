@@ -53,6 +53,7 @@ public final class ExportacioNotes {
             List<String> cap = new ArrayList<>(List.of("alumne", "email", "estat", "nota_sobre_10", "punts",
                     "punts_maxims", "pendents_de_revisar"));
             d.preguntes().forEach(q -> cap.add(capcaleraPregunta(q)));
+            cap.add("tipus");
             csv.printRecord(cap);
             BigDecimal maxim = Puntuacio.maxim(d.preguntes());
             for (DadesExamen.Alumne a : d.alumnes()) {
@@ -69,6 +70,7 @@ public final class ExportacioNotes {
                     BigDecimal p = punts(a, q);
                     fila.add(!comencat ? "" : a.respostes().get(q.getId()) != null && p == null ? "pendent" : CsvSegur.num(p));
                 }
+                fila.add(d.tipusText());
                 csv.printRecord(fila);
             }
         } catch (IOException e) {
@@ -109,11 +111,13 @@ public final class ExportacioNotes {
             List<String> cap = new ArrayList<>(List.of("alumne", "email"));
             cap.addAll(cos);
             cap.add("nota_global");
+            cap.add("tipus");
             csv.printRecord(cap);
             for (DadesExamen.Alumne a : d.entregats()) {
                 List<String> fila = new ArrayList<>(List.of(CsvSegur.cel(a.nom()), CsvSegur.cel(a.email())));
                 for (String co : cos) fila.add(CsvSegur.num(notaCompetencia(d, a, co)));
                 fila.add(CsvSegur.num(Puntuacio.notaSobreDeu(d.preguntes(), a.respostes())));
+                fila.add(d.tipusText());
                 csv.printRecord(fila);
             }
         } catch (IOException e) {

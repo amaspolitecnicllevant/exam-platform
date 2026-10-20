@@ -46,6 +46,11 @@ public record DadesExamen(Exam exam, List<Question> preguntes, List<Alumne> alum
         return new DadesExamen(exam, preguntes, alumnes);
     }
 
+    /** «Examen» o «Pràctica», segons com compta aquest examen a la nota de la unitat. */
+    public String tipusText() {
+        return exam.getTipus() == TipusExamen.PRACTICA ? "Pràctica" : "Examen";
+    }
+
     public List<Alumne> entregats() {
         return alumnes.stream().filter(Alumne::entregat).toList();
     }
