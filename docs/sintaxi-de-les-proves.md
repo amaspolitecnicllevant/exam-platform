@@ -1,6 +1,6 @@
-# Sintaxi de cada tipus de pregunta
+# Sintaxi de les proves
 
-Referència ràpida del format `.md` per crear exàmens i pràctiques. Cada tipus té un exemple complet que es pot copiar. La guia detallada (amb tots els casos particulars) és la *Guia de sintaxi per crear exàmens en Markdown*, que també es pot descarregar de la plataforma.
+Referència ràpida del format `.md` per crear proves, és a dir, exàmens i pràctiques. Una prova és un fitxer amb la seva capçalera i les seves preguntes; cada tipus de pregunta té un exemple complet que es pot copiar, i al final hi ha dues proves senceres. La guia detallada (amb tots els casos particulars) és la *Guia de sintaxi per crear exàmens en Markdown*, que també es pot descarregar de la plataforma.
 
 ## 1. Estructura de l'examen
 
@@ -20,7 +20,7 @@ Enunciat…
 - El fitxer comença amb el títol (`# `), la durada en minuts (`durada:`, per defecte 90) i les instruccions (opcionals). Una línia `---` tanca la capçalera.
 - `### Títol` obre una **secció**: les preguntes es barregen per a cada alumne dins de cada secció, però les seccions no es barregen entre elles. Afegeix `[apunts]` al títol si en aquella part es poden fer servir apunts.
 - **La suma de tots els `[pts:X]` ha de ser exactament 10.**
-- **Examen o pràctica** no s'escriu al fitxer: es tria a la previsualització, al desplegable «Tipus». Cada part té el seu percentatge a la nota de la unitat (es defineix a la programació del mòdul).
+- **Examen o pràctica** no canvia el format del fitxer: el mateix `.md` serveix per als dos. Es tria a la previsualització, al desplegable «Tipus», i cada part té el seu percentatge a la nota de la unitat (es defineix a la programació del mòdul).
 
 ## 2. Capçalera de pregunta
 
@@ -219,7 +219,102 @@ Segons aquesta taula, quina valoració correspon a un índex de 47?
 > No facis servir `###` a l'enunciat (es llegeix com una secció): usa negreta.
 > Les imatges no s'escriuen al fitxer: s'afegeixen des de la previsualització, amb «Afegir imatge».
 
-## 6. Errors freqüents
+## 6. Exemples de proves senceres
+
+### 6.1 Un examen
+
+````markdown
+# Examen UT01 · Xarxes
+durada: 45
+instruccions: Una sola resposta és correcta als tests. Les respostes en blanc puntuen 0.
+
+---
+
+### Part 1 — Test
+
+## 1. [choice] [pts:2] [co:CO1]
+Quin port fa servir per defecte un servidor DHCP?
+
+- a) 53
+- b) 67
+- c) 80
+- d) 443
+
+:::model
+b
+:::
+
+## 2. [choice] [pts:2] [co:CO1]
+Quina d'aquestes adreces és privada?
+
+- a) 8.8.8.8
+- b) 172.20.4.1
+- c) 1.1.1.1
+- d) 200.10.0.5
+
+:::model
+b
+:::
+
+### Part 2 — Resposta escrita
+
+## 3. [short] [pts:3] [co:CO2]
+Què fa un servidor DHCP?
+
+:::model
+Assigna automàticament la configuració de xarxa als equips.
+:::
+
+:::clau
+adreça IP, IP | 1.5
+automàtic, automàticament, dinàmic | 1.5
+:::
+
+## 4. [long] [pts:3] [co:CO2] [dif:alta]
+Explica com es resol un nom de domini.
+
+:::model
+El navegador consulta la memòria cau; si no hi és, pregunta al servidor DNS, que resol recursivament fins a obtenir l'adreça IP.
+:::
+````
+
+### 6.2 Una pràctica
+
+````markdown
+# Pràctica UT02 · Scripts i xarxa
+durada: 120
+instruccions: Entrega el document i resol l'script. Pots fer servir apunts.
+
+---
+
+### Part 1 — Lliurament [apunts]
+
+## 1. [fitxer] [pts:6] [co:CO3] [formats:docx,pkt]
+Dissenya la xarxa de l'enunciat i entrega la simulació (`.pkt`) i la taula d'adreçament (`.docx`).
+
+:::model
+Ha de tenir 3 subxarxes i la taula d'adreçament completa.
+:::
+
+### Part 2 — Script [apunts]
+
+## 2. [bash-script] [pts:4] [co:CO3]
+Escriu un script que rebi un nom i mostri `Hola, <nom>!`.
+
+:::model
+#!/bin/bash
+echo "Hola, $1!"
+:::
+
+:::test
+#!/bin/bash
+[ "$(bash "$SCRIPT_FILE" Anna 2>/dev/null)" = "Hola, Anna!" ] && exit 0 || exit 1
+:::
+````
+
+Després d'importar-la, marca-la com a «Pràctica» a la previsualització.
+
+## 7. Errors freqüents
 
 - Encadenar blocs sense tancar-los (`:::model` … `:::output-contains` … `:::`): tanca cada bloc amb `:::`.
 - Que la suma dels punts no sigui 10.
