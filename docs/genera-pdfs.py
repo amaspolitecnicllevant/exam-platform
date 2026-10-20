@@ -26,6 +26,7 @@ GUIES = [
     ("guia-professor.md", "Guia del professor", False),
     ("guia-alumne.md", "Guia de l'alumne", False),
     ("guia-alumne-resum.md", "Resum per a l'alumne", True),
+    ("sintaxi-tipus-de-pregunta.md", "Sintaxi dels tipus de pregunta", False),
 ]
 NOMS_PDF = {md: md.replace(".md", ".pdf") for md, _, _ in GUIES}
 
