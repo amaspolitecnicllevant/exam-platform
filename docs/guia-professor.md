@@ -211,6 +211,8 @@ El menú **Exportar** de cada examen ofereix:
 | **Notes per competència (CSV)** | Actes i programació |
 | **Excel (.xlsx)** | Notes, notes per competència i respostes en un sol fitxer |
 | **Informe (.md)** | Estadístiques per pregunta i les més difícils |
+| **Informe de dificultat (.md)** | Dificultat segons els resultats, millores per a la propera vegada i aprovats a revisar (porta noms) |
+| **Informes de qualificació (.md)** | Per a l'aplicació de notes: una secció per alumne que explica d'on surt la nota, pregunta a pregunta (porta noms). Segueix la sintaxi dels informes de qualificació de pràctiques |
 | **Fitxers lliurats (ZIP)** | Un directori per alumne, per corregir els lliuraments fora de línia |
 | **Respostes per a una IA (.md)** | Vegeu més avall |
 

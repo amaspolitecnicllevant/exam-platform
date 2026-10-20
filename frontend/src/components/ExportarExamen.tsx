@@ -84,6 +84,8 @@ export default function ExportarExamen({ examId, titol, teFitxers = false }: {
           <Opcio tipus="notes" sufix="notes.csv" text="Notes per alumne (CSV)" detall="Nota sobre 10, punts i punts de cada pregunta" />
           <Opcio tipus="notes-competencies" sufix="notes-competencies.csv" text="Notes per competència (CSV)" detall="Nota sobre 10 de cada competència; només alumnes que han entregat" />
           <Opcio tipus="excel" sufix="examen.xlsx" text="Excel (.xlsx)" detall="Full de notes, de competències i de respostes" />
+          <Opcio tipus="informes-qualificacio" sufix="informes-qualificacio.md" text="Informes de qualificació (.md)"
+            detall="Per a l'aplicació de notes: una secció per alumne que explica d'on surt la nota (porta noms)" />
 
           <p className="px-3 pt-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-t border-gray-100">Revisar amb una IA</p>
           <p className="px-3 text-xs text-gray-500">

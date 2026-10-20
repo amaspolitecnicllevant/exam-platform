@@ -88,6 +88,17 @@ public class ExportacioController {
         return fitxer(InformeDificultat.informe(d, LocalDate.now()), d, "dificultat.md", MARKDOWN);
     }
 
+    /**
+     * Informe de qualificació per importar a l'aplicació de notes: una secció per alumne que explica d'on surt la nota,
+     * amb la sintaxi dels informes de qualificació de pràctiques. Porta noms d'alumnes.
+     */
+    @GetMapping("/informes-qualificacio.md")
+    public ResponseEntity<byte[]> informesQualificacio(@PathVariable UUID examId, @AuthenticationPrincipal User user) {
+        DadesExamen d = exportacio.dades(examId, user);
+        auditar(user, "informes de qualificació", examId);
+        return fitxer(InformeQualificacio.informe(d), d, "informes-qualificacio.md", MARKDOWN);
+    }
+
     @GetMapping("/examen.xlsx")
     public ResponseEntity<byte[]> excel(@PathVariable UUID examId, @AuthenticationPrincipal User user) throws IOException {
         DadesExamen d = exportacio.dades(examId, user);

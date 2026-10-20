@@ -150,6 +150,15 @@ class ExportacioControllerTest {
         assertThat(cos(r)).startsWith("# Informe de l'examen:");
     }
 
+    @Test
+    void els_informes_de_qualificacio_son_markdown_i_queden_al_registre() throws Exception {
+        MvcResult r = mvc.perform(get(url("informes-qualificacio.md"))).andExpect(status().isOk()).andReturn();
+
+        assertThat(r.getResponse().getContentType()).startsWith("text/markdown");
+        assertThat(cos(r)).startsWith("# Informes de qualificació — ").contains("## Resum de la classe");
+        verify(audit).log(eq(prof.getId()), eq("EXAM_EXPORTED"), contains("informes de qualificació"));
+    }
+
     // ── Excel ─────────────────────────────────────────────────────────────────
 
     @Test
