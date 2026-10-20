@@ -82,6 +82,8 @@ class StatsServiceTest {
         ExamStatsDto.Competencia co1 = st.competencies().get(0), co2 = st.competencies().get(1);
         assertThat(co1.preguntes()).isEqualTo(1);
         assertThat(co1.punts()).isEqualByComparingTo("4");
+        assertThat(co1.mitjanaPunts()).isEqualByComparingTo("1.33");         // (4 + 0 + 0) / 3 punts reals de 4
+        assertThat(co2.mitjanaPunts()).isEqualByComparingTo("3.33");         // (6 + 3 + 1) / 3 punts reals de 6
         assertThat(co1.mitjana()).isEqualByComparingTo("3.33");              // (10 + 0 + 0) / 3
         assertThat(co1.percentAprovats()).isEqualByComparingTo("33.3");       // 1 de 3
         assertThat(co2.mitjana()).isEqualByComparingTo("5.56");              // (10 + 5 + 1,67) / 3

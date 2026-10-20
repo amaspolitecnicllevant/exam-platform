@@ -4,7 +4,7 @@ import Layout from '../../components/Layout'
 import { getExam } from '../../api/exams'
 import { getSessionsByExam, deleteSession } from '../../api/sessions'
 import type { Exam, Session } from '../../types'
-import { taulaNotes, ordenaFiles, csvTaulaNotes, NOTA_APROVAT, type ColumnaOrdre } from '../../utils/taulaNotes'
+import { taulaNotes, ordenaFiles, csvTaulaNotes, NOTA_APROVAT, type ColumnaOrdre, type NotaCompetencia } from '../../utils/taulaNotes'
 import { nomExportacio } from '../../utils/fitxers'
 
 const fmt = (n: number | null) => n == null ? '—' : n.toFixed(2).replace('.', ',')
@@ -15,6 +15,18 @@ function Nota({ valor, forta = false }: { valor: number | null; forta?: boolean 
   return (
     <span className={`tabular-nums ${forta ? 'font-semibold' : ''} ${valor == null ? 'text-gray-300' : suspesa ? 'text-red-600 font-semibold' : 'text-gray-800'}`}>
       {fmt(valor)}
+    </span>
+  )
+}
+
+/** Punts reals d'una competència («1,50 / 3»); en vermell si la nota equivalent sobre 10 és inferior a 5. */
+function PuntsCompetencia({ valor }: { valor: NotaCompetencia | null }) {
+  if (!valor) return <span className="text-gray-300">—</span>
+  const suspesa = valor.sobreDeu != null && valor.sobreDeu < NOTA_APROVAT
+  return (
+    <span className={`tabular-nums ${suspesa ? 'text-red-600 font-semibold' : 'text-gray-800'}`}
+      title={valor.sobreDeu != null ? `Equival a ${fmt(valor.sobreDeu)} sobre 10` : undefined}>
+      {fmt(valor.punts)}<span className="text-xs font-normal text-gray-400"> / {fmt(valor.maxim)}</span>
     </span>
   )
 }
@@ -94,7 +106,7 @@ export default function NotesPage() {
             <Link to="/professor/exams" className="text-xs text-brand-600 hover:underline">← Els meus exàmens</Link>
             <h1 className="text-2xl font-bold text-brand-700">Notes · {exam.title}</h1>
             <p className="text-sm text-gray-500">
-              {entregats} de {taula.files.length} alumnes han entregat · notes sobre 10, en vermell les inferiors a {NOTA_APROVAT}
+              {entregats} de {taula.files.length} alumnes han entregat · nota de l'examen sobre 10; competències en punts reals (/ màxim); en vermell si equival a menys de {NOTA_APROVAT} sobre 10
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -147,7 +159,7 @@ export default function NotesPage() {
                     <td className="px-3 py-1.5 text-xs">{f.estat}</td>
                     <td className="px-3 py-1.5 text-right border-l border-gray-100"><Nota valor={f.nota} forta /></td>
                     {taula.competencies.map(co => (
-                      <td key={co} className="px-3 py-1.5 text-right"><Nota valor={f.competencies[co]} /></td>
+                      <td key={co} className="px-3 py-1.5 text-right"><PuntsCompetencia valor={f.competencies[co]} /></td>
                     ))}
                     <td className="px-3 py-1.5 text-right border-l border-gray-100 tabular-nums text-xs">
                       {f.estat === 'No presentat' ? '' : f.pendents > 0 ? <span className="text-amber-700">{f.pendents}</span> : '0'}

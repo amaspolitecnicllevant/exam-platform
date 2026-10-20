@@ -245,6 +245,8 @@ export interface CompetenciaStats {
   codi: string
   preguntes: number
   punts: number
+  /** Punts reals que han tret de mitjana (sobre `punts`) */
+  mitjanaPunts: number | null
   /** Nota mitjana sobre 10 */
   mitjana: number | null
   /** % d'alumnes amb nota >= 5 en aquesta competència */

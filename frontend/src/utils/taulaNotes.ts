@@ -3,6 +3,15 @@ import { notaPerCompetencia, notaCompetenciaSobreDeu, notaTotal, puntsMaxims, so
 
 export { NOTA_APROVAT }
 
+export interface NotaCompetencia {
+  /** Punts que ha tret l'alumne */
+  punts: number
+  /** Punts màxims de la competència a l'examen */
+  maxim: number
+  /** El mateix, sobre 10 (per comparar competències de pes diferent) */
+  sobreDeu: number | null
+}
+
 export interface FilaNotes {
   sessio: Session
   entregat: boolean
@@ -10,8 +19,8 @@ export interface FilaNotes {
   estat: string
   /** Nota de l'examen sobre 10; null si l'alumne no l'ha començat */
   nota: number | null
-  /** Nota sobre 10 de cada competència (per codi); null si cap pregunta seva no té punts o no l'ha començat */
-  competencies: Record<string, number | null>
+  /** Punts reals de cada competència (per codi) i la seva nota sobre 10; null si no té preguntes o l'alumne no l'ha començat */
+  competencies: Record<string, NotaCompetencia | null>
   /** Respostes encara sense nota (compten 0 mentrestant) */
   pendents: number
 }
@@ -36,10 +45,10 @@ export function taulaNotes(exam: Pick<Exam, 'questions' | 'competenciesExamen'>,
     const comencat = entregat || !!sessio.startedAt
     const { total, pendents } = notaTotal(exam.questions, sessio.answers)
     const perCompetencia = new Map(notaPerCompetencia(exam.questions, sessio.answers))
-    const notes: Record<string, number | null> = {}
+    const notes: Record<string, NotaCompetencia | null> = {}
     for (const co of competencies) {
       const g = perCompetencia.get(co)
-      notes[co] = comencat && g ? notaCompetenciaSobreDeu(g) : null
+      notes[co] = comencat && g ? { punts: g.scored, maxim: g.pts, sobreDeu: notaCompetenciaSobreDeu(g) } : null
     }
     return {
       sessio, entregat,
@@ -53,7 +62,7 @@ export function taulaNotes(exam: Pick<Exam, 'questions' | 'competenciesExamen'>,
 }
 
 /** Nota amb coma decimal i dues xifres («7,50»), com espera un Excel en català; buit si no n'hi ha. */
-const num = (n: number | null) => n == null ? '' : n.toFixed(2).replace('.', ',')
+const num = (n: number | null | undefined) => n == null ? '' : n.toFixed(2).replace('.', ',')
 
 /** Evita la injecció de fórmules (=, +, -, @) en obrir el CSV a Excel. */
 const cel = (v: string) => {
@@ -65,9 +74,14 @@ const camp = (v: string) => /[;"\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : 
 
 /** CSV del que es veu a la taula (mateix ordre i mateixes files): separador «;», coma decimal i BOM UTF-8. */
 export function csvTaulaNotes(competencies: string[], files: FilaNotes[]): string {
-  const cap = ['alumne', 'estat', 'nota_sobre_10', ...competencies, 'pendents_de_revisar']
+  const cap = ['alumne', 'estat', 'nota_sobre_10',
+    ...competencies.flatMap(co => [`${co}_punts`, `${co}_punts_maxims`, `${co}_sobre_10`]), 'pendents_de_revisar']
   const linies = [cap, ...files.map(f => [
-    cel(f.sessio.studentName), f.estat, num(f.nota), ...competencies.map(co => num(f.competencies[co])),
+    cel(f.sessio.studentName), f.estat, num(f.nota),
+    ...competencies.flatMap(co => {
+      const c = f.competencies[co]
+      return [num(c?.punts), num(c?.maxim), num(c?.sobreDeu)]
+    }),
     f.estat === 'No presentat' ? '' : String(f.pendents),
   ])]
   return '﻿' + linies.map(l => l.map(camp).join(';')).join('\r\n') + '\r\n'
@@ -78,7 +92,7 @@ export type ColumnaOrdre = 'alumne' | 'nota' | 'pendents' | string
 /** Ordena per alumne (alfabètic) o per una nota (de menor a major; les files sense nota, al final). */
 export function ordenaFiles(files: FilaNotes[], per: ColumnaOrdre, descendent: boolean): FilaNotes[] {
   const valor = (f: FilaNotes): number | null =>
-    per === 'nota' ? f.nota : per === 'pendents' ? f.pendents : f.competencies[per] ?? null
+    per === 'nota' ? f.nota : per === 'pendents' ? f.pendents : f.competencies[per]?.sobreDeu ?? null
   const dir = descendent ? -1 : 1
   return [...files].sort((a, b) => {
     if (per === 'alumne') return dir * collator.compare(a.sessio.studentName, b.sessio.studentName)

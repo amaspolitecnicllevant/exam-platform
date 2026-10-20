@@ -92,7 +92,7 @@ export default function StatsPage() {
               <section className="bg-white border rounded-xl p-5 space-y-3 break-inside-avoid">
                 <h2 className="text-sm font-semibold text-gray-800">Nota per competència</h2>
                 <p className="text-xs text-gray-500">
-                  Nota mitjana sobre 10 dels alumnes entregats; en vermell si és inferior a 5.
+                  Punts reals que han tret de mitjana els alumnes entregats; en vermell si equival a menys de 5 sobre 10.
                 </p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm border-collapse">
@@ -100,8 +100,8 @@ export default function StatsPage() {
                       <tr className="text-left text-xs text-gray-500">
                         <th className="py-2 pr-3 font-medium">Competència</th>
                         <th className="py-2 pr-3 font-medium text-right">Preguntes</th>
-                        <th className="py-2 pr-3 font-medium text-right">Punts</th>
-                        <th className="py-2 pr-3 font-medium text-right">Nota mitjana</th>
+                        <th className="py-2 pr-3 font-medium text-right">Punts mitjans</th>
+                        <th className="py-2 pr-3 font-medium text-right">Equival a (sobre 10)</th>
                         <th className="py-2 font-medium text-right">Aproven</th>
                       </tr>
                     </thead>
@@ -113,10 +113,10 @@ export default function StatsPage() {
                               title={exam.competencies?.find(x => x.codi === c.codi)?.descripcio || undefined}>{c.codi}</span>
                           </td>
                           <td className="py-1.5 pr-3 text-right tabular-nums">{c.preguntes}</td>
-                          <td className="py-1.5 pr-3 text-right tabular-nums">{fmt(c.punts)}</td>
                           <td className={`py-1.5 pr-3 text-right tabular-nums font-semibold ${c.mitjana != null && c.mitjana < 5 ? 'text-red-600' : 'text-gray-800'}`}>
-                            {fmt(c.mitjana)}
+                            {fmt(c.mitjanaPunts)}<span className="text-xs font-normal text-gray-400"> / {fmt(c.punts)}</span>
                           </td>
+                          <td className="py-1.5 pr-3 text-right tabular-nums text-gray-600">{fmt(c.mitjana)}</td>
                           <td className="py-1.5 text-right tabular-nums">{c.percentAprovats != null ? `${fmt(c.percentAprovats, 1)} %` : '—'}</td>
                         </tr>
                       ))}

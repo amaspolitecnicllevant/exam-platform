@@ -42,6 +42,8 @@ public record ExamStatsDto(
             /** Preguntes de l'examen d'aquesta competència. */
             int preguntes,
             BigDecimal punts,
+            /** Punts reals que han tret de mitjana els alumnes entregats (sobre {@code punts}); null si cap alumne n'ha entregat. */
+            BigDecimal mitjanaPunts,
             /** Nota mitjana sobre 10; null si cap alumne n'ha entregat. */
             BigDecimal mitjana,
             /** % d'alumnes amb nota >= 5 en aquesta competència (0–100). */

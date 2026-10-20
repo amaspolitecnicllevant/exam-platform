@@ -89,11 +89,14 @@ public class StatsService {
         List<ExamStatsDto.Competencia> res = new ArrayList<>();
         perCodi.forEach((codi, qs) -> {
             List<BigDecimal> notes = new ArrayList<>();
+            List<BigDecimal> punts = new ArrayList<>();
             for (ExamSession s : entregades) {
-                BigDecimal nota = Puntuacio.notaSobreDeu(qs, respostes.getOrDefault(s.getId(), Map.of()));
+                Map<UUID, Answer> seves = respostes.getOrDefault(s.getId(), Map.of());
+                BigDecimal nota = Puntuacio.notaSobreDeu(qs, seves);
                 if (nota != null) notes.add(nota);
+                punts.add(Puntuacio.total(qs, seves));
             }
-            res.add(new ExamStatsDto.Competencia(codi, qs.size(), Puntuacio.maxim(qs), mitjana(notes),
+            res.add(new ExamStatsDto.Competencia(codi, qs.size(), Puntuacio.maxim(qs), mitjana(punts), mitjana(notes),
                     notes.isEmpty() ? null : percent(notes.stream().filter(n -> n.compareTo(APROVAT) >= 0).count(), notes.size())));
         });
         return res;
