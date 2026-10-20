@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import { getModuls } from '../../api/moduls'
-import { getProgramacio, desaProgramacio, importaProgramacioCsv } from '../../api/programacio'
+import { getProgramacio, desaProgramacio, importaProgramacioCsv, getResultatsModul } from '../../api/programacio'
+import { ResultatsUnitats, ResultatsCompetencies } from '../../components/ResultatsProgramacio'
 import { useAuth } from '../../context/AuthContext'
-import type { Modul, Programacio } from '../../types'
+import type { Modul, Programacio, ResultatsModul } from '../../types'
 
 interface FilaCo { codi: string; descripcio: string }
 interface FilaUt { codi: string; nom: string; competencies: string[] }
@@ -29,6 +30,9 @@ export default function ProgramacioPage() {
   const [missatge, setMissatge] = useState('')
   const [ocupat, setOcupat] = useState(false)
   const fitxerRef = useRef<HTMLInputElement>(null)
+  // Notes mitjanes per UT i competència; es tornen a carregar quan es desa o s'importa la programació
+  const [resultats, setResultats] = useState<ResultatsModul | null>(null)
+  const [versio, setVersio] = useState(0)
 
   useEffect(() => {
     getModuls({ meus: true }).then(ms => {
@@ -43,6 +47,11 @@ export default function ProgramacioPage() {
     getProgramacio(modulId).then(p => { const d = desdeProgramacio(p); setCos(d.cos); setUts(d.uts) })
       .catch(e => { setCos([]); setUts([]); setError(e?.response?.data?.error || 'No s\'ha pogut carregar la programació') })
   }, [modulId])
+
+  useEffect(() => {
+    if (!modulId) { setResultats(null); return }
+    getResultatsModul(modulId).then(setResultats).catch(() => setResultats(null))
+  }, [modulId, versio])
 
   const trieModul = (id: string) => {
     if (canviat && !confirm('Hi ha canvis sense desar. Els vols descartar?')) return
@@ -92,7 +101,7 @@ export default function ProgramacioPage() {
     try {
       const p = await desaProgramacio(modulId, { competencies: cos, unitats: uts })
       const d = desdeProgramacio(p); setCos(d.cos); setUts(d.uts)
-      setCanviat(false); setMissatge('Programació desada')
+      setCanviat(false); setMissatge('Programació desada'); setVersio(v => v + 1)
     } catch (e: any) {
       setError(e?.response?.data?.error || 'No s\'ha pogut desar la programació')
     } finally { setOcupat(false) }
@@ -105,7 +114,7 @@ export default function ProgramacioPage() {
     try {
       const p = await importaProgramacioCsv(modulId, fitxer)
       const d = desdeProgramacio(p); setCos(d.cos); setUts(d.uts)
-      setCanviat(false); setMissatge(`CSV importat: ${p.competencies.length} competències i ${p.unitats.length} unitats`)
+      setCanviat(false); setVersio(v => v + 1); setMissatge(`CSV importat: ${p.competencies.length} competències i ${p.unitats.length} unitats`)
     } catch (e: any) {
       setError(e?.response?.data?.error || 'No s\'ha pogut importar el CSV')
     } finally {
@@ -154,6 +163,8 @@ export default function ProgramacioPage() {
               <button onClick={afegeixCo} className="text-sm text-brand-600 hover:underline">+ Afegir competència</button>
             </section>
 
+            {resultats && <ResultatsCompetencies resultats={resultats} />}
+
             <section className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
               <h2 className="font-semibold text-gray-800">Unitats de treball i competències que treballen</h2>
               {uts.length === 0 && <p className="text-sm text-gray-400">Encara no n'hi ha cap.</p>}
@@ -200,6 +211,8 @@ export default function ProgramacioPage() {
               )}
               <button onClick={afegeixUt} className="text-sm text-brand-600 hover:underline">+ Afegir unitat</button>
             </section>
+
+            {resultats && <ResultatsUnitats resultats={resultats} />}
 
             <div className="flex items-center gap-4 flex-wrap">
               <button onClick={desa} disabled={!canviat || ocupat}

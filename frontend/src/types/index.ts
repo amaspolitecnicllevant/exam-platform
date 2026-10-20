@@ -184,6 +184,39 @@ export interface UnitatProg {
   competencies: string[]
 }
 
+/** Punts reals mitjans sobre un màxim, i l'equivalent sobre 10 */
+export interface NotaAgrupada {
+  mitjanaPunts: number
+  maxim: number
+  sobreDeu: number | null
+}
+
+export interface ResultatsModul {
+  modulId: string
+  examens: number
+  respostesPendents: number
+  unitats: {
+    codi: string
+    nom: string
+    nota: NotaAgrupada | null
+    examens: { examId: string; titol: string; entregats: number; nota: NotaAgrupada }[]
+    competencies: { codi: string; nota: NotaAgrupada }[]
+  }[]
+  competencies: {
+    codi: string
+    descripcio: string
+    nota: NotaAgrupada | null
+    perUnitat: {
+      codi: string | null
+      nom: string
+      examens: {
+        examId: string; titol: string; entregats: number; nota: NotaAgrupada
+        percentRendiment: number; percentPes: number
+      }[]
+    }[]
+  }[]
+}
+
 export interface Programacio {
   modulId: string
   competencies: CompetenciaProg[]

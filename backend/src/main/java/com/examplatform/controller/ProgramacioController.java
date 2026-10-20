@@ -29,6 +29,13 @@ public class ProgramacioController {
         return programacioService.obte(modulId, user);
     }
 
+    /** Notes mitjanes del mòdul per unitat de treball i per competència. */
+    @GetMapping("/api/moduls/{modulId}/resultats")
+    @PreAuthorize("hasAnyRole('PROFESSOR','ADMIN')")
+    public com.examplatform.dto.ResultatsModulDto resultats(@PathVariable UUID modulId, @AuthenticationPrincipal User user) {
+        return programacioService.resultats(modulId, user);
+    }
+
     @PutMapping("/api/moduls/{modulId}/programacio")
     @PreAuthorize("hasAnyRole('PROFESSOR','ADMIN')")
     public ProgramacioDto substitueix(@PathVariable UUID modulId, @RequestBody ProgramacioDto.Peticio req,

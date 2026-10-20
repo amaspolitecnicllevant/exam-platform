@@ -30,6 +30,7 @@ class ProgramacioServiceTest {
     @Mock ExamRepository examRepository;
     @Mock ImparticioRepository imparticioRepository;
     @Mock ExamService examService;
+    @Mock ExamSessionRepository sessionRepository;
 
     ProgramacioService service;
     User professor;
@@ -39,7 +40,7 @@ class ProgramacioServiceTest {
     @BeforeEach
     void setUp() {
         service = new ProgramacioService(modulRepository, competenciaRepository, unitatRepository,
-                questionRepository, examRepository, imparticioRepository, examService);
+                questionRepository, examRepository, imparticioRepository, examService, sessionRepository);
         professor = User.builder().id(UUID.randomUUID()).role(Role.PROFESSOR).build();
         admin = User.builder().id(UUID.randomUUID()).role(Role.ADMIN).build();
         Cicle cicle = Cicle.builder().id(UUID.randomUUID()).codi("ASIX").nom("ASIX").build();

@@ -57,6 +57,7 @@ class ProgramacioIntegrationTest {
     @Autowired UnitatTreballRepository unitatRepository;
     @Autowired QuestionRepository questionRepository;
     @Autowired ExamRepository examRepository;
+    @Autowired ExamSessionRepository sessionRepository;
     @Autowired ImparticioRepository imparticioRepository;
     @Autowired JdbcTemplate jdbc;
 
@@ -78,7 +79,7 @@ class ProgramacioIntegrationTest {
         examService = mock(ExamService.class);
         when(examService.getEntity(exam.getId())).thenReturn(exam);
         service = new ProgramacioService(modulRepository, competenciaRepository, unitatRepository,
-                questionRepository, examRepository, imparticioRepository, examService);
+                questionRepository, examRepository, imparticioRepository, examService, sessionRepository);
     }
 
     private static ProgramacioDto.Peticio peticio(List<String> cos, List<ProgramacioDto.UnitatPeticio> uts) {
@@ -178,6 +179,33 @@ class ProgramacioIntegrationTest {
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM competencies", Integer.class)).isZero();
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM unitats_treball", Integer.class)).isZero();
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM unitat_competencies", Integer.class)).isZero();
+    }
+
+    @Test
+    void les_notes_del_modul_es_calculen_amb_sessions_i_respostes_reals() {
+        prepara();
+        service.substitueix(modul.getId(), peticio(List.of("CO1"), List.of(ut("UT01", "CO1"))), admin);
+        em.flush();
+        UnitatTreball ut01 = unitatRepository.findByModulIdOrderByOrdreAsc(modul.getId()).get(0);
+        exam.getUnitats().add(ut01);
+        examRepository.saveAndFlush(exam);
+        Question q = exam.getQuestions().get(0);
+        for (String[] alumne : new String[][]{{"anna", "8", "SUBMITTED"}, {"biel", "4", "SUBMITTED"}, {"clara", "10", "IN_PROGRESS"}}) {
+            User u = userRepository.save(User.builder().name(alumne[0]).email(alumne[0] + "@test.cat").role(Role.STUDENT).build());
+            ExamSession sessio = sessionRepository.save(ExamSession.builder().exam(exam).student(u)
+                    .status(SessionStatus.valueOf(alumne[2])).startedAt(java.time.LocalDateTime.now()).build());
+            em.persist(Answer.builder().session(sessio).question(q).contingut("x").manualScore(new BigDecimal(alumne[1])).build());
+        }
+        em.flush();
+        em.clear();
+
+        var r = service.resultats(modul.getId(), admin);
+
+        assertThat(r.examens()).isEqualTo(1);
+        assertThat(r.unitats().get(0).nota().mitjanaPunts()).isEqualByComparingTo("6");       // (8 + 4) / 2; la sessió en curs no compta
+        assertThat(r.unitats().get(0).examens().get(0).entregats()).isEqualTo(2);
+        assertThat(r.competencies().get(0).nota().sobreDeu()).isEqualByComparingTo("6");
+        assertThat(r.competencies().get(0).perUnitat().get(0).examens().get(0).percentPes()).isEqualByComparingTo("100");
     }
 
     /** La conversió RA→CO de la migració V41, aplicada a dades que imiten les existents. */

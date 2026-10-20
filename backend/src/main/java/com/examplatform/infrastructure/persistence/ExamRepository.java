@@ -17,6 +17,9 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
     long comptaPerUnitat(@Param("unitatId") UUID unitatId);
     List<Exam> findByCreatedById(UUID professorId);
 
+    /** Exàmens d'un mòdul. */
+    List<Exam> findByModulId(UUID modulId);
+
     /** Exàmens que un professor pot gestionar: els que ha creat i els dels mòduls que imparteix. */
     @Query("SELECT e FROM Exam e WHERE e.createdBy.id = :professorId OR e.modul.id IN "
             + "(SELECT i.modul.id FROM Imparticio i WHERE i.professor.id = :professorId)")

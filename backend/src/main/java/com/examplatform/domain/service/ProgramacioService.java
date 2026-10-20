@@ -30,6 +30,7 @@ public class ProgramacioService {
     private final ExamRepository examRepository;
     private final ImparticioRepository imparticioRepository;
     private final ExamService examService;
+    private final ExamSessionRepository sessionRepository;
 
     @Transactional(readOnly = true)
     public ProgramacioDto obte(UUID modulId, User user) {
@@ -153,6 +154,24 @@ public class ProgramacioService {
         exam.getCompetenciesExamen().clear();
         exam.getCompetenciesExamen().addAll(nous);
         return ExamDto.from(examRepository.save(exam), true);
+    }
+
+    /** Notes mitjanes del mòdul per unitat de treball i per competència (alumnes que han entregat). */
+    @Transactional(readOnly = true)
+    public com.examplatform.dto.ResultatsModulDto resultats(UUID modulId, User user) {
+        Modul modul = modul(modulId, user);
+        List<ResultatsModul.ExamenEntregat> examens = new ArrayList<>();
+        for (Exam e : examRepository.findByModulId(modulId)) {
+            List<Map<UUID, Answer>> alumnes = new ArrayList<>();
+            for (ExamSession s : sessionRepository.findByExamIdWithDetails(e.getId())) {
+                if (s.getStatus() != SessionStatus.SUBMITTED) continue;
+                Map<UUID, Answer> seves = new HashMap<>();
+                s.getAnswers().forEach(a -> seves.put(a.getQuestion().getId(), a));
+                alumnes.add(seves);
+            }
+            examens.add(new ResultatsModul.ExamenEntregat(e, alumnes));
+        }
+        return ResultatsModul.calcula(modul, unitatRepository.findByModulIdOrderByOrdreAsc(modulId), examens);
     }
 
     private Modul modul(UUID modulId, User user) {

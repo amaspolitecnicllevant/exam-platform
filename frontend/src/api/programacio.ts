@@ -1,5 +1,5 @@
 import client from './client'
-import type { Exam, Programacio } from '../types'
+import type { Exam, Programacio, ResultatsModul } from '../types'
 
 export interface ProgramacioPeticio {
   competencies: { codi: string; descripcio: string }[]
@@ -24,3 +24,7 @@ export const fixaCompetenciesExamen = (examId: string, codis: string[]): Promise
 
 export const assignaUnitatsExamen = (examId: string, unitatIds: string[]): Promise<Exam> =>
   client.put(`/exams/${examId}/unitats`, { unitatIds }).then(r => r.data)
+
+/** Notes mitjanes del mòdul per unitat de treball i per competència (alumnes que han entregat). */
+export const getResultatsModul = (modulId: string): Promise<ResultatsModul> =>
+  client.get(`/moduls/${modulId}/resultats`).then(r => r.data)
