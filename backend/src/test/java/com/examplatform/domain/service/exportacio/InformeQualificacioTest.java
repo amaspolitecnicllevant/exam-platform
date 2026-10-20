@@ -124,6 +124,55 @@ class InformeQualificacioTest {
     }
 
     @Test
+    void amb_seccions_la_nota_final_es_reparteix_per_parts_segons_els_seus_punts() {
+        FixtureExamen f = new FixtureExamen();
+        f.seccio("Part 1 — Teoria");
+        Question t1 = f.pregunta(QuestionType.SHORT, "4", "CO1");
+        f.seccio("Part 2 — Pràctica");
+        Question p1 = f.pregunta(QuestionType.SHORT, "3", "CO2");
+        Question p2 = f.pregunta(QuestionType.SHORT, "3", "CO2");
+        ExamSession s = f.entregat("Anna", "anna@x.cat");
+        f.resposta(s, t1, "x", "3");       // 7,5 sobre 10 a la part 1
+        f.resposta(s, p1, "x", "3");       // 8 sobre 10 a la part 2: (3 + 2) / 6
+        f.resposta(s, p2, "x", "2");
+
+        String md = InformeQualificacio.informe(f.dades());
+
+        assertThat(md).contains("Nota final = 40% Part 1 — Teoria + 60% Part 2 — Pràctica. Cada part pesa segons els seus punts");
+        assertThat(md).contains("| Part 1 — Teoria | 7,5 | 40% |").contains("| Part 2 — Pràctica | 8,33 | 60% |")
+                .contains("| **Nota final** | **8** | |");
+        assertThat(md).contains("*Càlcul: 40% × 7,5 + 60% × 8,33 = 8*");
+        assertThat(md).contains("### Part 1 — Teoria\n\n1 pregunta, 4 punts (40% de la nota).")
+                .contains("### Part 2 — Pràctica\n\n2 preguntes, 6 punts (60% de la nota).");
+        // La numeració de les preguntes no compta les seccions i continua entre parts
+        assertThat(md).contains("| 1. Enunciat 2 |").contains("| 2. Enunciat 4 |").contains("| 3. Enunciat 5 |");
+        assertThat(md).doesNotContain("### Part teòrica");
+    }
+
+    @Test
+    void la_taula_per_competencia_diu_d_on_surt_cada_competencia() {
+        FixtureExamen f = new FixtureExamen();
+        Question a = f.pregunta(QuestionType.SHORT, "4", "CO1");
+        Question b = f.pregunta(QuestionType.SHORT, "6", "CO2");
+        ExamSession s = f.entregat("Anna", "anna@x.cat");
+        f.resposta(s, a, "x", "4");
+        f.resposta(s, b, "x", "3");
+
+        String md = InformeQualificacio.informe(f.dades());
+
+        assertThat(md).contains("### Per competència\n\n| Competència | Punts | Nota (sobre 10) |\n|---|---:|---:|\n")
+                .contains("| CO1 | 4 / 4 | 10 |").contains("| CO2 | 3 / 6 | 5 |");
+    }
+
+    @Test
+    void sense_competencies_no_hi_ha_taula_per_competencia() {
+        FixtureExamen f = new FixtureExamen();
+        f.resposta(f.entregat("Anna", "anna@x.cat"), f.pregunta(QuestionType.SHORT, "10", null), "x", "5");
+
+        assertThat(InformeQualificacio.informe(f.dades())).doesNotContain("Per competència");
+    }
+
+    @Test
     void sense_alumnes_nomes_porta_la_capcalera_i_el_resum_buit() {
         FixtureExamen f = new FixtureExamen();
         f.pregunta(QuestionType.SHORT, "10", null);

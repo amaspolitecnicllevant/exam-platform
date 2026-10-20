@@ -8,6 +8,7 @@ import com.examplatform.domain.service.Puntuacio;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Informe de qualificació de l'examen per importar a l'aplicació de notes: una secció per alumne que explica d'on surt la
@@ -27,19 +28,31 @@ public final class InformeQualificacio {
 
     private InformeQualificacio() {}
 
+    /** Una part de l'examen (cada secció) amb les seves preguntes; l'examen sense seccions és una sola part «Part teòrica». */
+    record Part(String titol, List<Question> preguntes, BigDecimal maxim) {}
+
     public static String informe(DadesExamen d) {
         StringBuilder sb = new StringBuilder();
         List<Question> preguntes = d.preguntes();
         BigDecimal maxim = Puntuacio.maxim(preguntes);
+        List<Part> parts = parts(d);
+        boolean unaPart = parts.size() == 1;
 
         sb.append("# Informes de qualificació — ").append(unaLinia(d.exam().getTitle())).append("\n\n");
         if (d.exam().getModul() != null) {
             sb.append("**Mòdul:** ").append(unaLinia(d.exam().getModul().getNom())).append(" (")
                     .append(unaLinia(d.exam().getModul().getCodi())).append(")\n\n");
         }
-        sb.append("Nota final = 100% teoria. Teoria: ").append(preguntes.size())
-                .append(preguntes.size() == 1 ? " pregunta" : " preguntes").append(", ").append(CsvSegur.curt(maxim))
-                .append(" punts en total.\n\n");
+        if (unaPart) {
+            sb.append("Nota final = 100% teoria. Teoria: ").append(preguntes.size())
+                    .append(preguntes.size() == 1 ? " pregunta" : " preguntes").append(", ").append(CsvSegur.curt(maxim))
+                    .append(" punts en total.\n\n");
+        } else {
+            sb.append("Nota final = ").append(parts.stream().map(x -> pes(x, maxim) + " " + x.titol()).collect(Collectors.joining(" + ")))
+                    .append(". Cada part pesa segons els seus punts: ").append(preguntes.size()).append(" preguntes, ")
+                    .append(CsvSegur.curt(maxim)).append(" punts en total.\n\n");
+            sb.append(explicacio(d, maxim)).append("\n\n");
+        }
 
         sb.append("## Resum de la classe\n\n| Alumne | Teoria | Final |\n|---|---:|---:|\n");
         for (DadesExamen.Alumne a : d.alumnes()) {
@@ -48,29 +61,54 @@ public final class InformeQualificacio {
                     .append(a.entregat() ? nota : "—").append(" |\n");
         }
 
+        List<String> competencies = ExportacioNotes.competencies(d).stream()
+                .filter(c -> !c.equals(ExportacioNotes.SENSE_COMPETENCIA)).toList();
         for (DadesExamen.Alumne a : d.alumnes()) {
             sb.append("\n---\n\n## ").append(unaLinia(a.nom())).append("\n\n### Resum\n\n");
             sb.append("| Part | Nota (sobre 10) | Pes |\n|---|---:|---:|\n");
             if (!a.entregat()) {
-                sb.append("| Part teòrica | No entregada | 100% |\n| **Nota final** | **—** | |\n");
+                sb.append("| ").append(unaPart ? "Part teòrica" : "Examen").append(" | No entregada | 100% |\n| **Nota final** | **—** | |\n");
                 continue;
             }
             String nota = nota(a, d);
-            sb.append("| Part teòrica | ").append(nota).append(" | 100% |\n");
+            for (Part part : parts) {
+                sb.append("| ").append(cela(part.titol())).append(" | ").append(notaPart(a, part)).append(" | ")
+                        .append(pes(part, maxim)).append(" |\n");
+            }
             sb.append("| **Nota final** | **").append(nota).append("** | |\n\n");
-            sb.append("*Càlcul: 100% × ").append(nota).append(" = ").append(nota).append("*\n\n");
+            sb.append("*Càlcul: ").append(parts.stream().map(x -> pes(x, maxim) + " × " + notaPart(a, x))
+                    .collect(Collectors.joining(" + "))).append(" = ").append(nota).append("*\n\n");
 
-            sb.append("### Part teòrica\n\n").append(explicacio(d, maxim)).append("\n\n");
-            sb.append("| Pregunta | Nota | Per què | Resposta esperada |\n|---|---:|---|---|\n");
-            for (Question q : preguntes) {
-                Answer r = a.respostes().get(q.getId());
-                BigDecimal punts = Puntuacio.punts(q, r);
-                sb.append("| ").append(cela(numero(q) + ". " + tema(q))).append(" | ").append(notaPregunta(punts, q))
-                        .append(" | ").append(cela(motiu(q, r, punts))).append(" | ")
-                        .append(cela(respostaEsperada(q, punts))).append(" |\n");
+            for (Part part : parts) {
+                sb.append("### ").append(unaPart ? "Part teòrica" : unaLinia(part.titol())).append("\n\n");
+                sb.append(unaPart ? explicacio(d, maxim)
+                        : part.preguntes().size() + (part.preguntes().size() == 1 ? " pregunta" : " preguntes") + ", "
+                                + CsvSegur.curt(part.maxim()) + " punts (" + pes(part, maxim) + " de la nota).").append("\n\n");
+                sb.append("| Pregunta | Nota | Per què | Resposta esperada |\n|---|---:|---|---|\n");
+                for (Question q : part.preguntes()) {
+                    Answer r = a.respostes().get(q.getId());
+                    BigDecimal punts = Puntuacio.punts(q, r);
+                    sb.append("| ").append(cela(numero(q) + ". " + tema(q))).append(" | ").append(notaPregunta(punts, q))
+                            .append(" | ").append(cela(motiu(q, r, punts))).append(" | ")
+                            .append(cela(respostaEsperada(q, punts))).append(" |\n");
+                }
+                sb.append("\n");
             }
 
-            sb.append("\n### Què pots millorar\n\n");
+            if (!competencies.isEmpty()) {
+                sb.append("### Per competència\n\n| Competència | Punts | Nota (sobre 10) |\n|---|---:|---:|\n");
+                for (String co : competencies) {
+                    List<Question> qs = preguntes.stream()
+                            .filter(q -> co.equals(q.getCompetencia() == null ? null : q.getCompetencia().strip())).toList();
+                    BigDecimal obtinguts = Puntuacio.total(qs, a.respostes());
+                    BigDecimal n = ExportacioNotes.notaCompetencia(d, a, co);
+                    sb.append("| ").append(cela(co)).append(" | ").append(qs.isEmpty() ? "—" : CsvSegur.curt(obtinguts) + " / " + CsvSegur.curt(Puntuacio.maxim(qs)))
+                            .append(" | ").append(n == null ? "—" : CsvSegur.curt(n)).append(" |\n");
+                }
+                sb.append("\n");
+            }
+
+            sb.append("### Què pots millorar\n\n");
             List<String> millorar = new ArrayList<>();
             for (Question q : preguntes) {
                 BigDecimal punts = Puntuacio.punts(q, a.respostes().get(q.getId()));
@@ -88,6 +126,44 @@ public final class InformeQualificacio {
             }
         }
         return sb.toString();
+    }
+
+    /** Les parts de l'examen: una per secció (en ordre), o una sola «Part teòrica» si no en té. Les parts sense punts no hi surten. */
+    static List<Part> parts(DadesExamen d) {
+        List<Question> totes = d.exam().getQuestions().stream().sorted(Comparator.comparingInt(Question::getOrdre)).toList();
+        boolean teSeccions = totes.stream().anyMatch(q -> q.getTipus() == QuestionType.SECTION);
+        if (!teSeccions) return List.of(new Part("Part teòrica", d.preguntes(), Puntuacio.maxim(d.preguntes())));
+        List<Part> parts = new ArrayList<>();
+        String titol = "Altres preguntes";
+        List<Question> actuals = new ArrayList<>();
+        for (Question q : totes) {
+            if (q.getTipus() == QuestionType.SECTION) {
+                afegeixPart(parts, titol, actuals);
+                titol = unaLinia(q.getEnunciat()).isEmpty() ? "Part " + (parts.size() + 1) : unaLinia(q.getEnunciat());
+                actuals = new ArrayList<>();
+            } else {
+                actuals.add(q);
+            }
+        }
+        afegeixPart(parts, titol, actuals);
+        return parts;
+    }
+
+    private static void afegeixPart(List<Part> parts, String titol, List<Question> preguntes) {
+        BigDecimal maxim = Puntuacio.maxim(preguntes);
+        if (!preguntes.isEmpty() && maxim.signum() > 0) parts.add(new Part(titol, List.copyOf(preguntes), maxim));
+    }
+
+    /** % de la nota que representa una part: els seus punts sobre els de tot l'examen. */
+    private static String pes(Part part, BigDecimal maximTotal) {
+        BigDecimal p = maximTotal.signum() == 0 ? BigDecimal.ZERO
+                : part.maxim().multiply(new BigDecimal("100")).divide(maximTotal, 1, java.math.RoundingMode.HALF_UP);
+        return CsvSegur.curt(p) + "%";
+    }
+
+    private static String notaPart(DadesExamen.Alumne a, Part part) {
+        BigDecimal n = Puntuacio.notaSobreDeu(part.preguntes(), a.respostes());
+        return n == null ? "—" : CsvSegur.curt(n);
     }
 
     // ── Peces ─────────────────────────────────────────────────────────────────
