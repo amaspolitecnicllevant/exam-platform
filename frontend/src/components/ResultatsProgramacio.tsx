@@ -7,7 +7,7 @@ const fmt = (n: number | null | undefined, dec = 2) =>
 
 /** Punts reals sobre el màxim i l'equivalent sobre 10; en vermell si no arriba a l'aprovat. */
 function Nota({ nota }: { nota: NotaAgrupada | null }) {
-  if (!nota) return <span className="text-gray-400 text-sm">Cap alumne ha entregat encara</span>
+  if (!nota) return <span className="text-gray-400 text-sm">—</span>
   const suspesa = nota.sobreDeu != null && nota.sobreDeu < NOTA_APROVAT
   return (
     <span className="tabular-nums text-sm">
@@ -27,7 +27,7 @@ function PartNota({ etiqueta, pes, nota, buit }: { etiqueta: string; pes: number
       <span className="text-gray-700">{etiqueta}{pes != null ? <span className="text-xs text-gray-400"> · {pes} % de la nota</span> : null}</span>
       {nota
         ? <span className={`tabular-nums font-semibold ${suspesa ? 'text-red-600' : 'text-gray-900'}`}>{fmt(nota.sobreDeu)} <span className="text-xs font-normal text-gray-400">sobre 10</span></span>
-        : <span className="text-xs text-gray-400">{buit}</span>}
+        : <span className="text-gray-400" title={buit}>—</span>}
     </div>
   )
 }
