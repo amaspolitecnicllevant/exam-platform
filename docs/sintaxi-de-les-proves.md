@@ -1,8 +1,21 @@
 # Sintaxi de les proves
 
-Referència ràpida del format `.md` per crear proves, és a dir, exàmens i pràctiques. Una prova és un fitxer amb la seva capçalera i les seves preguntes; cada tipus de pregunta té un exemple complet que es pot copiar, i al final hi ha dues proves senceres. La guia detallada (amb tots els casos particulars) és la *Guia de sintaxi per crear exàmens en Markdown*, que també es pot descarregar de la plataforma.
+Aquest document explica **com ha de ser el fitxer `.md` que s'importa a l'aplicació** per crear una prova (un examen o una pràctica), tant si l'escrius a mà com si el genera una IA. Cada tipus de pregunta té un exemple complet que es pot copiar, i al final hi ha dues proves senceres i les instruccions per demanar-ho a una IA.
 
-## 1. Estructura de l'examen
+## 0. Com s'importa
+
+1. A **Els meus exàmens**, prem **«+ Nou examen (MD)»**.
+2. Tria el fitxer `.md` i envia'l. L'aplicació el revisa **sencer**: si hi ha un error el rebutja i diu **la línia i el motiu**; no s'importa res a mitges.
+3. Si és vàlid, es crea un **esborrany** i s'obre la previsualització. Allà falta encara completar-ho (el fitxer només porta les preguntes):
+   - **Tipus:** examen o pràctica (desplegable «Tipus»).
+   - **Mòdul** (des del llistat d'exàmens) i **unitats de treball** que avalua.
+   - **Competències** de l'examen, si no les has posat a cada pregunta amb `[co:…]`.
+   - **Penalització** dels tests, **destinataris** (tots o alumnes concrets) i **imatges**, que s'afegeixen des de l'editor.
+4. Revisa les preguntes (es poden editar mentre cap alumne no ha començat) i **activa** l'examen.
+
+El fitxer **no porta notes**: les notes surten de les respostes dels alumnes, que es corregeixen a l'aplicació. Les pràctiques també s'hi entreguen (per exemple amb preguntes `fitxer`).
+
+## 1. Estructura del fitxer
 
 ````markdown
 # Títol de l'examen
@@ -314,7 +327,51 @@ echo "Hola, $1!"
 
 Després d'importar-la, marca-la com a «Pràctica» a la previsualització.
 
-## 7. Errors freqüents
+## 7. Quan l'aplicació rebutja el fitxer
+
+Mostra la **línia** i el motiu. Els més habituals:
+
+- Falta el títol (`# Títol`) o la línia `---` després de la capçalera, o la durada no és un nombre.
+- Hi ha text entre la capçalera i la primera pregunta, o una secció `###` abans de la primera pregunta (sovint és un `###` usat com a subtítol dins d'un enunciat).
+- Capçalera de pregunta mal escrita: sense número, sense `[pts:X]`, punts amb coma, etiqueta desconeguda o dificultat que no sigui `baixa`, `mitjana` o `alta`.
+- La suma de punts no és exactament 10, o el tipus de pregunta no existeix.
+- Un bloc `:::` sense tancar, repetit, desconegut o amb text de l'enunciat després dels blocs.
+- `choice` amb una opció fora de `a)`–`d)` o amb una lletra correcta que no és cap de les opcions.
+- Un bloc que no correspon al tipus: `:::clau` fora de `text`/`short`/`long`, `:::output-*` en una pregunta que no és de codi, dos criteris `:::output-*`, o `:::test` combinat amb `:::output-*`.
+- `[formats:…]` en una pregunta que no és `fitxer`, o amb un format no admès (`exe`, `xlsm`…).
+- Una imatge `![](https://…)` que no es pot baixar: **es rebutja tota la importació**.
+
+Els fitxers desats a Windows (CRLF) o amb BOM s'accepten sense problemes.
+
+## 8. Demanar-ho a una IA
+
+Copia aquest text a la IA (Claude, ChatGPT…) i adjunta aquest document. Substitueix el que va entre claudàtors.
+
+```text
+Genera una prova per a l'aplicació d'exàmens seguint exactament la sintaxi del document adjunt.
+
+Tipus: [examen o pràctica]  ·  Mòdul i unitat: [p. ex. 0485 · UT02 Xarxes]
+Temes: [llista de continguts a avaluar]
+Preguntes: [p. ex. 6 de test, 2 de resposta curta, 1 de bash-script]
+Competències (codi i descripció), si en vols a cada pregunta:
+[CO1 — …]
+[CO2 — …]
+
+Regles:
+- Respon NOMÉS amb el contingut del fitxer .md, sense text abans ni després.
+- La suma de tots els [pts:X] ha de ser exactament 10 (decimals amb punt).
+- Fes servir només els tipus i etiquetes del document. Tanca cada bloc ::: abans d'obrir-ne un altre.
+- choice: 4 opcions (a–d), una sola correcta, la lletra a :::model.
+- short/text/long: inclou :::model i un :::clau amb 2–4 conceptes, amb sinònims separats per comes.
+- Codi: :::model i un criteri :::output-* (o :::test als scripts) que accepti totes les solucions correctes.
+  L'entorn és Linux, sense xarxa, i només /tmp és escrivible.
+- No facis servir ### dins dels enunciats ni imatges amb una URL inventada.
+- Escriu-ho tot en català i sense incloure la solució a l'enunciat.
+```
+
+L'examen o la pràctica no es distingeixen al fitxer: el tipus es tria després, a la previsualització.
+
+## 9. Errors freqüents
 
 - Encadenar blocs sense tancar-los (`:::model` … `:::output-contains` … `:::`): tanca cada bloc amb `:::`.
 - Que la suma dels punts no sigui 10.
