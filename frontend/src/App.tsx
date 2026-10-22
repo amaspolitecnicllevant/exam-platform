@@ -92,6 +92,8 @@ export default function App() {
             <ProtectedRoute roles={['STUDENT']}><ExamTakePage /></ProtectedRoute>} />
           <Route path="/student/sessions/:sessionId/results" element={
             <ProtectedRoute roles={['STUDENT']}><ExamResultsPage /></ProtectedRoute>} />
+          <Route path="/professor/exams/:examId/sessions/:sessionId/vista-alumne" element={
+            <ProtectedRoute roles={['PROFESSOR','ADMIN']}><ExamResultsPage previsio /></ProtectedRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

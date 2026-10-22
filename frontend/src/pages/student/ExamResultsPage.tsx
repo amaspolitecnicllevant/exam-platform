@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import Md from '../../components/Md'
 import { getSession } from '../../api/sessions'
@@ -10,8 +10,12 @@ import { formatMida } from '../../utils/fitxers'
 import { resumCompetencies } from '../../utils/competencies'
 import { notaTotal, notaPerCompetencia, notaCompetenciaSobreDeu, NOTA_APROVAT, puntsPregunta, puntsMaxims, sobreDeu } from '../../notes'
 
-export default function ExamResultsPage() {
-  const { sessionId } = useParams<{ sessionId: string }>()
+/**
+ * Resultats d'un alumne. Amb {@code previsio}, el professor veu què veuria l'alumne (nom de l'alumne inclòs)
+ * encara que les notes no estiguin publicades.
+ */
+export default function ExamResultsPage({ previsio = false }: { previsio?: boolean }) {
+  const { sessionId, examId } = useParams<{ sessionId: string; examId?: string }>()
   const [session, setSession] = useState<Session | null>(null)
   const [exam, setExam]       = useState<Exam | null>(null)
   const [filtre, setFiltre]   = useState<string | null>(null)
@@ -34,7 +38,7 @@ export default function ExamResultsPage() {
     )
   }
 
-  if (!session.notesVisibles) {
+  if (!previsio && !session.notesVisibles) {
     return (
       <Layout examMode>
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
@@ -56,8 +60,18 @@ export default function ExamResultsPage() {
   const notaDeu   = totalMax !== 10 ? sobreDeu(total, totalMax) : null
 
   return (
-    <Layout examMode>
+    <Layout examMode={!previsio}>
       <div className="space-y-6 max-w-3xl mx-auto">
+
+        {previsio && (
+          <div className="bg-amber-50 border border-amber-300 rounded-xl px-5 py-3 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-amber-900">
+              👁 Previsualització: això és el que veuria <strong>{session.studentName}</strong>
+              {session.notesVisibles ? '' : ' quan publiquis les notes (ara no les veu)'}.
+            </p>
+            <Link to={`/professor/exams/${examId}/corrections`} className="text-sm text-amber-900 underline">Tornar a la correcció</Link>
+          </div>
+        )}
 
         {/* Resum */}
         <div className="bg-brand-600 text-white rounded-xl p-6">

@@ -448,6 +448,11 @@ export default function CorrectionPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-4">
+                    <Link to={`/professor/exams/${examId}/sessions/${selected.id}/vista-alumne`}
+                      className="text-xs border border-brand-400 text-brand-800 px-2 py-0.5 rounded hover:bg-brand-100"
+                      title="Veure els resultats tal com els veuria aquest alumne, abans de publicar les notes">
+                      👁 Veure com {selected.studentName.split(' ')[0]}
+                    </Link>
                     {(() => {
                       const ps = pendents(selected, questions)
                       const nAcceptables = ps.filter(a => a.autoScore != null).length
