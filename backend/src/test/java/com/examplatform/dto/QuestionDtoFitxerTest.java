@@ -40,4 +40,14 @@ class QuestionDtoFitxerTest {
     void el_professor_tambe_els_veu() {
         assertThat(QuestionDto.from(pregunta(QuestionType.FILE_UPLOAD, "pdf")).formatsPermesos()).isEqualTo(List.of("pdf"));
     }
+
+    @Test
+    void l_alumne_veu_la_competencia_de_la_pregunta_pero_no_la_dificultat() {
+        Question q = pregunta(QuestionType.SHORT, null);
+        q.setCompetencia("CO2");
+        q.setDificultat("DIFICIL");
+        QuestionDto dto = QuestionDto.forStudent(q);
+        assertThat(dto.competencia()).isEqualTo("CO2");
+        assertThat(dto.dificultat()).isNull();
+    }
 }

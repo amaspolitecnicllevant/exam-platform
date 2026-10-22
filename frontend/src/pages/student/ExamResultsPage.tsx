@@ -7,12 +7,14 @@ import { getExam } from '../../api/exams'
 import type { Session, Exam } from '../../types'
 import { descarregaFitxerResposta } from '../../api/respostaFitxer'
 import { formatMida } from '../../utils/fitxers'
+import { resumCompetencies } from '../../utils/competencies'
 import { notaTotal, notaPerCompetencia, notaCompetenciaSobreDeu, NOTA_APROVAT, puntsPregunta, puntsMaxims, sobreDeu } from '../../notes'
 
 export default function ExamResultsPage() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const [session, setSession] = useState<Session | null>(null)
   const [exam, setExam]       = useState<Exam | null>(null)
+  const [filtre, setFiltre]   = useState<string | null>(null)
 
   useEffect(() => {
     if (!sessionId) return
@@ -102,8 +104,26 @@ export default function ExamResultsPage() {
           )
         })()}
 
+        {/* Filtre de preguntes per competència */}
+        {(() => {
+          const codis = resumCompetencies(exam).filter(c => c.preguntes > 0)
+          if (codis.length === 0) return null
+          const chip = (actiu: boolean) =>
+            `text-xs px-3 py-1 rounded-full border ${actiu ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50'}`
+          return (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-gray-500">Filtra les preguntes per competència:</span>
+              <button type="button" className={chip(filtre === null)} onClick={() => setFiltre(null)}>Totes</button>
+              {codis.map(c => (
+                <button key={c.codi} type="button" className={chip(filtre === c.codi)}
+                  onClick={() => setFiltre(filtre === c.codi ? null : c.codi)}>{c.codi}</button>
+              ))}
+            </div>
+          )
+        })()}
+
         {/* Detall per pregunta */}
-        {exam.questions.map(q => {
+        {exam.questions.filter(q => filtre === null || (q.tipus !== 'SECTION' && q.competencia === filtre)).map(q => {
           if (q.tipus === 'SECTION') {
             return (
               <div key={q.id} className="pt-2 pb-1">
@@ -126,6 +146,9 @@ export default function ExamResultsPage() {
                 <div className="flex items-center gap-2">
                   <span className="text-xs bg-brand-100 text-brand-700 px-2 py-0.5 rounded">{q.numero}</span>
                   <span className="text-xs text-gray-400">{q.tipus}</span>
+                  {q.competencia && (
+                    <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-semibold" title="Competència relacionada">{q.competencia}</span>
+                  )}
                   {q.anulada && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Bonus: tothom té els punts</span>}
                 </div>
                 <div className="text-right flex-shrink-0">

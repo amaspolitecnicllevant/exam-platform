@@ -15,6 +15,7 @@ import { agafaPestanyaExamen, avisaIntrusa, escoltaIntrusos, type EstatPestanya 
 import { pujaFitxerResposta, esborraFitxerResposta, descarregaFitxerResposta } from '../../api/respostaFitxer'
 import { errorFitxer, formatMida, llistaFormats, MIDA_MAXIMA_FITXER } from '../../utils/fitxers'
 import type { Exam, Session, QuestionType, ExecutionResult } from '../../types'
+import { resumCompetencies } from '../../utils/competencies'
 
 const SCRIPT_TYPES: QuestionType[] = ['BASH_CMD', 'PS_CMD', 'BASH_SCRIPT', 'PS_SCRIPT', 'JAVA_PROG']
 const MULTILINE_TYPES: QuestionType[] = ['BASH_SCRIPT', 'PS_SCRIPT', 'JAVA_PROG']
@@ -392,6 +393,9 @@ function ExamTake() {
           <div>
             <span className="text-xs bg-brand-100 text-brand-700 px-2 py-0.5 rounded mr-2 font-mono font-semibold">{num}</span>
             <span className="text-xs text-gray-400">{q.tipus} · {q.punts} pts</span>
+            {q.competencia && (
+              <span className="ml-2 text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-semibold" title="Competència que avalua aquesta pregunta">{q.competencia}</span>
+            )}
             {q.ambApunts && (
               <span className="ml-2 text-xs bg-sky-100 text-sky-800 px-2 py-0.5 rounded">📖 Pots fer servir apunts</span>
             )}
@@ -686,6 +690,7 @@ function ExamTake() {
   if (!exam || !session) return <Layout examMode><p className="text-gray-400 p-8">Carregant…</p></Layout>
 
   // Mode una pregunta per pantalla
+  const competenciesAvaluades = resumCompetencies(exam)
   const paginat = exam.unaPreguntaPerPantalla
   const items: { q: Q; num: number; section: Q | null }[] = []
   {
@@ -714,6 +719,18 @@ function ExamTake() {
               <h1 className="text-xl font-bold">{exam.title}</h1>
               <p className="text-brand-100 text-sm mt-1">{exam.durada} min · {exam.questions.filter(q => q.tipus !== 'SECTION').length} preguntes</p>
               {exam.instruccions && <p className="text-white/80 text-sm mt-2">{exam.instruccions}</p>}
+              {competenciesAvaluades.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-white/70 text-xs mb-1">Competències que s'avaluen en aquesta prova</p>
+                  <div className="flex flex-wrap gap-2">
+                    {competenciesAvaluades.map(c => (
+                      <span key={c.codi} className="bg-white/20 rounded-lg px-2.5 py-1 text-xs">
+                        <span className="font-semibold">{c.codi}</span> · {c.preguntes} {c.preguntes === 1 ? 'pregunta' : 'preguntes'} · {c.punts} pts
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
               {exam.questions.some(q => q.tipus === 'CHOICE') && (
                 <p className="text-white text-sm mt-2 font-medium">{textPenalitzacio(exam.penalitzacioChoice ?? 0)}</p>
               )}

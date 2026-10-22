@@ -58,7 +58,7 @@ public record QuestionDto(
         return new QuestionDto(q.getId(), q.getOrdre(), numero, q.getTipus(), q.getEnunciat(),
                 q.getPunts(), null, null, null, null, null, null,
                 parseChoices(q.getChoices()), null, q.isBarrejarOpcions(), q.isAnulada(), q.isAmbApunts(),
-                null, null, files, formats(q));
+                q.getCompetencia(), null, files, formats(q));
     }
 
     public static QuestionDto forStudent(Question q) {
