@@ -26,6 +26,7 @@ import ExamPreviewPage from './pages/professor/ExamPreviewPage'
 import GrupsPage from './pages/professor/GrupsPage'
 import StudentExamList from './pages/student/ExamListPage'
 import HistorialPage from './pages/student/HistorialPage'
+import ProgresPage from './pages/student/ProgresPage'
 import ExamTakePage from './pages/student/ExamTakePage'
 import ExamResultsPage from './pages/student/ExamResultsPage'
 
@@ -86,6 +87,8 @@ export default function App() {
             <ProtectedRoute roles={['PROFESSOR','ADMIN']}><MonitorPage /></ProtectedRoute>} />
           <Route path="/student/historial" element={
             <ProtectedRoute roles={['STUDENT']}><HistorialPage /></ProtectedRoute>} />
+          <Route path="/student/progres" element={
+            <ProtectedRoute roles={['STUDENT']}><ProgresPage /></ProtectedRoute>} />
           <Route path="/student/exams" element={
             <ProtectedRoute roles={['STUDENT']}><StudentExamList /></ProtectedRoute>} />
           <Route path="/student/exams/:examId" element={

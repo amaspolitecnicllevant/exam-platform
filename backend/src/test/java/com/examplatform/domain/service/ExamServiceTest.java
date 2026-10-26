@@ -925,7 +925,9 @@ class ExamServiceTest {
             assertThat(q.claus()).isNull();
             assertThat(q.outputContains()).isNull();
             assertThat(q.testScript()).isNull();
-            assertThat(q.competencia()).isNull();
+            // La competència és visible per a qui no gestiona l'examen (l'alumne la veu a cada pregunta); la dificultat no
+            assertThat(q.competencia()).isEqualTo("CO1");
+            assertThat(q.dificultat()).isNull();
         });
     }
 

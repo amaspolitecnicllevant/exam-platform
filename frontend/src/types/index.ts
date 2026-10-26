@@ -319,3 +319,9 @@ export interface Recuperacio {
   respostesPendents: number
   candidats: RecuperacioCandidat[]
 }
+
+export interface ProgresPregunta { numero: number; tipus: QuestionType; enunciat: string; punts: number; obtinguts: number }
+export interface ProgresExamen { sessionId: string; examId: string; titol: string; data?: string; nota: number; preguntes: ProgresPregunta[] }
+export interface ProgresCompetencia { codi: string; notaGlobal: number | null; suspesos: ProgresExamen[] }
+export interface ProgresModul { modulId?: string; modulNom?: string; competencies: ProgresCompetencia[] }
+export interface Progres { moduls: ProgresModul[] }

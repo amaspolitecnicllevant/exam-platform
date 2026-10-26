@@ -92,6 +92,12 @@ public class SessionController {
         return sessionService.findMySubmitted(student.getId());
     }
 
+    @GetMapping("/my/progres")
+    @PreAuthorize("hasRole('STUDENT')")
+    public com.examplatform.dto.ProgresDto progres(@AuthenticationPrincipal User student) {
+        return sessionService.progres(student);
+    }
+
     @GetMapping("/my/historial")
     @PreAuthorize("hasRole('STUDENT')")
     public List<HistorialDto> historial(@AuthenticationPrincipal User student) {

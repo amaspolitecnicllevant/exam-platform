@@ -20,6 +20,7 @@ const NAV: { to: string; label: string; roles: string[] }[] = [
   { to: '/admin/audit',        label: 'Registre activitat',   roles: ['ADMIN'] },
   { to: '/student/exams',      label: 'Els meus examens',     roles: ['STUDENT'] },
   { to: '/student/historial',  label: 'Historial i notes',    roles: ['STUDENT'] },
+  { to: '/student/progres',    label: 'El meu progrés',       roles: ['STUDENT'] },
 ]
 
 interface LayoutProps {

@@ -9,7 +9,7 @@ export interface ConsellsRecuperacio {
   competencies: { codi: string; nota: number; provisional: boolean; fallades: number[]; consells: string[] }[]
 }
 
-const CONSELL_PER_TIPUS: Partial<Record<QuestionType, string>> = {
+export const CONSELL_PER_TIPUS: Partial<Record<QuestionType, string>> = {
   TEXT: 'repassa els conceptes i prova d\'explicar-los amb les teves paraules, sense mirar els apunts',
   SHORT: 'repassa els conceptes i prova d\'explicar-los amb les teves paraules, sense mirar els apunts',
   LONG: 'practica redactant respostes completes: defineix, explica i posa un exemple',
@@ -57,3 +57,9 @@ export function consellsRecuperacio(questions: Question[], answers: Answer[]): C
 }
 
 export const llistaPreguntes = mitja
+
+/** Consells (sense repetits) segons els tipus de pregunta on s'ha fallat, amb la primera lletra en majúscula. */
+export function consellsPerTipus(tipus: QuestionType[]): string[] {
+  return [...new Set(tipus.map(t => CONSELL_PER_TIPUS[t]).filter((c): c is string => !!c))]
+    .map(t => t.charAt(0).toUpperCase() + t.slice(1) + '.')
+}

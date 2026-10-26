@@ -50,3 +50,6 @@ export interface MonitorEntry {
 
 export const getHistorial = () =>
   client.get<import('../types').HistorialItem[]>('/sessions/my/historial').then(r => r.data)
+
+export const getProgres = () =>
+  client.get<import('../types').Progres>('/sessions/my/progres').then(r => r.data)

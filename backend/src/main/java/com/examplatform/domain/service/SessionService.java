@@ -290,6 +290,20 @@ public class SessionService {
         }).toList();
     }
 
+    /** Progrés de l'alumne: el que ha suspès per competència, agrupat entre els exàmens amb notes publicades. */
+    @Transactional(readOnly = true)
+    public com.examplatform.dto.ProgresDto progres(User student) {
+        List<ExamSession> entregades = sessionRepository.findByStudentIdWithExam(student.getId()).stream()
+                .filter(s -> s.getStatus() == SessionStatus.SUBMITTED && s.getExam().isNotesVisibles()).toList();
+        Map<UUID, Map<UUID, Answer>> respostes = new HashMap<>();
+        if (!entregades.isEmpty()) {
+            for (Answer a : answerRepository.findBySessionIdIn(entregades.stream().map(ExamSession::getId).toList())) {
+                respostes.computeIfAbsent(a.getSession().getId(), k -> new HashMap<>()).put(a.getQuestion().getId(), a);
+            }
+        }
+        return ProgresAlumne.calcula(entregades, respostes);
+    }
+
     @Transactional(readOnly = true)
     public SessionDto findById(UUID sessionId, User requestingUser) {
         ExamSession s = getSession(sessionId);
