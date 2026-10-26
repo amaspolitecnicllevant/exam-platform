@@ -3,7 +3,7 @@ import { consellsRecuperacio, llistaPreguntes } from '../utils/consellsRecuperac
 
 /**
  * Consells d'estudi per a la recuperació: de tot l'examen si no l'ha aprovat i de cada competència suspesa.
- * No surt res si l'alumne ho ha aprovat tot o si encara hi ha notes pendents de correcció.
+ * Les competències amb preguntes pendents es marquen com a provisionals. No surt res si ho ha aprovat tot.
  */
 export default function ConsellsRecuperacio({ questions, answers }: { questions: Question[]; answers: Answer[] }) {
   const { examen, competencies } = consellsRecuperacio(questions, answers)
@@ -31,8 +31,11 @@ export default function ConsellsRecuperacio({ questions, answers }: { questions:
       {competencies.map(c => (
         <div key={c.codi} className="space-y-1">
           <p className="text-sm font-semibold text-gray-800">
-            Competència {c.codi} <span className="font-normal text-gray-500">(nota {c.nota.toFixed(2)} / 10)</span>
+            Competència {c.codi} <span className="font-normal text-gray-500">({c.provisional ? 'nota provisional' : 'nota'} {c.nota.toFixed(2)} / 10)</span>
           </p>
+          {c.provisional && (
+            <p className="text-xs text-gray-500">Encara hi ha preguntes d'aquesta competència pendents de correcció: aquests consells es basen només en la part ja corregida.</p>
+          )}
           <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
             {c.fallades.length > 0 && <li>Preguntes d'aquesta competència on has perdut punts: {llistaPreguntes(c.fallades)}.</li>}
             {c.consells.map(t => <li key={t}>{t.charAt(0).toUpperCase() + t.slice(1)}.</li>)}

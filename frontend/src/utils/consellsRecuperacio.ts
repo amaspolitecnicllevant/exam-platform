@@ -5,7 +5,8 @@ export interface ConsellsRecuperacio {
   /** Consells per a tot l'examen; null si l'alumne l'ha aprovat (o encara hi ha notes pendents). */
   examen: { nota: number; fallades: number[] } | null
   /** Una entrada per cada competència suspesa amb nota definitiva. */
-  competencies: { codi: string; nota: number; fallades: number[]; consells: string[] }[]
+  /** `provisional`: encara hi ha preguntes d'aquesta competència pendents de correcció. */
+  competencies: { codi: string; nota: number; provisional: boolean; fallades: number[]; consells: string[] }[]
 }
 
 const CONSELL_PER_TIPUS: Partial<Record<QuestionType, string>> = {
@@ -46,11 +47,11 @@ export function consellsRecuperacio(questions: Question[], answers: Answer[]): C
   const competencies = notaPerCompetencia(questions, answers).flatMap(([codi, g]) => {
     const n = notaCompetenciaSobreDeu(g)
     if (n == null || n >= NOTA_APROVAT) return []
-    // Amb alguna pregunta pendent de correcció la nota de la competència no és definitiva
-    if (reals.some(q => q.competencia === codi && puntsPregunta(q, perPregunta.get(q.id)) == null)) return []
+    // Amb preguntes pendents la nota només és provisional (les pendents compten 0): els consells valen per a la part ja corregida
+    const provisional = reals.some(q => q.competencia === codi && puntsPregunta(q, perPregunta.get(q.id)) == null)
     const qs = fallades(reals.filter(q => q.competencia === codi), perPregunta)
     const consells = [...new Set(qs.map(q => CONSELL_PER_TIPUS[q.tipus]).filter((c): c is string => !!c))]
-    return [{ codi, nota: n, fallades: qs.map(q => q.numero ?? 0), consells }]
+    return [{ codi, nota: n, provisional, fallades: qs.map(q => q.numero ?? 0), consells }]
   })
   return { examen, competencies }
 }
