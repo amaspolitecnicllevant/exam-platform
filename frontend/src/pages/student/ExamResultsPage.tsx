@@ -8,6 +8,7 @@ import type { Session, Exam } from '../../types'
 import { descarregaFitxerResposta } from '../../api/respostaFitxer'
 import { formatMida } from '../../utils/fitxers'
 import { resumCompetencies } from '../../utils/competencies'
+import ConsellsRecuperacio from '../../components/ConsellsRecuperacio'
 import { notaTotal, notaPerCompetencia, notaCompetenciaSobreDeu, NOTA_APROVAT, puntsPregunta, puntsMaxims, sobreDeu } from '../../notes'
 
 /**
@@ -223,6 +224,8 @@ export default function ExamResultsPage({ previsio = false }: { previsio?: boole
             </div>
           )
         })}
+
+        <ConsellsRecuperacio questions={exam.questions} answers={session.answers} />
       </div>
     </Layout>
   )
