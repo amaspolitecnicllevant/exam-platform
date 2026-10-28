@@ -1,6 +1,7 @@
 package com.examplatform.infrastructure.parser;
 
 import com.examplatform.domain.model.*;
+import com.examplatform.domain.service.PenalitzacioInstruccions;
 import com.examplatform.domain.service.FormatsFitxer;
 import com.examplatform.domain.port.ExamParser;
 import com.examplatform.domain.service.ClausCorreccio;
@@ -58,6 +59,8 @@ public class MarkdownExamParser implements ExamParser {
         Exam exam = parseHeader(lines.subList(0, sep), createdBy, mdContent);
         parseQuestions(lines.subList(sep + 1, lines.size()), sep + 2, exam);
         validateTotalPoints(exam);
+        // Si les instruccions diuen que les incorrectes resten, l'examen s'importa ja amb aquesta penalització
+        PenalitzacioInstruccions.detecta(exam.getInstruccions(), exam.getQuestions()).ifPresent(exam::setPenalitzacioChoice);
         return exam;
     }
 

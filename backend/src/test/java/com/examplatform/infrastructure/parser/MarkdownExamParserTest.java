@@ -23,6 +23,47 @@ class MarkdownExamParserTest {
     // ── Casos correctes ──────────────────────────────────────────────────────
 
     @Test
+    void la_penalitzacio_es_dedueix_de_les_instruccions() {
+        String md = """
+                # Examen amb test
+                durada: 30
+                instruccions: Test: resposta incorrecta -0,03 pts (1/3 de la pregunta); en blanc 0 pts.
+                ---
+                ## 1. [choice] [pts:0.1]
+                Quina?
+                - a) A
+                - b) B
+                :::model
+                a
+                :::
+                ## 2. [text] [pts:9.9]
+                Explica.
+                :::model
+                x
+                :::
+                """;
+
+        assertThat(parser.parse(md, professor).getPenalitzacioChoice()).isEqualByComparingTo("0.3333");
+    }
+
+    @Test
+    void sense_penalitzacio_a_les_instruccions_es_queda_a_zero() {
+        String md = """
+                # Examen
+                durada: 30
+                instruccions: Les incorrectes no resten.
+                ---
+                ## 1. [text] [pts:10]
+                Explica.
+                :::model
+                x
+                :::
+                """;
+
+        assertThat(parser.parse(md, professor).getPenalitzacioChoice()).isEqualByComparingTo("0");
+    }
+
+    @Test
     void parseja_examen_basic_amb_una_pregunta() {
         String md = """
                 # Examen de prova

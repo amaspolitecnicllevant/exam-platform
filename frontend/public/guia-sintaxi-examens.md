@@ -65,7 +65,7 @@ El fitxer comença amb la capçalera, seguida d'una línia `---` que la separa d
 |:--|:--:|:--|
 | `# Títol` | Sí | Títol de l'examen (línia que comença per `# `) |
 | `durada: N` | No | Durada en minuts. Si no hi és, 90 |
-| `instruccions: text` | No | Text que es mostra a l'alumne a l'inici (una sola línia) |
+| `instruccions: text` | No | Text que es mostra a l'alumne a l'inici (una sola línia). Si hi dius quant resten les respostes incorrectes del test, **en importar-lo s'aplica aquesta penalització** a l'examen: com a fracció («resposta incorrecta: 1/3 de la pregunta»), percentatge («errades: 25%») o punts («resposta incorrecta: −0,03 pts», que es divideixen pels punts de les preguntes de test, si valen tots el mateix). Si diu que no resten, o no s'entén, la penalització és 0. Comprova-la després a la previsualització: es pot canviar en qualsevol moment |
 
 > La primera línia `---` del fitxer marca el final de la capçalera: no n'hi posis cap abans (ni a les instruccions).
 
