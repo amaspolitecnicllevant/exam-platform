@@ -214,7 +214,21 @@ export interface ExamStats {
   histograma: number[]
   /** Nota per competència entre els alumnes entregats (buit si cap pregunta en té) */
   competencies: CompetenciaStats[]
+  /** Nota per part (secció de l'examen); buit si l'examen no té seccions */
+  parts: PartStats[]
   preguntes: PreguntaStats[]
+}
+
+export interface PartStats {
+  titol: string
+  preguntes: number
+  punts: number
+  /** Punts reals que han tret de mitjana (sobre `punts`) */
+  mitjanaPunts: number | null
+  /** Nota mitjana sobre 10 */
+  mitjana: number | null
+  /** % d'alumnes amb nota >= 5 en aquesta part */
+  percentAprovats: number | null
 }
 
 export interface CompetenciaStats {

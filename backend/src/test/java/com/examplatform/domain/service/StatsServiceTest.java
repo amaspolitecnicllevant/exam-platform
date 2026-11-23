@@ -69,6 +69,37 @@ class StatsServiceTest {
     }
 
     @Test
+    void nota_per_part_agrupa_les_preguntes_de_cada_seccio() {
+        exam.getQuestions().add(Question.builder().id(UUID.randomUUID()).ordre(4).tipus(QuestionType.SECTION)
+                .punts(BigDecimal.ZERO).enunciat("Part 2").build());
+        Question extra = Question.builder().id(UUID.randomUUID()).ordre(5).tipus(QuestionType.SHORT)
+                .punts(new BigDecimal("10")).enunciat("Explica NAT").build();
+        exam.getQuestions().add(extra);
+        alumne("b", "6");    // Part 1: 10 punts de 10 -> 10; Part 2: sense nota
+        alumne("a", "0");    // Part 1: 0 de 10 -> 0
+
+        ExamStatsDto st = service.stats(exam.getId(), professor);
+
+        assertThat(st.parts()).extracting(ExamStatsDto.Part::titol).containsExactly("Part 1", "Part 2");
+        ExamStatsDto.Part p1 = st.parts().get(0);
+        assertThat(p1.preguntes()).isEqualTo(2);
+        assertThat(p1.punts()).isEqualByComparingTo("10");
+        assertThat(p1.mitjanaPunts()).isEqualByComparingTo("5");
+        assertThat(p1.mitjana()).isEqualByComparingTo("5");
+        assertThat(p1.percentAprovats()).isEqualByComparingTo("50");
+        assertThat(st.parts().get(1).preguntes()).isEqualTo(1);
+        assertThat(st.parts().get(1).mitjanaPunts()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void sense_seccions_no_hi_ha_notes_per_part() {
+        exam.getQuestions().removeIf(q -> q.getTipus() == QuestionType.SECTION);
+        alumne("b", "6");
+
+        assertThat(service.stats(exam.getId(), professor).parts()).isEmpty();
+    }
+
+    @Test
     void nota_per_competencia_sobre_10_amb_la_mitjana_i_el_percentatge_d_aprovats() {
         test.setCompetencia("CO1");     // 4 punts
         curta.setCompetencia("CO2");    // 6 punts

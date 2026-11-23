@@ -26,15 +26,39 @@ public record ExamStatsDto(
         List<Integer> histograma,
         /** Nota per competència entre els alumnes entregats (buit si cap pregunta no en té). */
         List<Competencia> competencies,
+        /** Nota per part (secció «###» de l'examen); buit si l'examen no té seccions. */
+        List<Part> parts,
         List<Pregunta> preguntes
 ) {
+    /** Sense estadístiques per part (p. ex. en els tests que no les necessiten). */
+    public ExamStatsDto(int entregats, int sessions, int respostesPendents, BigDecimal mitjana, BigDecimal mediana,
+                        BigDecimal minima, BigDecimal maxima, BigDecimal percentAprovats, List<Integer> histograma,
+                        List<Competencia> competencies, List<Pregunta> preguntes) {
+        this(entregats, sessions, respostesPendents, mitjana, mediana, minima, maxima, percentAprovats, histograma,
+                competencies, List.of(), preguntes);
+    }
+
     /** Sense estadístiques per competència (p. ex. en els tests que no les necessiten). */
     public ExamStatsDto(int entregats, int sessions, int respostesPendents, BigDecimal mitjana, BigDecimal mediana,
                         BigDecimal minima, BigDecimal maxima, BigDecimal percentAprovats, List<Integer> histograma,
                         List<Pregunta> preguntes) {
         this(entregats, sessions, respostesPendents, mitjana, mediana, minima, maxima, percentAprovats, histograma,
-                List.of(), preguntes);
+                List.of(), List.of(), preguntes);
     }
+
+    /** Nota d'una part (secció) de l'examen entre els alumnes entregats. */
+    public record Part(
+            String titol,
+            /** Preguntes de la part. */
+            int preguntes,
+            BigDecimal punts,
+            /** Punts reals que han tret de mitjana els alumnes entregats (sobre {@code punts}); null si cap alumne n'ha entregat. */
+            BigDecimal mitjanaPunts,
+            /** Nota mitjana sobre 10; null si cap alumne n'ha entregat. */
+            BigDecimal mitjana,
+            /** % d'alumnes amb nota >= 5 en aquesta part (0–100). */
+            BigDecimal percentAprovats
+    ) {}
 
     /** Nota d'una competència (sobre 10) entre els alumnes entregats que hi tenen punts. */
     public record Competencia(

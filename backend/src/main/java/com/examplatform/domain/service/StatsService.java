@@ -74,6 +74,7 @@ public class StatsService {
                 notes.isEmpty() ? null : percent(notes.stream().filter(n -> n.compareTo(APROVAT) >= 0).count(), notes.size()),
                 histograma(notes),
                 perCompetencia(preguntes, entregades, respostes),
+                perPart(exam, entregades, respostes),
                 perPregunta);
     }
 
@@ -88,18 +89,52 @@ public class StatsService {
         }
         List<ExamStatsDto.Competencia> res = new ArrayList<>();
         perCodi.forEach((codi, qs) -> {
-            List<BigDecimal> notes = new ArrayList<>();
-            List<BigDecimal> punts = new ArrayList<>();
-            for (ExamSession s : entregades) {
-                Map<UUID, Answer> seves = respostes.getOrDefault(s.getId(), Map.of());
-                BigDecimal nota = Puntuacio.notaSobreDeu(qs, seves);
-                if (nota != null) notes.add(nota);
-                punts.add(Puntuacio.total(qs, seves));
-            }
-            res.add(new ExamStatsDto.Competencia(codi, qs.size(), Puntuacio.maxim(qs), mitjana(punts), mitjana(notes),
-                    notes.isEmpty() ? null : percent(notes.stream().filter(n -> n.compareTo(APROVAT) >= 0).count(), notes.size())));
+            Grup g = grup(qs, entregades, respostes);
+            res.add(new ExamStatsDto.Competencia(codi, qs.size(), Puntuacio.maxim(qs), g.mitjanaPunts(), g.mitjana(), g.percentAprovats()));
         });
         return res;
+    }
+
+    /**
+     * Nota sobre 10 de cada part (secció «###») entre els alumnes entregats. Les preguntes anteriors a la
+     * primera secció formen la part «Sense secció». Buit si l'examen no té cap secció.
+     */
+    private static List<ExamStatsDto.Part> perPart(Exam exam, List<ExamSession> entregades,
+                                                   Map<UUID, Map<UUID, Answer>> respostes) {
+        if (exam.getQuestions().stream().noneMatch(q -> q.getTipus() == QuestionType.SECTION)) return List.of();
+        Map<String, List<Question>> perTitol = new LinkedHashMap<>();
+        String actual = "Sense secció";
+        for (Question q : exam.getQuestions().stream().sorted(Comparator.comparingInt(Question::getOrdre)).toList()) {
+            if (q.getTipus() == QuestionType.SECTION) {
+                actual = q.getEnunciat();
+                perTitol.computeIfAbsent(actual, k -> new ArrayList<>());
+            } else {
+                perTitol.computeIfAbsent(actual, k -> new ArrayList<>()).add(q);
+            }
+        }
+        List<ExamStatsDto.Part> res = new ArrayList<>();
+        perTitol.forEach((titol, qs) -> {
+            if (qs.isEmpty()) return;
+            Grup g = grup(qs, entregades, respostes);
+            res.add(new ExamStatsDto.Part(titol, qs.size(), Puntuacio.maxim(qs), g.mitjanaPunts(), g.mitjana(), g.percentAprovats()));
+        });
+        return res;
+    }
+
+    private record Grup(BigDecimal mitjanaPunts, BigDecimal mitjana, BigDecimal percentAprovats) {}
+
+    /** Mitjana de punts i de nota sobre 10 d'un grup de preguntes entre els alumnes entregats. */
+    private static Grup grup(List<Question> qs, List<ExamSession> entregades, Map<UUID, Map<UUID, Answer>> respostes) {
+        List<BigDecimal> notes = new ArrayList<>();
+        List<BigDecimal> punts = new ArrayList<>();
+        for (ExamSession s : entregades) {
+            Map<UUID, Answer> seves = respostes.getOrDefault(s.getId(), Map.of());
+            BigDecimal nota = Puntuacio.notaSobreDeu(qs, seves);
+            if (nota != null) notes.add(nota);
+            punts.add(Puntuacio.total(qs, seves));
+        }
+        return new Grup(mitjana(punts), mitjana(notes),
+                notes.isEmpty() ? null : percent(notes.stream().filter(n -> n.compareTo(APROVAT) >= 0).count(), notes.size()));
     }
 
     private ExamStatsDto.Pregunta statsPregunta(Question q, List<ExamSession> entregades,

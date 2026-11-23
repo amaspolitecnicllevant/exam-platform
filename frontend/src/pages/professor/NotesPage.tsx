@@ -78,7 +78,7 @@ export default function NotesPage() {
   const fletxa = (per: ColumnaOrdre) => ordre.per === per ? (ordre.descendent ? ' ▾' : ' ▴') : ''
 
   const exporta = () => {
-    const blob = new Blob([csvTaulaNotes(taula.competencies, files)], { type: 'text/csv;charset=utf-8' })
+    const blob = new Blob([csvTaulaNotes(taula.competencies, files, taula.parts)], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -106,7 +106,7 @@ export default function NotesPage() {
             <Link to="/professor/exams" className="text-xs text-brand-600 hover:underline">← Els meus exàmens</Link>
             <h1 className="text-2xl font-bold text-brand-700">Notes · {exam.title}</h1>
             <p className="text-sm text-gray-500">
-              {entregats} de {taula.files.length} alumnes han entregat · nota de l'examen sobre 10; competències en punts reals (/ màxim); en vermell si equival a menys de {NOTA_APROVAT} sobre 10
+              {entregats} de {taula.files.length} alumnes han entregat · nota de l'examen sobre 10; competències i parts en punts reals (/ màxim); en vermell si equival a menys de {NOTA_APROVAT} sobre 10
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -148,6 +148,11 @@ export default function NotesPage() {
                       <span>{co}</span>
                     </Cap>
                   ))}
+                  {taula.parts.map((p, i) => (
+                    <Cap key={p.clau} per={p.clau} className={`text-right ${i === 0 ? 'border-l border-gray-200' : ''}`}>
+                      <span title="Part de l'examen">{p.titol}</span>
+                    </Cap>
+                  ))}
                   <Cap per="pendents" className="text-right border-l border-gray-200">Pendents</Cap>
                   <th scope="col" className="px-3 py-2"><span className="sr-only">Accions</span></th>
                 </tr>
@@ -160,6 +165,9 @@ export default function NotesPage() {
                     <td className="px-3 py-1.5 text-right border-l border-gray-100"><Nota valor={f.nota} forta /></td>
                     {taula.competencies.map(co => (
                       <td key={co} className="px-3 py-1.5 text-right"><PuntsCompetencia valor={f.competencies[co]} /></td>
+                    ))}
+                    {taula.parts.map((p, i) => (
+                      <td key={p.clau} className={`px-3 py-1.5 text-right ${i === 0 ? 'border-l border-gray-100' : ''}`}><PuntsCompetencia valor={f.parts[p.clau]} /></td>
                     ))}
                     <td className="px-3 py-1.5 text-right border-l border-gray-100 tabular-nums text-xs">
                       {f.estat === 'No presentat' ? '' : f.pendents > 0 ? <span className="text-amber-700">{f.pendents}</span> : '0'}

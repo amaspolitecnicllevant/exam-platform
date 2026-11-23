@@ -57,3 +57,35 @@ export function notaPerCompetencia(questions: Question[], answers: Answer[]): [s
   }
   return Object.entries(grups).sort(([a], [b]) => a.localeCompare(b))
 }
+
+/** Una part de l'examen (secció «###»): clau estable per a columnes i punts màxims. */
+export interface PartExamen { clau: string; titol: string; preguntes: Question[] }
+
+/**
+ * Parts de l'examen en ordre: cada secció amb les preguntes que té fins a la següent. Les preguntes anteriors a la
+ * primera secció formen «Sense secció». Buit si l'examen no té cap secció (mateixa regla que StatsService.perPart).
+ */
+export function partsExamen(questions: Question[]): PartExamen[] {
+  if (!questions.some(q => q.tipus === 'SECTION')) return []
+  const parts: PartExamen[] = []
+  let actual: PartExamen = { clau: '#0', titol: 'Sense secció', preguntes: [] }
+  parts.push(actual)
+  for (const q of [...questions].sort((a, b) => a.ordre - b.ordre)) {
+    if (q.tipus === 'SECTION') {
+      actual = { clau: `#${parts.length}`, titol: q.enunciat, preguntes: [] }
+      parts.push(actual)
+    } else {
+      actual.preguntes.push(q)
+    }
+  }
+  return parts.filter(p => p.preguntes.length > 0)
+}
+
+/** Punts reals i màxims d'un alumne en un grup de preguntes. */
+export function puntsGrup(preguntes: Question[], answers: Answer[]): { pts: number; scored: number } {
+  const perPregunta = new Map(answers.map(a => [a.questionId, a]))
+  return {
+    pts: preguntes.reduce((s, q) => s + q.punts, 0),
+    scored: preguntes.reduce((s, q) => s + (puntsPregunta(q, perPregunta.get(q.id)) ?? 0), 0),
+  }
+}

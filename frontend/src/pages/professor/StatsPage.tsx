@@ -87,6 +87,42 @@ export default function StatsPage() {
             {/* Preguntes més fàcils i més difícils */}
             <ExtremsPreguntes preguntes={stats.preguntes} />
 
+            {/* Nota per part (secció) */}
+            {stats.parts.length > 0 && (
+              <section className="bg-white border rounded-xl p-5 space-y-3 break-inside-avoid">
+                <h2 className="text-sm font-semibold text-gray-800">Nota per part</h2>
+                <p className="text-xs text-gray-500">
+                  Punts reals que han tret de mitjana els alumnes entregats a cada part de l'examen; en vermell si equival a menys de 5 sobre 10.
+                </p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="text-left text-xs text-gray-500">
+                        <th className="py-2 pr-3 font-medium">Part</th>
+                        <th className="py-2 pr-3 font-medium text-right">Preguntes</th>
+                        <th className="py-2 pr-3 font-medium text-right">Punts mitjans</th>
+                        <th className="py-2 pr-3 font-medium text-right">Equival a (sobre 10)</th>
+                        <th className="py-2 font-medium text-right">Aproven</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stats.parts.map(p => (
+                        <tr key={p.titol} className="border-t">
+                          <td className="py-1.5 pr-3">{p.titol}</td>
+                          <td className="py-1.5 pr-3 text-right tabular-nums">{p.preguntes}</td>
+                          <td className={`py-1.5 pr-3 text-right tabular-nums font-semibold ${p.mitjana != null && p.mitjana < 5 ? 'text-red-600' : 'text-gray-800'}`}>
+                            {fmt(p.mitjanaPunts)}<span className="text-xs font-normal text-gray-400"> / {fmt(p.punts)}</span>
+                          </td>
+                          <td className="py-1.5 pr-3 text-right tabular-nums text-gray-600">{fmt(p.mitjana)}</td>
+                          <td className="py-1.5 text-right tabular-nums">{p.percentAprovats != null ? `${fmt(p.percentAprovats, 1)} %` : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
+
             {/* Nota per competència */}
             {stats.competencies.length > 0 && (
               <section className="bg-white border rounded-xl p-5 space-y-3 break-inside-avoid">
