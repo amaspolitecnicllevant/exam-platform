@@ -150,7 +150,7 @@ export default function NotesPage() {
                   ))}
                   {taula.parts.map((p, i) => (
                     <Cap key={p.clau} per={p.clau} className={`text-right ${i === 0 ? 'border-l border-gray-200' : ''}`}>
-                      <span title="Part de l'examen">{p.titol}</span>
+                      <span title={p.titol} className="inline-block max-w-[7rem] truncate align-bottom">{p.titol}</span>
                     </Cap>
                   ))}
                   <Cap per="pendents" className="text-right border-l border-gray-200">Pendents</Cap>
