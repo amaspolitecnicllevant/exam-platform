@@ -73,7 +73,7 @@ public final class ExportacioExcel {
                 Answer r = a.respostes().get(q.getId());
                 BigDecimal p = Puntuacio.punts(q, r);
                 files.add(new ArrayList<>(Arrays.asList(a.nom(), a.email(), "P" + Numeracio.numero(q),
-                        ExportacioMarkdown.etiquetaTipus(q.getTipus()), dosDecimals(q.getPunts()), textResposta(q, r),
+                        ExportacioMarkdown.etiquetaTipus(q.getTipus()), dosDecimals(Puntuacio.maximPregunta(q)), textResposta(q, r),
                         r != null && p == null ? "pendent" : dosDecimals(p), r == null ? null : r.getComentari())));
             }
         }

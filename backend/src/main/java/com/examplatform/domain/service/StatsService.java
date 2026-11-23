@@ -163,10 +163,10 @@ public class StatsService {
         }
 
         BigDecimal mitjanaPunts = mitjana(punts);
-        BigDecimal rendiment = mitjanaPunts == null || q.getPunts().signum() == 0 ? null
-                : mitjanaPunts.multiply(CENT).divide(q.getPunts(), 1, RoundingMode.HALF_UP);
+        BigDecimal rendiment = mitjanaPunts == null || Puntuacio.maximPregunta(q).signum() == 0 ? null
+                : mitjanaPunts.multiply(CENT).divide(Puntuacio.maximPregunta(q), 1, RoundingMode.HALF_UP);
         return new ExamStatsDto.Pregunta(
-                q.getId(), Numeracio.numero(q), q.getTipus(), q.getEnunciat(), q.getPunts(), q.isAnulada(), q.getCompetencia(),
+                q.getId(), Numeracio.numero(q), q.getTipus(), q.getEnunciat(), Puntuacio.maximPregunta(q), q.isAnulada(), q.getCompetencia(),
                 contestades, entregades.size() - contestades,
                 mitjanaPunts, rendiment,
                 choice && !entregades.isEmpty() ? percent(correctes, entregades.size()) : null,

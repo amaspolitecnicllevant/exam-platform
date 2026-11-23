@@ -11,6 +11,7 @@ import RespostaCorreccio, { Referencia, isPendent } from '../../components/corre
 import type { AccionsCorreccio } from '../../components/correccio/RespostaCorreccio'
 import ExportarExamen from '../../components/ExportarExamen'
 import ImportarRevisioIa from '../../components/ImportarRevisioIa'
+import PesosParts from '../../components/PesosParts'
 
 type Tab = 'preguntes' | 'perPregunta' | 'alumnes'
 type FiltreAlumnes = 'tots' | 'pendents' | 'revisats' | 'noEntregats'
@@ -236,6 +237,8 @@ export default function CorrectionPage() {
           <button onClick={() => setAvis('')} aria-label="Tancar l'avís" className="text-brand-500 hover:text-brand-700">✕</button>
         </div>
       )}
+
+      {exam && <PesosParts exam={exam} onCanvi={setExam} />}
 
       {/* ── TAB PREGUNTES: resum ── */}
       {tab === 'preguntes' && (

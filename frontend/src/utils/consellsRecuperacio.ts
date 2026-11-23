@@ -1,5 +1,5 @@
 import type { Answer, Question, QuestionType } from '../types'
-import { NOTA_APROVAT, notaCompetenciaSobreDeu, notaPerCompetencia, notaTotal, puntsMaxims, puntsPregunta, sobreDeu } from '../notes'
+import { maximPregunta, NOTA_APROVAT, notaCompetenciaSobreDeu, notaPerCompetencia, notaTotal, puntsMaxims, puntsPregunta, sobreDeu } from '../notes'
 
 export interface ConsellsRecuperacio {
   /** Consells per a tot l'examen; null si l'alumne l'ha aprovat (o encara hi ha notes pendents). */
@@ -29,7 +29,7 @@ const mitja = (a: number[]) => a.map(n => `P${n}`).join(', ')
 function fallades(preguntes: Question[], perPregunta: Map<string, Answer>): Question[] {
   return preguntes.filter(q => {
     const p = puntsPregunta(q, perPregunta.get(q.id))
-    return p != null && p < q.punts
+    return p != null && p < maximPregunta(q) - 1e-9
   })
 }
 

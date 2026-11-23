@@ -27,7 +27,7 @@ public final class ExportacioNotes {
 
     /** Capçalera d'una pregunta: «P3 (2 pts)». */
     public static String capcaleraPregunta(Question q) {
-        return "P" + Numeracio.numero(q) + " (" + CsvSegur.curt(q.getPunts()) + " pts)";
+        return "P" + Numeracio.numero(q) + " (" + CsvSegur.curt(Puntuacio.maximPregunta(q)) + " pts)";
     }
 
     /** Respostes d'una sessió que el professor encara no ha qualificat. */

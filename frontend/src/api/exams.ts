@@ -76,3 +76,10 @@ export const ocultarNotes = (examId: string): Promise<Exam> =>
 /** Fixa les competències que avalua l'examen (codis lliures; buit = sense llista). */
 export const fixaCompetenciesExamen = (examId: string, codis: string[]) =>
   client.put<import('../types').Exam>(`/exams/${examId}/competencies`, { codis }).then(r => r.data)
+
+/** Fixa el pes (%) de cada part de l'examen (han de sumar 100); recalcula les notes. */
+export const fixaPesosParts = (examId: string, pesos: { seccioId: string; pes: number }[]) =>
+  client.put<Exam>(`/exams/${examId}/pesos-parts`, { pesos }).then(r => r.data)
+/** Treu els pesos: cada pregunta torna a valer els seus punts. */
+export const treuPesosParts = (examId: string) =>
+  client.delete<Exam>(`/exams/${examId}/pesos-parts`).then(r => r.data)

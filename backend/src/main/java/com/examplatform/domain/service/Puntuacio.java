@@ -5,7 +5,10 @@ import com.examplatform.domain.model.Question;
 import com.examplatform.domain.model.QuestionType;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -25,10 +28,58 @@ public final class Puntuacio {
      */
     public static BigDecimal punts(Question q, Answer a) {
         if (q.getTipus() == QuestionType.SECTION) return BigDecimal.ZERO;
-        if (q.isAnulada()) return q.getPunts();
+        if (q.isAnulada()) return maximPregunta(q);
         if (a == null) return BigDecimal.ZERO;
-        if (a.getManualScore() != null) return a.getManualScore();
-        return a.getAutoScore();
+        BigDecimal brut = a.getManualScore() != null ? a.getManualScore() : a.getAutoScore();
+        return brut == null ? null : escala(brut, factor(q));
+    }
+
+    /**
+     * Punts màxims d'una pregunta un cop aplicat el pes de la seva part. Sense pesos és simplement
+     * {@code q.getPunts()}. Les notes que es desen a les respostes són sempre sobre els punts «bruts» de la pregunta.
+     */
+    public static BigDecimal maximPregunta(Question q) {
+        return escala(q.getPunts(), factor(q));
+    }
+
+    /**
+     * Factor pel qual s'escalen els punts de les preguntes d'una part perquè la part valgui el seu pes (%) sobre el
+     * total de punts de l'examen: {@code pes/100 · puntsTotals / puntsDeLaPart}. 1 si l'examen no té pesos.
+     */
+    public static BigDecimal factor(Question q) {
+        if (q.getTipus() == QuestionType.SECTION || q.getExam() == null || q.getExam().getQuestions() == null) {
+            return BigDecimal.ONE;
+        }
+        List<Question> totes = q.getExam().getQuestions().stream()
+                .sorted(Comparator.comparingInt(Question::getOrdre)).toList();
+        Question seccio = null, seccioDeQ = null;
+        BigDecimal totalPunts = BigDecimal.ZERO, puntsPart = BigDecimal.ZERO;
+        for (Question x : totes) {
+            if (x.getTipus() == QuestionType.SECTION) {
+                seccio = x;
+                continue;
+            }
+            totalPunts = totalPunts.add(x.getPunts());
+            if (x.getId() != null ? x.getId().equals(q.getId()) : x == q) seccioDeQ = seccio;
+        }
+        if (seccioDeQ == null || seccioDeQ.getPesPart() == null) return BigDecimal.ONE;
+        seccio = null;
+        for (Question x : totes) {
+            if (x.getTipus() == QuestionType.SECTION) seccio = x;
+            else if (seccio == seccioDeQ) puntsPart = puntsPart.add(x.getPunts());
+        }
+        if (puntsPart.signum() <= 0) return BigDecimal.ONE;
+        return seccioDeQ.getPesPart().multiply(totalPunts)
+                .divide(puntsPart.multiply(BigDecimal.valueOf(100)), 8, RoundingMode.HALF_UP);
+    }
+
+    /** Una nota «bruta» (sobre els punts de la pregunta) expressada amb el pes de la seva part. */
+    public static BigDecimal puntsEscalats(Question q, BigDecimal brut) {
+        return brut == null ? null : escala(brut, factor(q));
+    }
+
+    private static BigDecimal escala(BigDecimal valor, BigDecimal factor) {
+        return factor.compareTo(BigDecimal.ONE) == 0 ? valor : valor.multiply(factor).setScale(6, RoundingMode.HALF_UP);
     }
 
     /** Nota total d'un alumne (les respostes sense nota compten 0). */
@@ -44,7 +95,7 @@ public final class Puntuacio {
     /** Punts màxims de l'examen (sense comptar les seccions). */
     public static BigDecimal maxim(Collection<Question> preguntes) {
         return preguntes.stream().filter(q -> q.getTipus() != QuestionType.SECTION)
-                .map(Question::getPunts).reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(Puntuacio::maximPregunta).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     /**

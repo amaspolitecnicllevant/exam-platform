@@ -112,8 +112,8 @@ public final class InformeQualificacio {
             List<String> millorar = new ArrayList<>();
             for (Question q : preguntes) {
                 BigDecimal punts = Puntuacio.punts(q, a.respostes().get(q.getId()));
-                if (!q.isAnulada() && q.getPunts().signum() > 0
-                        && (punts == null ? BigDecimal.ZERO : punts).compareTo(q.getPunts().multiply(LLINDAR_MILLORAR)) < 0) {
+                if (!q.isAnulada() && Puntuacio.maximPregunta(q).signum() > 0
+                        && (punts == null ? BigDecimal.ZERO : punts).compareTo(Puntuacio.maximPregunta(q).multiply(LLINDAR_MILLORAR)) < 0) {
                     String esperada = esperada(q);
                     millorar.add("- **Teoria " + numero(q) + ". " + tema(q) + "** (" + notaPregunta(punts, q).replace(" / ", "/") + ")"
                             + (esperada.isEmpty() ? "" : ": " + esperada));
@@ -190,7 +190,7 @@ public final class InformeQualificacio {
     }
 
     private static String notaPregunta(BigDecimal punts, Question q) {
-        return (punts == null ? "0" : CsvSegur.curt(punts)) + " / " + CsvSegur.curt(q.getPunts());
+        return (punts == null ? "0" : CsvSegur.curt(punts)) + " / " + CsvSegur.curt(Puntuacio.maximPregunta(q));
     }
 
     private static int numero(Question q) {
@@ -220,7 +220,7 @@ public final class InformeQualificacio {
                 String correcta = q.getCorrectChoice() == null ? "" : q.getCorrectChoice().strip().toLowerCase(Locale.ROOT);
                 parts.add(triada.equals(correcta) ? "Resposta correcta."
                         : "Ha triat " + triada + "; la correcta és " + correcta + ".");
-            } else if (punts.compareTo(q.getPunts()) >= 0) {
+            } else if (punts.compareTo(Puntuacio.maximPregunta(q)) >= 0) {
                 parts.add("Resposta completa.");
             } else {
                 parts.add("Nota posada pel professor.");
@@ -231,9 +231,9 @@ public final class InformeQualificacio {
 
     /** Resposta esperada de la columna: només si la nota és inferior al 90 % de la pregunta; si no, «—». */
     static String respostaEsperada(Question q, BigDecimal punts) {
-        if (q.isAnulada() || q.getPunts().signum() == 0) return "—";
+        if (q.isAnulada() || Puntuacio.maximPregunta(q).signum() == 0) return "—";
         BigDecimal p = punts == null ? BigDecimal.ZERO : punts;
-        if (p.compareTo(q.getPunts().multiply(LLINDAR_RESPOSTA_ESPERADA)) >= 0) return "—";
+        if (p.compareTo(Puntuacio.maximPregunta(q).multiply(LLINDAR_RESPOSTA_ESPERADA)) >= 0) return "—";
         String e = esperada(q);
         return e.isEmpty() ? "—" : e;
     }

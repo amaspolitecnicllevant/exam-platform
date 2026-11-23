@@ -82,4 +82,11 @@ public class Question {
     /** Només FILE_UPLOAD: extensions admeses separades per comes (docx,xlsx,pkt…); null = totes les permeses. */
     @Column(name = "formats_permesos", length = 200)
     private String formatsPermesos;
+
+    /**
+     * Només a les seccions: pes (%) de la part sobre la nota total. Quan hi és, els punts de les preguntes de la
+     * part s'escalen perquè la part valgui aquest percentatge (vegeu {@code Puntuacio.factor}).
+     */
+    @Column(name = "pes_part", precision = 5, scale = 2)
+    private BigDecimal pesPart;
 }

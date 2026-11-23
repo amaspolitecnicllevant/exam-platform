@@ -27,6 +27,10 @@ export interface Question {
   tipus: QuestionType
   enunciat: string
   punts: number
+  /** Factor pel qual s'escalen els punts pel pes de la part de la pregunta (1 o absent si no n'hi ha) */
+  factor?: number
+  /** Només a les seccions: pes (%) de la part sobre la nota total; null si no s'ha fixat */
+  pesPart?: number | null
   modelResposta?: string
   outputContains?: string
   outputExact?: string

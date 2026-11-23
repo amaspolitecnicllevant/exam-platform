@@ -9,9 +9,18 @@ import type { Answer, Question } from './types'
  */
 export function puntsPregunta(q: Question, a: Answer | undefined): number | null {
   if (q.tipus === 'SECTION') return 0
-  if (q.anulada) return q.punts
+  if (q.anulada) return maximPregunta(q)
   if (!a) return 0
-  return a.manualScore ?? a.autoScore ?? null
+  const brut = a.manualScore ?? a.autoScore ?? null
+  return brut == null ? null : brut * (q.factor ?? 1)
+}
+
+/**
+ * Punts màxims d'una pregunta amb el pes de la seva part aplicat (el mateix que Puntuacio.maximPregunta).
+ * Les notes de les respostes estan sempre sobre els punts «bruts» (`q.punts`); això només és per als totals.
+ */
+export function maximPregunta(q: Question): number {
+  return q.punts * (q.factor ?? 1)
 }
 
 /** Nota total d'un alumne. Les respostes sense nota compten 0 i es marquen com a pendents. */
@@ -29,7 +38,7 @@ export function notaTotal(questions: Question[], answers: Answer[]): { total: nu
 
 /** Punts màxims de l'examen (sense les seccions). */
 export function puntsMaxims(questions: Question[]): number {
-  return questions.filter(q => q.tipus !== 'SECTION').reduce((s, q) => s + q.punts, 0)
+  return questions.filter(q => q.tipus !== 'SECTION').reduce((s, q) => s + maximPregunta(q), 0)
 }
 
 /** Nota sobre 10 (la mateixa regla que Puntuacio.sobreDeu al backend). Null si l'examen no té punts. */
@@ -52,7 +61,7 @@ export function notaPerCompetencia(questions: Question[], answers: Answer[]): [s
   for (const q of questions) {
     if (!q.competencia || q.tipus === 'SECTION') continue
     grups[q.competencia] ??= { pts: 0, scored: 0 }
-    grups[q.competencia].pts += q.punts
+    grups[q.competencia].pts += maximPregunta(q)
     grups[q.competencia].scored += puntsPregunta(q, perPregunta.get(q.id)) ?? 0
   }
   return Object.entries(grups).sort(([a], [b]) => a.localeCompare(b))
@@ -85,7 +94,7 @@ export function partsExamen(questions: Question[]): PartExamen[] {
 export function puntsGrup(preguntes: Question[], answers: Answer[]): { pts: number; scored: number } {
   const perPregunta = new Map(answers.map(a => [a.questionId, a]))
   return {
-    pts: preguntes.reduce((s, q) => s + q.punts, 0),
+    pts: preguntes.reduce((s, q) => s + maximPregunta(q), 0),
     scored: preguntes.reduce((s, q) => s + (puntsPregunta(q, perPregunta.get(q.id)) ?? 0), 0),
   }
 }

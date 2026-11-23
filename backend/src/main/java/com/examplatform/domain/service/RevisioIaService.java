@@ -272,7 +272,7 @@ public class RevisioIaService {
     private static BigDecimal notaSobreDeu(Collection<Question> preguntes, Map<UUID, Answer> respostes, Map<UUID, BigDecimal> noves) {
         BigDecimal total = BigDecimal.ZERO;
         for (Question q : preguntes) {
-            BigDecimal p = noves.containsKey(q.getId()) ? noves.get(q.getId()) : Puntuacio.punts(q, respostes.get(q.getId()));
+            BigDecimal p = noves.containsKey(q.getId()) ? Puntuacio.puntsEscalats(q, noves.get(q.getId())) : Puntuacio.punts(q, respostes.get(q.getId()));
             if (p != null) total = total.add(p);
         }
         return Puntuacio.sobreDeu(total, Puntuacio.maxim(preguntes));

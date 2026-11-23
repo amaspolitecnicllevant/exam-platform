@@ -4,6 +4,7 @@ import com.examplatform.domain.model.Question;
 import com.examplatform.domain.model.QuestionType;
 import com.examplatform.domain.service.FormatsFitxer;
 import com.examplatform.domain.service.Numeracio;
+import com.examplatform.domain.service.Puntuacio;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -32,7 +33,11 @@ public record QuestionDto(
         String dificultat,
         List<QuestionFileDto> files,
         /** Només FILE_UPLOAD: extensions que l'alumne pot pujar. */
-        List<String> formatsPermesos
+        List<String> formatsPermesos,
+        /** Factor pel qual s'escalen els punts de la pregunta pel pes de la seva part (1 si no n'hi ha). */
+        BigDecimal factor,
+        /** Només a les seccions: pes (%) de la part sobre la nota total; null si no s'ha fixat. */
+        BigDecimal pesPart
 ) {
     public static QuestionDto from(Question q, List<QuestionFileDto> files) {
         return from(q, files, numeroDe(q));
@@ -43,7 +48,7 @@ public record QuestionDto(
                 q.getPunts(), q.getModelResposta(), q.getOutputContains(),
                 q.getOutputExact(), q.getOutputRegex(), q.getTestScript(), q.getClaus(),
                 parseChoices(q.getChoices()), q.getCorrectChoice(), q.isBarrejarOpcions(), q.isAnulada(), q.isAmbApunts(),
-                q.getCompetencia(), q.getDificultat(), files, formats(q));
+                q.getCompetencia(), q.getDificultat(), files, formats(q), Puntuacio.factor(q), q.getPesPart());
     }
 
     public static QuestionDto from(Question q) {
@@ -58,7 +63,7 @@ public record QuestionDto(
         return new QuestionDto(q.getId(), q.getOrdre(), numero, q.getTipus(), q.getEnunciat(),
                 q.getPunts(), null, null, null, null, null, null,
                 parseChoices(q.getChoices()), null, q.isBarrejarOpcions(), q.isAnulada(), q.isAmbApunts(),
-                q.getCompetencia(), null, files, formats(q));
+                q.getCompetencia(), null, files, formats(q), Puntuacio.factor(q), q.getPesPart());
     }
 
     public static QuestionDto forStudent(Question q) {

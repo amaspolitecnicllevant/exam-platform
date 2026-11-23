@@ -1,4 +1,5 @@
 import type { Exam } from '../types'
+import { maximPregunta } from '../notes'
 
 /**
  * Competències que es proposen a les preguntes d'un examen: les que declara l'examen. {@code null} = text lliure
@@ -21,7 +22,7 @@ export function resumCompetencies(exam: Pick<Exam, 'competenciesExamen' | 'quest
     if (q.tipus === 'SECTION' || !q.competencia) continue
     const r = mapa.get(q.competencia) ?? { codi: q.competencia, preguntes: 0, punts: 0 }
     r.preguntes++
-    r.punts += q.punts
+    r.punts += maximPregunta(q)
     mapa.set(q.competencia, r)
   }
   return [...mapa.values()].sort((a, b) => a.codi.length - b.codi.length || a.codi.localeCompare(b.codi))

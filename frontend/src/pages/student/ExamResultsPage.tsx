@@ -9,7 +9,7 @@ import { descarregaFitxerResposta } from '../../api/respostaFitxer'
 import { formatMida } from '../../utils/fitxers'
 import { resumCompetencies } from '../../utils/competencies'
 import ConsellsRecuperacio from '../../components/ConsellsRecuperacio'
-import { notaTotal, notaPerCompetencia, notaCompetenciaSobreDeu, NOTA_APROVAT, puntsPregunta, puntsMaxims, sobreDeu } from '../../notes'
+import { notaTotal, notaPerCompetencia, notaCompetenciaSobreDeu, NOTA_APROVAT, puntsPregunta, maximPregunta, puntsMaxims, sobreDeu } from '../../notes'
 
 /**
  * Resultats d'un alumne. Amb {@code previsio}, el professor veu què veuria l'alumne (nom de l'alumne inclòs)
@@ -168,11 +168,11 @@ export default function ExamResultsPage({ previsio = false }: { previsio?: boole
                 </div>
                 <div className="text-right flex-shrink-0">
                   {isScored ? (
-                    <span className={`text-sm font-semibold ${score === q.punts ? 'text-green-600' : score === 0 ? 'text-red-500' : 'text-orange-500'}`}>
-                      {(score as number).toFixed(2)} / {q.punts}
+                    <span className={`text-sm font-semibold ${Math.abs((score as number) - maximPregunta(q)) < 1e-9 ? 'text-green-600' : score === 0 ? 'text-red-500' : 'text-orange-500'}`}>
+                      {(score as number).toFixed(2)} / {Number(maximPregunta(q).toFixed(2))}
                     </span>
                   ) : (
-                    <span className="text-xs text-gray-400">Pendent de correcció · {q.punts} pts</span>
+                    <span className="text-xs text-gray-400">Pendent de correcció · {Number(maximPregunta(q).toFixed(2))} pts</span>
                   )}
                 </div>
               </div>

@@ -74,11 +74,11 @@ public final class ProgresAlumne {
                 for (Question q : e.getValue()) {
                     BigDecimal p = Puntuacio.punts(q, resp.get(q.getId()));
                     if (p == null) { pendent = true; continue; }
-                    max = max.add(q.getPunts());
+                    max = max.add(Puntuacio.maximPregunta(q));
                     obtinguts = obtinguts.add(p);
-                    if (p.compareTo(q.getPunts()) < 0) {
+                    if (p.compareTo(Puntuacio.maximPregunta(q)) < 0) {
                         fallades.add(new ProgresDto.Pregunta(numeros.getOrDefault(q.getId(), q.getOrdre()), q.getTipus(),
-                                resumEnunciat(q.getEnunciat()), q.getPunts(), p));
+                                resumEnunciat(q.getEnunciat()), Puntuacio.maximPregunta(q), p));
                     }
                 }
                 if (pendent) continue;

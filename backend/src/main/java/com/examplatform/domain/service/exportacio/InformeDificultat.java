@@ -183,7 +183,7 @@ public final class InformeDificultat {
             }
             BigDecimal rendiment = rendiment(q, punts);
             BigDecimal disc = null;
-            if (k > 0 && !q.isAnulada() && q.getPunts().signum() > 0) {
+            if (k > 0 && !q.isAnulada() && Puntuacio.maximPregunta(q).signum() > 0) {
                 BigDecimal rDalt = rendimentGrup(q, dalt), rBaix = rendimentGrup(q, baix);
                 if (rDalt != null && rBaix != null) disc = rDalt.subtract(rBaix).divide(CENT, 2, RoundingMode.HALF_UP);
             }
@@ -200,8 +200,8 @@ public final class InformeDificultat {
     }
 
     private static BigDecimal rendiment(Question q, List<BigDecimal> punts) {
-        if (punts.isEmpty() || q.getPunts().signum() == 0) return null;
-        return mitjana(punts).multiply(CENT).divide(q.getPunts(), 1, RoundingMode.HALF_UP);
+        if (punts.isEmpty() || Puntuacio.maximPregunta(q).signum() == 0) return null;
+        return mitjana(punts).multiply(CENT).divide(Puntuacio.maximPregunta(q), 1, RoundingMode.HALF_UP);
     }
 
     private static BigDecimal rendimentGrup(Question q, List<DadesExamen.Alumne> grup) {
