@@ -5,7 +5,7 @@ import Md from '../../components/Md'
 import { getSessionsByExam, getSession } from '../../api/sessions'
 import { getExam, runAnswer, setManualScore, setComment, patchQuestion, acceptProposal, acceptAllProposals } from '../../api/exams'
 import type { Exam, Session, Answer, Question } from '../../types'
-import { notaTotal, notaPerCompetencia, notaCompetenciaSobreDeu, NOTA_APROVAT, puntsMaxims, sobreDeu } from '../../notes'
+import { notaTotal, notaPerCompetencia, notaCompetenciaSobreDeu, partsExamen, puntsGrup, NOTA_APROVAT, puntsMaxims, sobreDeu } from '../../notes'
 import { useLlindarFocus } from '../../context/ConfiguracioContext'
 import RespostaCorreccio, { Referencia, isPendent } from '../../components/correccio/RespostaCorreccio'
 import type { AccionsCorreccio } from '../../components/correccio/RespostaCorreccio'
@@ -496,6 +496,34 @@ export default function CorrectionPage() {
                           return (
                             <div key={co} className={`flex items-center gap-1.5 rounded px-1.5 py-0.5 ${suspesa ? 'bg-red-50 ring-1 ring-red-200' : ''}`}>
                               <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded font-medium">{co}</span>
+                              <span className={`text-sm font-semibold tabular-nums ${suspesa ? 'text-red-600' : 'text-gray-700'}`}>
+                                {nota != null ? nota.toFixed(2) : '—'}
+                              </span>
+                              <span className="text-xs text-gray-400">/ 10</span>
+                              <span className="text-xs text-gray-400">({g.scored.toFixed(2)} de {g.pts.toFixed(2)} pts)</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                {/* Desglossament per part (secció) */}
+                {(() => {
+                  const parts = partsExamen(sections)
+                  if (parts.length === 0) return null
+                  return (
+                    <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 space-y-2">
+                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Nota per part</p>
+                      <div className="flex flex-wrap gap-3">
+                        {parts.map(p => {
+                          const g = puntsGrup(p.preguntes, selected.answers)
+                          const nota = notaCompetenciaSobreDeu(g)
+                          const suspesa = nota != null && nota < NOTA_APROVAT
+                          return (
+                            <div key={p.clau} className={`flex items-center gap-1.5 rounded px-1.5 py-0.5 ${suspesa ? 'bg-red-50 ring-1 ring-red-200' : ''}`}>
+                              <span className="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded font-medium max-w-[16rem] truncate" title={p.titol}>{p.titol}</span>
                               <span className={`text-sm font-semibold tabular-nums ${suspesa ? 'text-red-600' : 'text-gray-700'}`}>
                                 {nota != null ? nota.toFixed(2) : '—'}
                               </span>
