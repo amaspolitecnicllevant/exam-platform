@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import Layout from '../../components/Layout'
-import { getExam } from '../../api/exams'
+import { getExam, updateExamSettings } from '../../api/exams'
+import PesosParts from '../../components/PesosParts'
 import { getSessionsByExam, deleteSession } from '../../api/sessions'
 import type { Exam, Session } from '../../types'
 import { taulaNotes, ordenaFiles, csvTaulaNotes, NOTA_APROVAT, type ColumnaOrdre, type NotaCompetencia } from '../../utils/taulaNotes'
@@ -40,6 +41,8 @@ export default function NotesPage() {
   const [nomesEntregats, setNomesEntregats] = useState(false)
   const [avis, setAvis] = useState('')
   const [eliminant, setEliminant] = useState<string | null>(null)
+  const [mostraPesos, setMostraPesos] = useState(false)
+  const [treuPenalitzant, setTreuPenalitzant] = useState(false)
   const [ordre, setOrdre] = useState<{ per: ColumnaOrdre; descendent: boolean }>({ per: 'alumne', descendent: false })
 
   useEffect(() => {
@@ -77,6 +80,24 @@ export default function NotesPage() {
     setOrdre(o => o.per === per ? { per, descendent: !o.descendent } : { per, descendent: false })
   const fletxa = (per: ColumnaOrdre) => ordre.per === per ? (ordre.descendent ? ' ▾' : ' ▴') : ''
 
+  const teParts = exam.questions.some(q => q.tipus === 'SECTION')
+  const recarregaSessions = () => getSessionsByExam(exam.id).then(setSessions)
+
+  const llevaPenalitzacio = async () => {
+    const pen = Math.round(exam.penalitzacioChoice * 100)
+    if (!confirm(`Llevar la penalització del test (ara −${pen} % del valor per resposta incorrecta)?\n\nEs re-corregiran les respostes de test de tots els alumnes i les notes canviaran${exam.notesVisibles ? ', també les ja publicades' : ''}.`)) return
+    setTreuPenalitzant(true)
+    setAvis('')
+    try {
+      setExam(await updateExamSettings(exam.id, { penalitzacioChoice: 0 }))
+      await recarregaSessions()
+    } catch (err: any) {
+      setAvis(err?.response?.data?.error || 'No s\'ha pogut llevar la penalització')
+    } finally {
+      setTreuPenalitzant(false)
+    }
+  }
+
   const exporta = () => {
     const blob = new Blob([csvTaulaNotes(taula.competencies, files, taula.parts)], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
@@ -110,6 +131,16 @@ export default function NotesPage() {
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <button type="button" onClick={() => setMostraPesos(m => !m)} disabled={!teParts}
+              title={teParts ? 'Veure els pesos actuals de cada part i posar-ne de nous' : 'Aquest examen no té parts (seccions ###)'}
+              className="text-xs border border-amber-500 text-amber-700 px-3 py-1.5 rounded-lg hover:bg-amber-50 disabled:opacity-40 disabled:hover:bg-transparent">
+              Canvia els pesos de les parts
+            </button>
+            <button type="button" onClick={llevaPenalitzacio} disabled={treuPenalitzant || exam.penalitzacioChoice <= 0}
+              title={exam.penalitzacioChoice > 0 ? 'Treu la penalització de les respostes incorrectes del test i recalcula les notes' : 'Aquest examen ja no té penalització'}
+              className="text-xs border border-amber-500 text-amber-700 px-3 py-1.5 rounded-lg hover:bg-amber-50 disabled:opacity-40 disabled:hover:bg-transparent">
+              {treuPenalitzant ? 'Recalculant…' : 'Lleva la penalització del test'}
+            </button>
             <Link to={`/professor/exams/${exam.id}/corrections`}
               className="text-xs border border-brand-600 text-brand-600 px-3 py-1.5 rounded-lg hover:bg-brand-50">Correccions</Link>
             <button type="button" onClick={exporta} disabled={files.length === 0}
@@ -124,6 +155,11 @@ export default function NotesPage() {
             className="accent-brand-600 w-4 h-4" />
           Mostra només els alumnes que han entregat
         </label>
+
+        {mostraPesos && teParts && (
+          <PesosParts key="pesos" exam={exam} obertInicial
+            onCanvi={e => { setExam(e); recarregaSessions() }} />
+        )}
 
         {avis && <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">{avis}</p>}
 

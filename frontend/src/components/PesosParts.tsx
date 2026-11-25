@@ -8,7 +8,7 @@ const fmt = (n: number) => String(Number(n.toFixed(2))).replace('.', ',')
  * Pes (%) de cada part (secció) de l'examen sobre la nota. Es pot canviar quan l'examen ja s'ha fet (p. ex. una part
  * massa difícil): les notes es recalculen, també les que els alumnes ja veuen si estan publicades.
  */
-export default function PesosParts({ exam, onCanvi }: { exam: Exam; onCanvi: (e: Exam) => void }) {
+export default function PesosParts({ exam, onCanvi, obertInicial = false }: { exam: Exam; onCanvi: (e: Exam) => void; obertInicial?: boolean }) {
   const parts = useMemo(() => {
     const ordenades = [...exam.questions].sort((a, b) => a.ordre - b.ordre)
     const res: { id: string; titol: string; punts: number; pes: number | null }[] = []
@@ -23,7 +23,7 @@ export default function PesosParts({ exam, onCanvi }: { exam: Exam; onCanvi: (e:
   const fixats = parts.some(p => p.pes != null)
 
   const [valors, setValors] = useState<Record<string, string>>({})
-  const [obert, setObert] = useState(false)
+  const [obert, setObert] = useState(obertInicial)
   const [desant, setDesant] = useState(false)
   const [error, setError] = useState('')
 
@@ -33,7 +33,13 @@ export default function PesosParts({ exam, onCanvi }: { exam: Exam; onCanvi: (e:
 
   // Les preguntes abans de la primera secció no tenen part: no es pot repartir.
   const primera = [...exam.questions].sort((a, b) => a.ordre - b.ordre)[0]
-  if (parts.length === 0 || !primera || primera.tipus !== 'SECTION') return null
+  if (parts.length === 0 || !primera || primera.tipus !== 'SECTION') {
+    return obertInicial ? (
+      <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+        No es poden repartir pesos: hi ha preguntes abans de la primera part. Posa-les dins d'una part (secció) a l'editor de l'examen.
+      </p>
+    ) : null
+  }
 
   const num = (v: string) => Number(v.replace(',', '.'))
   const suma = parts.reduce((s, p) => s + (Number.isFinite(num(valors[p.id] ?? '')) ? num(valors[p.id] ?? '') : 0), 0)
