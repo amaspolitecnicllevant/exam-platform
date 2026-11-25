@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import Layout from '../../components/Layout'
-import { getExam, updateExamSettings } from '../../api/exams'
+import { getExam, updateExamSettings, treuPesosParts } from '../../api/exams'
 import PesosParts from '../../components/PesosParts'
 import { getSessionsByExam, deleteSession } from '../../api/sessions'
 import type { Exam, Session } from '../../types'
@@ -43,6 +43,7 @@ export default function NotesPage() {
   const [eliminant, setEliminant] = useState<string | null>(null)
   const [mostraPesos, setMostraPesos] = useState(false)
   const [treuPenalitzant, setTreuPenalitzant] = useState(false)
+  const [tornant, setTornant] = useState(false)
   const [ordre, setOrdre] = useState<{ per: ColumnaOrdre; descendent: boolean }>({ per: 'alumne', descendent: false })
 
   useEffect(() => {
@@ -81,6 +82,25 @@ export default function NotesPage() {
   const fletxa = (per: ColumnaOrdre) => ordre.per === per ? (ordre.descendent ? ' ▾' : ' ▴') : ''
 
   const teParts = exam.questions.some(q => q.tipus === 'SECTION')
+  const tornaALsInicials = async () => {
+    if (!confirm(`Tornar als valors inicials de l'examen (sense pesos per part i amb la penalització original, ${Math.round((exam.penalitzacioOriginal ?? exam.penalitzacioChoice) * 100)} %)?\n\nEs recalcularan les notes de tots els alumnes${exam.notesVisibles ? ', també les ja publicades' : ''}.`)) return
+    setTornant(true)
+    setAvis('')
+    try {
+      let e = exam
+      if (exam.questions.some(q => q.pesPart != null)) e = await treuPesosParts(exam.id)
+      if (Math.abs((exam.penalitzacioOriginal ?? exam.penalitzacioChoice) - exam.penalitzacioChoice) > 1e-6) {
+        e = await updateExamSettings(exam.id, { penalitzacioChoice: exam.penalitzacioOriginal })
+      }
+      setExam(e)
+      await recarregaSessions()
+    } catch (err: any) {
+      setAvis(err?.response?.data?.error || 'No s\'ha pogut tornar als valors inicials')
+    } finally {
+      setTornant(false)
+    }
+  }
+
   const recarregaSessions = () => getSessionsByExam(exam.id).then(setSessions)
 
   const llevaPenalitzacio = async () => {
@@ -99,7 +119,7 @@ export default function NotesPage() {
   }
 
   const exporta = () => {
-    const blob = new Blob([csvTaulaNotes(taula.competencies, files, taula.parts)], { type: 'text/csv;charset=utf-8' })
+    const blob = new Blob([csvTaulaNotes(taula.competencies, files, taula.parts, taula.modificada)], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -127,7 +147,7 @@ export default function NotesPage() {
             <Link to="/professor/exams" className="text-xs text-brand-600 hover:underline">← Els meus exàmens</Link>
             <h1 className="text-2xl font-bold text-brand-700">Notes · {exam.title}</h1>
             <p className="text-sm text-gray-500">
-              {entregats} de {taula.files.length} alumnes han entregat · nota de l'examen sobre 10; competències i parts en punts reals (/ màxim); en vermell si equival a menys de {NOTA_APROVAT} sobre 10
+              {entregats} de {taula.files.length} alumnes han entregat · nota de l'examen sobre 10; entre parèntesis, la nota original quan s'han canviat pesos o penalització; competències i parts en punts reals (/ màxim); en vermell si equival a menys de {NOTA_APROVAT} sobre 10
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -140,6 +160,11 @@ export default function NotesPage() {
               title={exam.penalitzacioChoice > 0 ? 'Treu la penalització de les respostes incorrectes del test i recalcula les notes' : 'Aquest examen ja no té penalització'}
               className="text-xs border border-amber-500 text-amber-700 px-3 py-1.5 rounded-lg hover:bg-amber-50 disabled:opacity-40 disabled:hover:bg-transparent">
               {treuPenalitzant ? 'Recalculant…' : 'Lleva la penalització del test'}
+            </button>
+            <button type="button" onClick={tornaALsInicials} disabled={tornant || !taula.modificada}
+              title={taula.modificada ? 'Treu els pesos per part i recupera la penalització original' : 'L\'examen encara té els valors inicials'}
+              className="text-xs border border-gray-400 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-transparent">
+              {tornant ? 'Recalculant…' : 'Torna als valors inicials'}
             </button>
             <Link to={`/professor/exams/${exam.id}/corrections`}
               className="text-xs border border-brand-600 text-brand-600 px-3 py-1.5 rounded-lg hover:bg-brand-50">Correccions</Link>
@@ -198,7 +223,12 @@ export default function NotesPage() {
                   <tr key={f.sessio.id} className={f.entregat ? '' : 'text-gray-500'}>
                     <td className="px-3 py-1.5 whitespace-nowrap">{f.sessio.studentName}</td>
                     <td className="px-3 py-1.5 text-xs">{f.estat}</td>
-                    <td className="px-3 py-1.5 text-right border-l border-gray-100"><Nota valor={f.nota} forta /></td>
+                    <td className="px-3 py-1.5 text-right border-l border-gray-100 whitespace-nowrap">
+                      <Nota valor={f.nota} forta />
+                      {taula.modificada && f.nota != null && f.notaOriginal != null && Math.abs(f.nota - f.notaOriginal) >= 0.005 && (
+                        <span className="text-xs text-gray-400 tabular-nums ml-1" title="Nota original, amb els valors inicials de l'examen">({fmt(f.notaOriginal)})</span>
+                      )}
+                    </td>
                     {taula.competencies.map(co => (
                       <td key={co} className="px-3 py-1.5 text-right"><PuntsCompetencia valor={f.competencies[co]} /></td>
                     ))}

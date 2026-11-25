@@ -147,6 +147,8 @@ export interface Exam {
   scheduledGrupId?: string
   scheduledGrupName?: string
   penalitzacioChoice: number
+  /** Penalització amb què es va fer l'examen (igual a l'actual si no s'ha canviat després) */
+  penalitzacioOriginal?: number
   modulId?: string
   modulNom?: string
   cicleNom?: string

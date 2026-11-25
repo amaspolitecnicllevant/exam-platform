@@ -21,6 +21,8 @@ public record ExamDto(
         UUID scheduledGrupId,
         String scheduledGrupName,
         BigDecimal penalitzacioChoice,
+        /** Penalització amb què es va fer l'examen (igual a l'actual si no s'ha canviat després). */
+        BigDecimal penalitzacioOriginal,
         UUID modulId,
         String modulNom,
         String cicleNom,
@@ -43,7 +45,7 @@ public record ExamDto(
     /** Còpia amb la marca «ja té sessions d'alumnes» i la data de la primera (només les calcula el llistat del professor). */
     public ExamDto ambSessions(boolean teSessions, LocalDateTime primeraSessio) {
         return new ExamDto(id, title, durada, instruccions, status, createdByName, createdAt, scheduledAt,
-                scheduledGrupId, scheduledGrupName, penalitzacioChoice, modulId, modulNom, cicleNom, departamentNom, aulaId,
+                scheduledGrupId, scheduledGrupName, penalitzacioChoice, penalitzacioOriginal, modulId, modulNom, cicleNom, departamentNom, aulaId,
                 aulaNom, aulaCidr, notesVisibles, unaPreguntaPerPantalla, restringit, teSessions, primeraSessio, competenciesExamen, avisos, questions);
     }
 
@@ -67,6 +69,8 @@ public record ExamDto(
                 e.getScheduledGrup() != null ? e.getScheduledGrup().getId() : null,
                 e.getScheduledGrup() != null ? e.getScheduledGrup().getName() : null,
                 e.getPenalitzacioChoice() != null ? e.getPenalitzacioChoice() : BigDecimal.ZERO,
+                e.getPenalitzacioOriginal() != null ? e.getPenalitzacioOriginal()
+                        : e.getPenalitzacioChoice() != null ? e.getPenalitzacioChoice() : BigDecimal.ZERO,
                 e.getModul() != null ? e.getModul().getId() : null,
                 e.getModul() != null ? e.getModul().getNom() : null,
                 e.getModul() != null ? e.getModul().getCicle().getNom() : null,

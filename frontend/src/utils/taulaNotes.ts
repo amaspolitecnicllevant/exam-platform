@@ -1,5 +1,5 @@
 import type { Exam, Session } from '../types'
-import { notaPerCompetencia, notaCompetenciaSobreDeu, partsExamen, puntsGrup, notaTotal, puntsMaxims, sobreDeu, NOTA_APROVAT } from '../notes'
+import { notaPerCompetencia, notaCompetenciaSobreDeu, notaOriginal, partsExamen, puntsGrup, notaTotal, puntsMaxims, sobreDeu, NOTA_APROVAT } from '../notes'
 
 export { NOTA_APROVAT }
 
@@ -19,6 +19,8 @@ export interface FilaNotes {
   estat: string
   /** Nota de l'examen sobre 10; null si l'alumne no l'ha començat */
   nota: number | null
+  /** Nota amb els valors inicials de l'examen (sense pesos per part, amb la penalització original); null si no ha començat */
+  notaOriginal: number | null
   /** Punts reals de cada competència (per codi) i la seva nota sobre 10; null si no té preguntes o l'alumne no l'ha començat */
   competencies: Record<string, NotaCompetencia | null>
   /** El mateix per a cada part (secció) de l'examen, per clau de {@link TaulaNotes.parts} */
@@ -32,18 +34,22 @@ export interface TaulaNotes {
   competencies: string[]
   /** Parts (seccions) de l'examen en ordre; buit si no en té */
   parts: { clau: string; titol: string }[]
+  /** Hi ha pesos per part o la penalització s'ha canviat respecte de l'original */
+  modificada: boolean
   files: FilaNotes[]
 }
 
 const collator = new Intl.Collator('ca', { numeric: true, sensitivity: 'base' })
 
 /** Una fila per sessió: nota de l'examen i de cada competència sobre 10 (mateixa regla que el backend). */
-export function taulaNotes(exam: Pick<Exam, 'questions' | 'competenciesExamen'>, sessions: Session[]): TaulaNotes {
+export function taulaNotes(exam: Pick<Exam, 'questions' | 'competenciesExamen' | 'penalitzacioChoice' | 'penalitzacioOriginal'>, sessions: Session[]): TaulaNotes {
   const codis = new Set<string>((exam.competenciesExamen ?? []).map(c => c.trim()).filter(Boolean))
   for (const q of exam.questions) if (q.tipus !== 'SECTION' && q.competencia?.trim()) codis.add(q.competencia.trim())
   const competencies = [...codis].sort((a, b) => collator.compare(a, b))
   const maxim = puntsMaxims(exam.questions)
   const parts = partsExamen(exam.questions)
+  const penOriginal = exam.penalitzacioOriginal ?? exam.penalitzacioChoice ?? 0
+  const modificada = exam.questions.some(q => q.pesPart != null) || Math.abs(penOriginal - (exam.penalitzacioChoice ?? 0)) > 1e-6
 
   const files = sessions.map<FilaNotes>(sessio => {
     const entregat = sessio.status === 'SUBMITTED'
@@ -64,12 +70,13 @@ export function taulaNotes(exam: Pick<Exam, 'questions' | 'competenciesExamen'>,
       sessio, entregat,
       estat: entregat ? 'Entregat' : comencat ? 'En curs' : 'No presentat',
       nota: comencat ? sobreDeu(total, maxim) : null,
+      notaOriginal: comencat ? notaOriginal(exam.questions, sessio.answers, penOriginal) : null,
       competencies: notes,
       parts: notesParts,
       pendents: comencat ? pendents : 0,
     }
   })
-  return { competencies, parts: parts.map(({ clau, titol }) => ({ clau, titol })), files }
+  return { competencies, parts: parts.map(({ clau, titol }) => ({ clau, titol })), modificada, files }
 }
 
 /** Nota amb coma decimal i dues xifres («7,50»), com espera un Excel en català; buit si no n'hi ha. */
@@ -84,13 +91,13 @@ const cel = (v: string) => {
 const camp = (v: string) => /[;"\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v
 
 /** CSV del que es veu a la taula (mateix ordre i mateixes files): separador «;», coma decimal i BOM UTF-8. */
-export function csvTaulaNotes(competencies: string[], files: FilaNotes[], parts: TaulaNotes['parts'] = []): string {
-  const cap = ['alumne', 'estat', 'nota_sobre_10',
+export function csvTaulaNotes(competencies: string[], files: FilaNotes[], parts: TaulaNotes['parts'] = [], ambOriginal = false): string {
+  const cap = ['alumne', 'estat', 'nota_sobre_10', ...(ambOriginal ? ['nota_original_sobre_10'] : []),
     ...competencies.flatMap(co => [`${co}_punts`, `${co}_punts_maxims`, `${co}_sobre_10`]),
     ...parts.flatMap(p => [`${p.titol}_punts`, `${p.titol}_punts_maxims`, `${p.titol}_sobre_10`]),
     'pendents_de_revisar']
   const linies = [cap, ...files.map(f => [
-    cel(f.sessio.studentName), f.estat, num(f.nota),
+    cel(f.sessio.studentName), f.estat, num(f.nota), ...(ambOriginal ? [num(f.notaOriginal)] : []),
     ...competencies.flatMap(co => {
       const c = f.competencies[co]
       return [num(c?.punts), num(c?.maxim), num(c?.sobreDeu)]

@@ -98,3 +98,28 @@ export function puntsGrup(preguntes: Question[], answers: Answer[]): { pts: numb
     scored: preguntes.reduce((s, q) => s + (puntsPregunta(q, perPregunta.get(q.id)) ?? 0), 0),
   }
 }
+
+/**
+ * Nota sobre 10 que tindria l'alumne amb els valors inicials de l'examen: sense pesos per part i amb la penalització
+ * del test original. Les notes manuals i les de les preguntes que no són de test es mantenen tal com estan.
+ */
+export function notaOriginal(questions: Question[], answers: Answer[], penalitzacioOriginal: number): number | null {
+  const perPregunta = new Map(answers.map(a => [a.questionId, a]))
+  let total = 0, maxim = 0
+  for (const q of questions) {
+    if (q.tipus === 'SECTION') continue
+    maxim += q.punts
+    const a = perPregunta.get(q.id)
+    if (q.anulada) { total += q.punts; continue }
+    if (!a) continue
+    if (a.manualScore != null) { total += a.manualScore; continue }
+    if (q.tipus === 'CHOICE') {
+      const donada = (a.contingut ?? '').trim().toLowerCase()
+      if (!donada) continue
+      total += donada === (q.correctChoice ?? '').trim().toLowerCase() ? q.punts : -q.punts * penalitzacioOriginal
+    } else {
+      total += a.autoScore ?? 0
+    }
+  }
+  return sobreDeu(total, maxim)
+}

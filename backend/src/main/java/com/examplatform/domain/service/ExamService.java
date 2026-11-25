@@ -372,6 +372,12 @@ public class ExamService {
             if (factor.compareTo(java.math.BigDecimal.ZERO) < 0 || factor.compareTo(java.math.BigDecimal.ONE) > 0) {
                 throw new IllegalArgumentException("El factor de penalització ha d'estar entre 0 i 1");
             }
+            java.math.BigDecimal abans = exam.getPenalitzacioChoice();
+            if (abans != null && abans.compareTo(factor) != 0) {
+                // Amb l'examen ja fet es guarda la penalització inicial (un cop); abans de fer-lo, el canvi redefineix l'inicial
+                if (!sessionRepository.existsByExamId(examId)) exam.setPenalitzacioOriginal(null);
+                else if (exam.getPenalitzacioOriginal() == null) exam.setPenalitzacioOriginal(abans);
+            }
             exam.setPenalitzacioChoice(factor);
         }
         if (req.unaPreguntaPerPantalla() != null) {

@@ -67,6 +67,13 @@ public class Exam {
     @Builder.Default
     private java.math.BigDecimal penalitzacioChoice = java.math.BigDecimal.ZERO;
 
+    /**
+     * Penalització que tenia l'examen quan els alumnes el van fer, si el professor l'ha canviat després; null si
+     * no s'ha canviat mai amb l'examen ja fet. Serveix per mostrar la nota original i tornar als valors inicials.
+     */
+    @Column(name = "penalitzacio_original", precision = 5, scale = 4)
+    private java.math.BigDecimal penalitzacioOriginal;
+
     /** Quan és true, els alumnes poden veure les seves notes i correccions */
     @Column(nullable = false)
     @Builder.Default

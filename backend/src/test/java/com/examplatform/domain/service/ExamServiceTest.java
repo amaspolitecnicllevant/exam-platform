@@ -530,6 +530,35 @@ class ExamServiceTest {
     }
 
     @Test
+    void updateSettings_amb_l_examen_fet_guarda_la_penalitzacio_inicial_una_sola_vegada() {
+        Exam exam = exam(ExamStatus.DRAFT, professor);
+        exam.setPenalitzacioChoice(new BigDecimal("0.3333"));
+        when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
+        when(examRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(sessionRepository.existsByExamId(exam.getId())).thenReturn(true);
+
+        service.updateSettings(exam.getId(), new ExamSettingsRequest(BigDecimal.ZERO), professor);
+        service.updateSettings(exam.getId(), new ExamSettingsRequest(new BigDecimal("0.5")), professor);
+
+        assertThat(exam.getPenalitzacioOriginal()).isEqualByComparingTo("0.3333");   // la primera, no la intermèdia
+        assertThat(exam.getPenalitzacioChoice()).isEqualByComparingTo("0.5");
+    }
+
+    @Test
+    void updateSettings_abans_de_fer_l_examen_no_guarda_cap_penalitzacio_original() {
+        Exam exam = exam(ExamStatus.DRAFT, professor);
+        exam.setPenalitzacioChoice(new BigDecimal("0.3333"));
+        exam.setPenalitzacioOriginal(new BigDecimal("0.25"));
+        when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
+        when(examRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(sessionRepository.existsByExamId(exam.getId())).thenReturn(false);
+
+        service.updateSettings(exam.getId(), new ExamSettingsRequest(BigDecimal.ZERO), professor);
+
+        assertThat(exam.getPenalitzacioOriginal()).isNull();
+    }
+
+    @Test
     void updateSettings_activa_i_desactiva_una_pregunta_per_pantalla() {
         Exam exam = exam(ExamStatus.DRAFT, professor);
         when(examRepository.findById(exam.getId())).thenReturn(Optional.of(exam));
