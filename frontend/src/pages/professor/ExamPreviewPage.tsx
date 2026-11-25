@@ -38,6 +38,8 @@ export default function ExamPreviewPage() {
   const [showAnswers, setShowAnswers] = useState(false)
   const [draftAnswers, setDraftAnswers] = useState<Record<string, string>>({})
   const [penalEdit, setPenalEdit] = useState(false)
+  const [utValue, setUtValue] = useState('')
+  const [utDesada, setUtDesada] = useState(false)
   const [penalValue, setPenalValue] = useState(0)
   const [dadesEdit, setDadesEdit] = useState(false)
   const [titolValue, setTitolValue] = useState('')
@@ -61,6 +63,7 @@ export default function ExamPreviewPage() {
     return getExam(examId).then(e => {
       setExam(e)
       setPenalValue(e.penalitzacioChoice)
+      setUtValue(e.ut ?? '')
       // Inicialitzem fitxers des del DTO
       const fMap: Record<string, QuestionFile[]> = {}
       e.questions.forEach(q => { fMap[q.id] = q.files ?? [] })
@@ -96,6 +99,13 @@ export default function ExamPreviewPage() {
       <button onClick={() => elimina(q)} className="px-1.5 py-0.5 rounded border border-red-200 text-red-600 hover:bg-red-50" title="Eliminar">🗑</button>
     </div>
   )
+
+  const saveUt = async () => {
+    if (!examId) return
+    const updated = await updateExamSettings(examId, { ut: utValue.trim() })
+    setExam(updated); setUtValue(updated.ut ?? ''); setUtDesada(true)
+    setTimeout(() => setUtDesada(false), 2000)
+  }
 
   const savePenal = async () => {
     if (!examId) return
@@ -271,6 +281,18 @@ export default function ExamPreviewPage() {
               <button onClick={startEditDades} className="text-xs text-brand-600 hover:underline">Editar</button>
             </div>
           )}
+        </div>
+
+        {/* Unitat de treball */}
+        <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-3 text-sm flex-wrap">
+          <label htmlFor="ut-examen" className="text-gray-500">Unitat de treball (UT):</label>
+          <input id="ut-examen" type="text" value={utValue} maxLength={50} placeholder="p. ex. UT01"
+            onChange={e => setUtValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && saveUt()}
+            className="border rounded px-2 py-1 text-sm w-32 focus:outline-none focus:ring-1 focus:ring-brand-400" />
+          <button onClick={saveUt} disabled={utValue.trim() === (exam?.ut ?? '')}
+            className="bg-brand-600 text-white px-3 py-1 rounded text-xs hover:bg-brand-700 disabled:opacity-40">Guardar</button>
+          {utDesada && <span className="text-xs text-green-700">Desat</span>}
+          <span className="text-xs text-gray-400">Serveix per calcular la mitjana de cada UT a «Resum de notes».</span>
         </div>
 
         {/* Configuració penalització */}

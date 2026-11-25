@@ -149,6 +149,8 @@ export interface Exam {
   penalitzacioChoice: number
   /** Penalització amb què es va fer l'examen (igual a l'actual si no s'ha canviat després) */
   penalitzacioOriginal?: number
+  /** Unitat de treball de l'examen (p. ex. «UT01») */
+  ut?: string | null
   modulId?: string
   modulNom?: string
   cicleNom?: string

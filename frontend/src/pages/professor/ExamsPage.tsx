@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../../components/Layout'
+import { getResumNotes, type ResumExamen } from '../../api/exams'
 import { getMyExams, publishExam, unpublishExam, closeExam, deleteExam, duplicateExam, scheduleExam, unscheduleExam, assignModul, publicarNotes, ocultarNotes } from '../../api/exams'
 import { getGrups, assignExamToGrup } from '../../api/grups'
 import { getModuls } from '../../api/moduls'
@@ -50,6 +51,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function ExamsPage() {
   const [exams, setExams]   = useState<Exam[]>([])
+  const [resum, setResum]   = useState<Record<string, ResumExamen>>({})
   const [grups, setGrups]   = useState<Grup[]>([])
   const [moduls, setModuls]         = useState<Modul[]>([])
   const [aules, setAules]           = useState<Aula[]>([])
@@ -99,6 +101,7 @@ export default function ExamsPage() {
 
   useEffect(() => {
     getMyExams().then(setExams)
+    getResumNotes().then(r => setResum(Object.fromEntries(r.examens.map(x => [x.id, x])))).catch(() => {})
     getGrups().then(setGrups)
     getModuls().then(setModuls)
     getAules().then(setAules)
@@ -359,6 +362,16 @@ export default function ExamsPage() {
                       {exam.primeraSessio && (
                         <span className="text-xs text-gray-500" title="Quan un alumne el va començar per primera vegada">
                           Fet per primera vegada: {new Date(exam.primeraSessio).toLocaleString('ca-ES', { dateStyle: 'short', timeStyle: 'short' })}
+                        </span>
+                      )}
+                      {exam.ut && (
+                        <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-mono" title="Unitat de treball">{exam.ut}</span>
+                      )}
+                      {resum[exam.id] && resum[exam.id].entregats > 0 && (
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full tabular-nums"
+                          title={`Nota mitjana ${resum[exam.id].mitjana?.toFixed(2).replace('.', ',')} sobre 10`}>
+                          Aproven {resum[exam.id].aprovats} de {resum[exam.id].entregats}
+                          {resum[exam.id].percentAprovats != null ? ` (${Math.round(resum[exam.id].percentAprovats as number)} %)` : ''}
                         </span>
                       )}
                       {exam.modulNom && (

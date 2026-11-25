@@ -74,6 +74,10 @@ public class Exam {
     @Column(name = "penalitzacio_original", precision = 5, scale = 4)
     private java.math.BigDecimal penalitzacioOriginal;
 
+    /** Unitat de treball de l'examen (text lliure, p. ex. «UT01»); serveix per agrupar-ne les notes. */
+    @Column(length = 50)
+    private String ut;
+
     /** Quan és true, els alumnes poden veure les seves notes i correccions */
     @Column(nullable = false)
     @Builder.Default

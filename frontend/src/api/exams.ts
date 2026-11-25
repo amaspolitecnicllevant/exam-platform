@@ -32,6 +32,8 @@ export interface ExamSettings {
   unaPreguntaPerPantalla?: boolean
   title?: string
   durada?: number
+  /** Unitat de treball de l'examen (p. ex. «UT01»); buit = cap */
+  ut?: string
 }
 
 /** Canvis parcials: els camps no indicats no es modifiquen */
@@ -83,3 +85,27 @@ export const fixaPesosParts = (examId: string, pesos: { seccioId: string; pes: n
 /** Treu els pesos: cada pregunta torna a valer els seus punts. */
 export const treuPesosParts = (examId: string) =>
   client.delete<Exam>(`/exams/${examId}/pesos-parts`).then(r => r.data)
+
+export interface ResumExamen {
+  id: string
+  titol: string
+  ut: string | null
+  modulNom: string | null
+  estat: string
+  entregats: number
+  aprovats: number
+  percentAprovats: number | null
+  mitjana: number | null
+}
+export interface ResumUnitat {
+  ut: string
+  modulNom: string | null
+  examens: number
+  entregats: number
+  aprovats: number
+  percentAprovats: number | null
+  mitjana: number | null
+}
+/** Aprovats i mitjana de cada examen del professor i de cada UT. */
+export const getResumNotes = () =>
+  client.get<{ examens: ResumExamen[]; unitats: ResumUnitat[] }>('/resum-notes').then(r => r.data)

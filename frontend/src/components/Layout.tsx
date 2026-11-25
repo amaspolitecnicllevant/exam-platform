@@ -9,6 +9,7 @@ import AlertesSeguretat from './AlertesSeguretat'
 
 const NAV: { to: string; label: string; roles: string[] }[] = [
   { to: '/professor/exams',    label: 'Examens',              roles: ['PROFESSOR', 'ADMIN'] },
+  { to: '/professor/resum',    label: 'Resum de notes',       roles: ['PROFESSOR', 'ADMIN'] },
   { to: '/professor/grups',    label: 'Grups i alumnes',      roles: ['PROFESSOR', 'ADMIN'] },
   { to: '/professor/convits',  label: 'Links de convit',      roles: ['PROFESSOR', 'ADMIN'] },
   { to: '/admin/users',        label: 'Gestió d\'usuaris',    roles: ['ADMIN', 'PROFESSOR'] },
