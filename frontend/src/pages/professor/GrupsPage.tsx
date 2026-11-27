@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import { getGrups, createGrup, setGrupStudents, deleteGrup, assignGrupModul } from '../../api/grups'
-import { getUsers } from '../../api/users'
+import { getUsers, deleteUsers } from '../../api/users'
+import { useAuth } from '../../context/AuthContext'
 import { getModuls } from '../../api/moduls'
 import { getMatricules } from '../../api/matricules'
 import {
@@ -51,6 +52,9 @@ export default function GrupsPage() {
   const [grupsTriats, setGrupsTriats]     = useState<Set<string>>(new Set())
   const [alumnesTriats, setAlumnesTriats] = useState<Set<string>>(new Set())
   const [grupDestiLot, setGrupDestiLot]   = useState('')
+  const { user: yo }                      = useAuth()
+  const esAdmin                           = yo?.role === 'ADMIN'
+  const [forcaEliminar, setForcaEliminar] = useState(false)
 
   useEffect(() => {
     // Si les matrícules no es poden carregar, la llista d'alumnes continua funcionant (sense filtres de matrícula)
@@ -178,6 +182,28 @@ export default function GrupsPage() {
       setAlumnesTriats(new Set())
     } catch { setError('Error desant els alumnes del grup') }
     finally { setSaving(false) }
+  }
+
+  /** Només l'administrador: elimina els alumnes triats (amb «forçar», també les seves dades d'exàmens). */
+  const handleEliminaAlumnes = async () => {
+    const ids = [...alumnesTriats]
+    if (!ids.length) return
+    const n = `${ids.length} alumne${ids.length > 1 ? 's' : ''}`
+    if (!confirm(forcaEliminar
+      ? `Eliminar ${n} I TOTES LES SEVES DADES D'EXÀMENS (sessions, respostes i notes)? Aquesta acció no es pot desfer.`
+      : `Eliminar ${n}? Aquesta acció no es pot desfer.`)) return
+    setSaving(true); setError('')
+    try {
+      const r = await deleteUsers(ids, forcaEliminar)
+      const fets = new Set(r.eliminats)
+      setStudents(prev => prev.filter(a => !fets.has(a.id)))
+      setGrups(prev => prev.map(g => ({ ...g, students: g.students.filter(a => !fets.has(a.id)) })))
+      setAlumnesTriats(new Set(r.errors.map(e => e.id)))
+      if (r.errors.length) setError(`S'han eliminat ${fets.size}; ${r.errors.length} no s'han pogut eliminar: `
+        + r.errors.map(e => e.motiu).join(' · '))
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'No s\'han pogut eliminar els alumnes')
+    } finally { setSaving(false) }
   }
 
   const handleAssignModulGrup = async () => {
@@ -415,6 +441,19 @@ export default function GrupsPage() {
                     <button onClick={() => handleAlumnesLot(false)} disabled={saving || !grupDestiLot}
                       className="border border-gray-300 rounded-lg px-3 py-1.5 hover:bg-gray-50 text-gray-700 disabled:opacity-50">
                       Treure del grup
+                    </button>
+                  </div>
+                )}
+                {esAdmin && (
+                  <div className="flex flex-wrap items-center gap-3 text-sm mb-3">
+                    <label className="flex items-center gap-1 text-xs text-red-700"
+                      title="Elimina també les sessions d'examen dels alumnes (respostes i notes)">
+                      <input type="checkbox" checked={forcaEliminar} onChange={e => setForcaEliminar(e.target.checked)} />
+                      Forçar: eliminar també les dades dels exàmens
+                    </label>
+                    <button onClick={handleEliminaAlumnes} disabled={saving || alumnesTriats.size === 0}
+                      className="bg-red-600 text-white rounded-lg px-3 py-1.5 hover:bg-red-700 disabled:opacity-40">
+                      Eliminar alumnes seleccionats{alumnesTriats.size ? ` (${alumnesTriats.size})` : ''}
                     </button>
                   </div>
                 )}
