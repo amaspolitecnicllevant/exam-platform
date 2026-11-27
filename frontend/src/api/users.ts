@@ -4,7 +4,11 @@ import type { User, Role } from '../types'
 export const getUsers    = () => client.get<User[]>('/users').then(r => r.data)
 export const createUser  = (data: { name: string; email: string; password: string; role: Role }) =>
   client.post<User>('/users', data).then(r => r.data)
-export const deleteUser  = (id: string) => client.delete(`/users/${id}`)
+export const deleteUser  = (id: string, forca = false) => client.delete(`/users/${id}`, { params: { forca } })
+
+export interface EliminacioLot { eliminats: string[]; errors: { id: string; motiu: string }[] }
+export const deleteUsers = (ids: string[], forca = false) =>
+  client.post<EliminacioLot>('/users/elimina-lot', { ids, forca }).then(r => r.data)
 
 export const resetPassword = (id: string, password: string) =>
   client.patch(`/users/${id}/password`, { password })

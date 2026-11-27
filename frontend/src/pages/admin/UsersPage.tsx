@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import Layout from '../../components/Layout'
-import { getUsers, createUser, deleteUser, resetPassword, revocaSessions, minimContrasenya } from '../../api/users'
+import { getUsers, createUser, deleteUser, deleteUsers, resetPassword, revocaSessions, minimContrasenya } from '../../api/users'
+import { useAuth } from '../../context/AuthContext'
+import { SortTh, useOrdre, ordena } from '../../components/SortTh'
 import ImportacioUsuaris from '../../components/ImportacioUsuaris'
 import type { User, Role } from '../../types'
 
@@ -8,6 +10,13 @@ export default function UsersPage() {
   const [users, setUsers]     = useState<User[]>([])
   const [form, setForm]       = useState({ name: '', email: '', password: '', role: 'STUDENT' as Role })
   const [error, setError]     = useState('')
+  const { user: yo }          = useAuth()
+  const [cerca, setCerca]     = useState('')
+  const [filtreRol, setFiltreRol] = useState<'' | Role>('')
+  const [seleccio, setSeleccio]   = useState<Set<string>>(new Set())
+  const ordreUsuaris = useOrdre<'name' | 'email' | 'role'>('name')
+  const [eliminant, setEliminant] = useState(false)
+  const [forca, setForca]        = useState(false)
 
   // Modal reset contrasenya
   const [resetUser, setResetUser]   = useState<User | null>(null)
@@ -30,13 +39,53 @@ export default function UsersPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Eliminar usuari?')) return
+    if (!confirm(forca ? 'Eliminar l\'usuari i totes les seves dades d\'exàmens? Aquesta acció no es pot desfer.' : 'Eliminar usuari?')) return
     setError('')
     try {
-      await deleteUser(id)
+      await deleteUser(id, forca)
       setUsers(prev => prev.filter(u => u.id !== id))
     } catch (err: any) {
       setError(err?.response?.data?.error || 'No s\'ha pogut eliminar l\'usuari')
+    }
+  }
+
+  const visibles = users.filter(u =>
+    (!filtreRol || u.role === filtreRol) &&
+    (!cerca || (u.name + ' ' + u.email).toLowerCase().includes(cerca.toLowerCase())))
+  const ordenats = ordena(visibles, ordreUsuaris.ordre, (u, k) => u[k])
+  const seleccionables = visibles.filter(u => u.id !== yo?.userId)
+  const totsSeleccionats = seleccionables.length > 0 && seleccionables.every(u => seleccio.has(u.id))
+
+  const toggle = (id: string) => setSeleccio(prev => {
+    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n
+  })
+  const toggleTots = () => setSeleccio(prev => {
+    const n = new Set(prev)
+    seleccionables.forEach(u => totsSeleccionats ? n.delete(u.id) : n.add(u.id))
+    return n
+  })
+
+  const handleDeleteSeleccio = async () => {
+    const ids = [...seleccio]
+    if (!ids.length) return
+    const msg = forca
+      ? `Eliminar ${ids.length} usuari${ids.length > 1 ? 's' : ''} I TOTES LES SEVES DADES D'EXÀMENS (sessions, respostes i notes; si algun és professor, també els exàmens i grups que ha creat, amb les notes de tots els alumnes)? Aquesta acció no es pot desfer.`
+      : `Eliminar ${ids.length} usuari${ids.length > 1 ? 's' : ''}? Aquesta acció no es pot desfer.`
+    if (!confirm(msg)) return
+    setError(''); setEliminant(true)
+    try {
+      const r = await deleteUsers(ids, forca)
+      const fets = new Set(r.eliminats)
+      setUsers(prev => prev.filter(u => !fets.has(u.id)))
+      setSeleccio(new Set(r.errors.map(e => e.id)))
+      if (r.errors.length) {
+        setError(`S'han eliminat ${fets.size} usuaris; ${r.errors.length} no s'han pogut eliminar: ` +
+          r.errors.map(e => e.motiu).join(' · '))
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'No s\'han pogut eliminar els usuaris')
+    } finally {
+      setEliminant(false)
     }
   }
 
@@ -98,14 +147,47 @@ export default function UsersPage() {
         </div>
 
         {/* Llistat */}
+        <div className="flex flex-wrap items-center gap-3">
+          <input type="search" placeholder="Cerca per nom o correu" value={cerca} onChange={e => setCerca(e.target.value)}
+            className="border rounded px-3 py-2 text-sm" />
+          <select value={filtreRol} onChange={e => setFiltreRol(e.target.value as '' | Role)}
+            className="border rounded px-3 py-2 text-sm">
+            <option value="">Tots els rols</option>
+            {(['ADMIN','PROFESSOR','STUDENT'] as Role[]).map(r => <option key={r}>{r}</option>)}
+          </select>
+          <span className="text-xs text-gray-500">{visibles.length} usuaris</span>
+          <label className="flex items-center gap-1 text-xs text-red-700" title="Elimina també les sessions d'examen de l'usuari i, si és professor, els exàmens i grups que ha creat">
+            <input type="checkbox" checked={forca} onChange={e => setForca(e.target.checked)} />
+            Forçar: eliminar també les dades dels exàmens
+          </label>
+          {seleccio.size > 0 && (
+            <button onClick={handleDeleteSeleccio} disabled={eliminant}
+              className="ml-auto bg-red-600 text-white rounded px-4 py-2 text-sm hover:bg-red-700 disabled:opacity-50">
+              {eliminant ? 'Eliminant…' : `Eliminar seleccionats (${seleccio.size})`}
+            </button>
+          )}
+        </div>
         <div className="bg-white rounded-xl border overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-brand-600 text-white">
-              <tr>{['Nom','Correu','Rol',''].map(h => <th key={h} className="px-4 py-2 text-left">{h}</th>)}</tr>
+              <tr>
+                <th className="px-4 py-2 w-8">
+                  <input type="checkbox" checked={totsSeleccionats} onChange={toggleTots}
+                    aria-label="Seleccionar tots els usuaris visibles" />
+                </th>
+                <SortTh clau="name" {...ordreUsuaris} className="!text-white">Nom</SortTh>
+                <SortTh clau="email" {...ordreUsuaris} className="!text-white">Correu</SortTh>
+                <SortTh clau="role" {...ordreUsuaris} className="!text-white">Rol</SortTh>
+                <th />
+              </tr>
             </thead>
             <tbody>
-              {users.map((u, i) => (
+              {ordenats.map((u, i) => (
                 <tr key={u.id} className={i % 2 ? 'bg-brand-50' : ''}>
+                  <td className="px-4 py-2">
+                    <input type="checkbox" checked={seleccio.has(u.id)} disabled={u.id === yo?.userId}
+                      onChange={() => toggle(u.id)} aria-label={`Seleccionar ${u.name}`} />
+                  </td>
                   <td className="px-4 py-2">{u.name}</td>
                   <td className="px-4 py-2">{u.email}</td>
                   <td className="px-4 py-2"><span className="bg-brand-100 text-brand-700 px-2 py-0.5 rounded text-xs">{u.role}</span></td>

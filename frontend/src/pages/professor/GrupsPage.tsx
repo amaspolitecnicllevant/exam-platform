@@ -10,6 +10,7 @@ import {
   filtraPerGrup, filtraGrups, GRUP_CAP,
   type FiltreAlumnes,
 } from '../../utils/filtreAlumnes'
+import { SortTh, useOrdre, ordena } from '../../components/SortTh'
 import type { Grup, User, Modul, Matricula } from '../../types'
 
 type Tab = 'grups' | 'alumnes'
@@ -44,6 +45,13 @@ export default function GrupsPage() {
   const [filtreTab, setFiltreTab]             = useState<FiltreAlumnes>(FILTRE_BUIT)
   const [filtreGrupTab, setFiltreGrupTab]     = useState('')
 
+  // Ordenació i selecció a les taules de les pestanyes
+  const ordreGrups   = useOrdre<'nom' | 'modul' | 'alumnes'>('nom')
+  const ordreAlumnes = useOrdre<'nom' | 'correu' | 'grups'>('nom')
+  const [grupsTriats, setGrupsTriats]     = useState<Set<string>>(new Set())
+  const [alumnesTriats, setAlumnesTriats] = useState<Set<string>>(new Set())
+  const [grupDestiLot, setGrupDestiLot]   = useState('')
+
   useEffect(() => {
     // Si les matrícules no es poden carregar, la llista d'alumnes continua funcionant (sense filtres de matrícula)
     Promise.all([getGrups(), getUsers(), getModuls(), getMatricules().catch(() => [] as Matricula[])])
@@ -73,6 +81,21 @@ export default function GrupsPage() {
   const senseMatricula = allStudents.filter(a => !idsMatriculats.has(a.id)).length
   const alumnesTab = filtraPerGrup(
     filtraAlumnes(allStudents, matricules, moduls, filtreTab, new Set()), grups, filtreGrupTab)
+  const nomsGrups = (id: string) =>
+    grups.filter(g => g.students.some(x => x.id === id)).map(g => g.name).join(', ')
+  const alumnesOrdenats = ordena(alumnesTab, ordreAlumnes.ordre, (a, k) =>
+    k === 'nom' ? a.name : k === 'correu' ? a.email : nomsGrups(a.id))
+  const grupsOrdenats = ordena(grups, ordreGrups.ordre, (g, k) =>
+    k === 'nom' ? g.name : k === 'modul' ? (g.modulNom ?? '') : g.students.length)
+  const tots = (llista: { id: string }[], triats: Set<string>) =>
+    llista.length > 0 && llista.every(x => triats.has(x.id))
+  const commutaTots = (llista: { id: string }[], set: React.Dispatch<React.SetStateAction<Set<string>>>) =>
+    set(prev => {
+      const n = new Set(prev)
+      const marcats = llista.every(x => n.has(x.id))
+      llista.forEach(x => (marcats ? n.delete(x.id) : n.add(x.id)))
+      return n
+    })
   const modulsFiltreTab = modulsAmbMatricula(moduls, matricules, filtreTab.cicleId)
   const filtreTabActiu = filtreTab.text !== '' || filtraPerMatricula(filtreTab) || filtreGrupTab !== ''
   const grupsVisiblesModal = filtraGrups(grups, cercaGrups)
@@ -126,6 +149,35 @@ export default function GrupsPage() {
       await deleteGrup(g.id)
       setGrups(prev => prev.filter(x => x.id !== g.id))
     } catch { setError('Error eliminant el grup') }
+  }
+
+  const handleDeleteGrupsTriats = async () => {
+    const ids = [...grupsTriats]
+    if (!ids.length || !confirm(`Eliminar ${ids.length} grup${ids.length > 1 ? 's' : ''}?`)) return
+    setSaving(true); setError('')
+    const fets = new Set<string>()
+    for (const id of ids) {
+      try { await deleteGrup(id); fets.add(id) } catch { /* es comunica a baix */ }
+    }
+    setGrups(prev => prev.filter(g => !fets.has(g.id)))
+    setGrupsTriats(new Set(ids.filter(id => !fets.has(id))))
+    if (fets.size < ids.length) setError(`No s'han pogut eliminar ${ids.length - fets.size} grups`)
+    setSaving(false)
+  }
+
+  /** Afegeix (o treu) els alumnes triats al grup escollit, amb una sola crida. */
+  const handleAlumnesLot = async (afegir: boolean) => {
+    const grup = grups.find(g => g.id === grupDestiLot)
+    if (!grup || alumnesTriats.size === 0) return
+    setSaving(true); setError('')
+    try {
+      const actuals = new Set(grup.students.map(s => s.id))
+      alumnesTriats.forEach(id => (afegir ? actuals.add(id) : actuals.delete(id)))
+      const updated = await setGrupStudents(grup.id, [...actuals])
+      setGrups(prev => prev.map(g => g.id === updated.id ? updated : g))
+      setAlumnesTriats(new Set())
+    } catch { setError('Error desant els alumnes del grup') }
+    finally { setSaving(false) }
   }
 
   const handleAssignModulGrup = async () => {
@@ -219,42 +271,72 @@ export default function GrupsPage() {
             {grups.length === 0
               ? <p className="text-gray-400 text-sm">Encara no hi ha grups.</p>
               : (
-                <div className="space-y-3">
-                  {grups.map(g => (
-                    <div key={g.id}
-                      className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-center justify-between shadow-sm">
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-semibold text-gray-800">{g.name}</p>
-                          {g.modulNom && (
-                            <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-mono">
-                              {g.modulNom}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          {g.students.length === 0
-                            ? 'Sense alumnes'
-                            : `${g.students.length} alumne${g.students.length !== 1 ? 's' : ''}: ${g.students.slice(0, 4).map(s => s.name).join(', ')}${g.students.length > 4 ? '…' : ''}`}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => { setAssigningModulGrup(g); setSelectedModulGrup(g.modulId ?? '') }}
-                          className="text-sm border border-indigo-200 rounded-lg px-3 py-1.5 hover:bg-indigo-50 text-indigo-600">
-                          Mòdul
-                        </button>
-                        <button onClick={() => openGrupEdit(g)}
-                          className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 hover:bg-gray-50 text-gray-700">
-                          Alumnes
-                        </button>
-                        <button onClick={() => handleDeleteGrup(g)}
-                          className="text-sm border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-50 text-red-600">
-                          Eliminar
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                <>
+                {grupsTriats.size > 0 && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="text-gray-500">{grupsTriats.size} seleccionat{grupsTriats.size !== 1 ? 's' : ''}</span>
+                    <button onClick={handleDeleteGrupsTriats} disabled={saving}
+                      className="border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-50 text-red-600 disabled:opacity-50">
+                      Eliminar seleccionats
+                    </button>
+                  </div>
+                )}
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3 w-8">
+                          <input type="checkbox" checked={tots(grups, grupsTriats)}
+                            onChange={() => commutaTots(grups, setGrupsTriats)}
+                            aria-label="Seleccionar o deseleccionar tots els grups" />
+                        </th>
+                        <SortTh clau="nom" {...ordreGrups}>Grup</SortTh>
+                        <SortTh clau="modul" {...ordreGrups}>Mòdul</SortTh>
+                        <SortTh clau="alumnes" {...ordreGrups}>Alumnes</SortTh>
+                        <th className="px-4 py-3"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {grupsOrdenats.map(g => (
+                        <tr key={g.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            <input type="checkbox" checked={grupsTriats.has(g.id)}
+                              onChange={() => setGrupsTriats(prev => toggle(prev, g.id))}
+                              aria-label={`Seleccionar ${g.name}`} />
+                          </td>
+                          <td className="px-4 py-3 font-semibold text-gray-800">{g.name}</td>
+                          <td className="px-4 py-3">
+                            {g.modulNom
+                              ? <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-mono">{g.modulNom}</span>
+                              : <span className="text-gray-300 text-xs italic">Sense mòdul</span>}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-500">
+                            {g.students.length === 0
+                              ? 'Sense alumnes'
+                              : `${g.students.length}: ${g.students.slice(0, 3).map(s => s.name).join(', ')}${g.students.length > 3 ? '…' : ''}`}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex gap-2 justify-end">
+                              <button onClick={() => { setAssigningModulGrup(g); setSelectedModulGrup(g.modulId ?? '') }}
+                                className="text-sm border border-indigo-200 rounded-lg px-3 py-1.5 hover:bg-indigo-50 text-indigo-600">
+                                Mòdul
+                              </button>
+                              <button onClick={() => openGrupEdit(g)}
+                                className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 hover:bg-gray-50 text-gray-700">
+                                Alumnes
+                              </button>
+                              <button onClick={() => handleDeleteGrup(g)}
+                                className="text-sm border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-50 text-red-600">
+                                Eliminar
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
+                </>
               )}
           </div>
         )}
@@ -318,26 +400,54 @@ export default function GrupsPage() {
                     </p>
                   )}
                 </div>
+                {alumnesTriats.size > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 text-sm mb-3">
+                    <span className="text-gray-500">{alumnesTriats.size} seleccionat{alumnesTriats.size !== 1 ? 's' : ''}</span>
+                    <select value={grupDestiLot} onChange={e => setGrupDestiLot(e.target.value)} aria-label="Grup"
+                      className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm">
+                      <option value="">Tria un grup…</option>
+                      {grups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                    </select>
+                    <button onClick={() => handleAlumnesLot(true)} disabled={saving || !grupDestiLot}
+                      className="bg-brand-600 text-white rounded-lg px-3 py-1.5 hover:bg-brand-700 disabled:opacity-50">
+                      Afegir al grup
+                    </button>
+                    <button onClick={() => handleAlumnesLot(false)} disabled={saving || !grupDestiLot}
+                      className="border border-gray-300 rounded-lg px-3 py-1.5 hover:bg-gray-50 text-gray-700 disabled:opacity-50">
+                      Treure del grup
+                    </button>
+                  </div>
+                )}
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
-                        <th className="px-4 py-3 text-left font-medium text-gray-600">Alumne</th>
-                        <th className="px-4 py-3 text-left font-medium text-gray-600">Correu</th>
-                        <th className="px-4 py-3 text-left font-medium text-gray-600">Grups</th>
+                        <th className="px-4 py-3 w-8">
+                          <input type="checkbox" checked={tots(alumnesTab, alumnesTriats)}
+                            onChange={() => commutaTots(alumnesTab, setAlumnesTriats)}
+                            aria-label="Seleccionar o deseleccionar tots els alumnes visibles" />
+                        </th>
+                        <SortTh clau="nom" {...ordreAlumnes}>Alumne</SortTh>
+                        <SortTh clau="correu" {...ordreAlumnes}>Correu</SortTh>
+                        <SortTh clau="grups" {...ordreAlumnes}>Grups</SortTh>
                         <th className="px-4 py-3 w-24"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {alumnesTab.length === 0 && (
-                        <tr><td colSpan={4} className="px-4 py-6 text-center text-gray-400">
+                        <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400">
                           Cap alumne coincideix amb els filtres.
                         </td></tr>
                       )}
-                      {alumnesTab.map(s => {
+                      {alumnesOrdenats.map(s => {
                         const myGrups = grups.filter(g => g.students.some(x => x.id === s.id))
                         return (
                           <tr key={s.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3">
+                              <input type="checkbox" checked={alumnesTriats.has(s.id)}
+                                onChange={() => setAlumnesTriats(prev => toggle(prev, s.id))}
+                                aria-label={`Seleccionar ${s.name}`} />
+                            </td>
                             <td className="px-4 py-3 font-medium text-gray-800">{s.name}</td>
                             <td className="px-4 py-3 text-gray-500">{s.email}</td>
                             <td className="px-4 py-3">
@@ -498,6 +608,14 @@ export default function GrupsPage() {
                   onChange={e => setCercaGrups(e.target.value)}
                   placeholder="Cerca un grup pel nom o el mòdul…"
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                <div className="flex justify-end gap-3 text-xs mt-2">
+                  <button type="button" disabled={grupsVisiblesModal.length === 0}
+                    onClick={() => setSelectedGrups(prev => { const n = new Set(prev); grupsVisiblesModal.forEach(g => n.add(g.id)); return n })}
+                    className="text-brand-600 hover:underline disabled:opacity-40">Marcar tots</button>
+                  <button type="button" disabled={grupsVisiblesModal.length === 0}
+                    onClick={() => setSelectedGrups(prev => { const n = new Set(prev); grupsVisiblesModal.forEach(g => n.delete(g.id)); return n })}
+                    className="text-gray-500 hover:underline disabled:opacity-40">Desmarcar tots</button>
+                </div>
               </div>
               {grupsVisiblesModal.length === 0
                 ? <p className="text-sm text-gray-400 text-center py-4">Cap grup coincideix.</p>

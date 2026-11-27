@@ -51,10 +51,36 @@ public class UserController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable UUID id,
+                                       @RequestParam(defaultValue = "false") boolean forca,
                                        @AuthenticationPrincipal com.examplatform.domain.model.User caller) {
-        userService.delete(id, caller);
-        auditLog.log(caller.getId(), "USER_DELETED", id.toString());
+        userService.delete(id, caller, forca);
+        auditLog.log(caller.getId(), forca ? "USER_DELETED_FORCE" : "USER_DELETED", id.toString());
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Elimina diversos usuaris d'un cop. Cada un va en la seva transacció: els que no es poden eliminar (tenen exàmens fets
+     * o creats, o és el mateix administrador) queden a la llista d'errors amb el motiu, i la resta s'eliminen igualment.
+     */
+    @PostMapping("/elimina-lot")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Map<String, Object> deleteBatch(@RequestBody Map<String, Object> body,
+                                           @AuthenticationPrincipal com.examplatform.domain.model.User caller) {
+        List<UUID> ids = body.get("ids") instanceof List<?> l
+                ? l.stream().map(o -> UUID.fromString(o.toString())).distinct().toList() : List.of();
+        boolean forca = Boolean.TRUE.equals(body.get("forca"));
+        List<UUID> eliminats = new ArrayList<>();
+        List<Map<String, String>> errors = new ArrayList<>();
+        for (UUID id : ids) {
+            try {
+                userService.delete(id, caller, forca);
+                auditLog.log(caller.getId(), forca ? "USER_DELETED_FORCE" : "USER_DELETED", id.toString());
+                eliminats.add(id);
+            } catch (IllegalStateException | NoSuchElementException e) {
+                errors.add(Map.of("id", id.toString(), "motiu", e.getMessage()));
+            }
+        }
+        return Map.of("eliminats", eliminats, "errors", errors);
     }
 
     /** Qualsevol usuari autenticat canvia la seva pròpia contrasenya (cal l'actual). */

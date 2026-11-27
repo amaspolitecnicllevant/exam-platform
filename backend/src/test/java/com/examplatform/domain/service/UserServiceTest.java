@@ -34,12 +34,13 @@ class UserServiceTest {
     @Mock com.examplatform.infrastructure.persistence.ExamRepository examRepository;
     @Mock com.examplatform.infrastructure.persistence.GrupRepository grupRepository;
     @Mock AlumnesVisibles alumnesVisibles;
+    @Mock com.examplatform.infrastructure.storage.FitxersRespostaStorage fitxersStorage;
 
     UserService service;
 
     @BeforeEach
     void setUp() {
-        service = new UserService(userRepository, passwordEncoder, sessionRepository, examRepository, grupRepository, alumnesVisibles);
+        service = new UserService(userRepository, passwordEncoder, sessionRepository, examRepository, grupRepository, alumnesVisibles, fitxersStorage);
     }
 
     // ── delete ────────────────────────────────────────────────────────────────
@@ -85,6 +86,34 @@ class UserServiceTest {
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.delete(u.getId(), ADMIN))
                 .isInstanceOf(IllegalStateException.class);
         org.mockito.Mockito.verify(userRepository, org.mockito.Mockito.never()).delete(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void delete_forcat_esborra_sessions_examens_i_grups_abans_de_l_usuari() {
+        User u = alumne();
+        var sessio = com.examplatform.domain.model.ExamSession.builder().id(UUID.randomUUID()).build();
+        var examen = com.examplatform.domain.model.Exam.builder().id(UUID.randomUUID()).build();
+        var altra = com.examplatform.domain.model.ExamSession.builder().id(UUID.randomUUID()).build();
+        org.mockito.Mockito.when(sessionRepository.findByStudentId(u.getId())).thenReturn(java.util.List.of(sessio));
+        org.mockito.Mockito.when(examRepository.findByCreatedById(u.getId())).thenReturn(java.util.List.of(examen));
+        org.mockito.Mockito.when(sessionRepository.findByExamId(examen.getId())).thenReturn(java.util.List.of(altra));
+
+        service.delete(u.getId(), ADMIN, true);
+
+        var ordre = org.mockito.Mockito.inOrder(sessionRepository, examRepository, grupRepository, userRepository);
+        ordre.verify(sessionRepository).deleteAll(org.mockito.ArgumentMatchers.argThat(c ->
+                new java.util.HashSet<>(java.util.List.copyOf((java.util.Collection<?>) c)).size() == 2));
+        ordre.verify(examRepository).deleteAll(java.util.List.of(examen));
+        ordre.verify(grupRepository).deleteAll(org.mockito.ArgumentMatchers.<Iterable<com.examplatform.domain.model.Grup>>any());
+        ordre.verify(userRepository).delete(u);
+        org.mockito.Mockito.verify(fitxersStorage).esborraSessio(sessio.getId());
+        org.mockito.Mockito.verify(fitxersStorage).esborraSessio(altra.getId());
+    }
+
+    @Test
+    void delete_forcat_no_permet_eliminar_se_a_un_mateix() {
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.delete(ADMIN.getId(), ADMIN, true))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     // ── create ────────────────────────────────────────────────────────────────

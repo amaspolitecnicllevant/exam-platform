@@ -21,6 +21,7 @@ public class UserService {
     private final com.examplatform.infrastructure.persistence.ExamRepository examRepository;
     private final com.examplatform.infrastructure.persistence.GrupRepository grupRepository;
     private final AlumnesVisibles alumnesVisibles;
+    private final com.examplatform.infrastructure.storage.FitxersRespostaStorage fitxersStorage;
 
     /**
      * Els usuaris que veu qui ho demana. L'administració, tots. Un professor, només els alumnes de les seves assignatures (i dels seus
@@ -80,11 +81,25 @@ public class UserService {
 
     @Transactional
     public void delete(UUID id, User caller) {
+        delete(id, caller, false);
+    }
+
+    /**
+     * Amb {@code forca}, s'esborren també les dades que ho impedeixen: les sessions d'examen de l'usuari (respostes i fitxers
+     * inclosos), els exàmens que ha creat (amb les sessions de tots els alumnes) i els grups que ha creat.
+     */
+    @Transactional
+    public void delete(UUID id, User caller, boolean forca) {
         if (id.equals(caller.getId())) {
             throw new IllegalStateException("No et pots eliminar a tu mateix");
         }
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Usuari no trobat: " + id));
+        if (forca) {
+            esborraDades(id);
+            userRepository.delete(user);
+            return;
+        }
         // Les sessions són les notes de l'alumne i els exàmens/grups, feina del professor:
         // no s'esborren en cascada (i la BD tampoc ho permet)
         if (sessionRepository.existsByStudentId(id)) {
@@ -94,6 +109,21 @@ public class UserService {
             throw new IllegalStateException(user.getName() + " té exàmens o grups creats: no es pot eliminar");
         }
         userRepository.delete(user);
+    }
+
+    private void esborraDades(UUID id) {
+        var sessions = new java.util.LinkedHashMap<UUID, com.examplatform.domain.model.ExamSession>();
+        sessionRepository.findByStudentId(id).forEach(s -> sessions.put(s.getId(), s));
+        var exams = examRepository.findByCreatedById(id);
+        exams.forEach(e -> sessionRepository.findByExamId(e.getId()).forEach(s -> sessions.put(s.getId(), s)));
+        sessions.keySet().forEach(fitxersStorage::esborraSessio);
+        // exam_sessions no té ON DELETE CASCADE cap a exams ni users: s'esborren explícitament abans
+        sessionRepository.deleteAll(sessions.values());
+        sessionRepository.flush();
+        examRepository.deleteAll(exams);
+        examRepository.flush();
+        grupRepository.deleteAll(grupRepository.findByCreatedByIdWithStudents(id));
+        grupRepository.flush();
     }
 
     @Transactional(readOnly = true)
